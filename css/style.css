@@ -1,0 +1,1451 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Zen+Old+Mincho:wght@400;700&display=swap');
+
+:root {
+  --color-bg: #fbfdff;
+  --color-bg-card: #ffffff;
+  --color-bg-section: #eef4fa;
+  --color-text: #1f2933;
+  --color-text-light: #3e4c59;
+  --color-text-muted: #5b6b78;
+  --color-primary: #1c6fc9;
+  --color-primary-light: #e3f0fc;
+  --color-primary-dark: #124e8c;
+  --color-accent: #e8720c;
+  --color-accent-light: #fdeee0;
+  --color-border: #dce6ee;
+  --color-food-lunch: #e8720c;
+  --color-food-dinner: #8b6bc7;
+  --color-food-snack: #f2a73b;
+  --color-food-breakfast: #34a896;
+  --color-transport: #2e86de;
+  --color-hotel: #f2994a;
+  --color-spot: #2e9e6b;
+  --color-score-high: #2e9e6b;
+  --color-score-mid: #f2a73b;
+  --color-score-low: #e0563f;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 21px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+.step {
+  display: none;
+}
+
+.step.active {
+  display: block;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================
+   Station Choice
+   ======================== */
+.station-choice {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.station-choice-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.station-choice-option:has(input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.station-choice-option input[type="radio"] {
+  accent-color: var(--color-primary);
+}
+
+/* ========================
+   Buttons
+   ======================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 2rem;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+  background: var(--color-bg-card);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--color-primary-light);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-light);
+  padding: 0.6rem 1.2rem;
+}
+
+.btn-ghost:hover {
+  background: var(--color-bg-section);
+}
+
+.btn-large {
+  padding: 1rem 3rem;
+  font-size: 1.05rem;
+}
+
+/* ========================
+   Container / Layout
+   ======================== */
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.page-header {
+  text-align: center;
+  padding: 2.5rem 0 1.5rem;
+}
+
+.page-header h1 {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 1.6rem;
+  color: var(--color-primary);
+  margin-bottom: 0.3rem;
+}
+
+.page-header p {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ========================
+   Form (Input Step)
+   ======================== */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 0.4rem;
+}
+
+.form-sublabel {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.95rem;
+  background: var(--color-bg-card);
+  color: var(--color-text);
+  transition: border-color 0.2s;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(28,111,201,0.15);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.dest-info-card {
+  background: var(--color-primary-light);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.5rem;
+}
+
+.dest-info-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-primary-dark);
+  font-weight: 500;
+}
+
+.dest-info-highlights {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  margin-top: 0.2rem;
+}
+
+.dest-info-notice {
+  background: #fdf6ec;
+  color: #8a6d3b;
+  font-size: 0.85rem;
+}
+
+/* 交通手段判定バッジ（公開版） */
+.transport-badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.transport-shinkansen {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-left: 3px solid #4caf50;
+}
+
+.transport-flight {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-left: 3px solid #2196f3;
+}
+
+.transport-note {
+  display: block;
+  width: 100%;
+  font-size: 0.72rem;
+  font-weight: 400;
+  opacity: 0.85;
+  margin-top: 0.15rem;
+}
+
+/* Luggage Pattern */
+.luggage-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.luggage-option {
+  position: relative;
+}
+
+.luggage-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.luggage-option label {
+  display: flex;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 0.75rem;
+}
+
+.luggage-option input[type="radio"]:checked + label {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.luggage-pattern-letter {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-bg-section);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.luggage-option input[type="radio"]:checked + label .luggage-pattern-letter {
+  background: var(--color-primary);
+  color: white;
+}
+
+.luggage-label-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.luggage-label-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.luggage-label-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.luggage-description {
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  background: var(--color-bg-section);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.5rem;
+  line-height: 1.7;
+}
+
+/* ========================
+   実ダイヤの列車選択（A/B）
+   ======================== */
+.train-choice:empty {
+  display: none;
+}
+
+/* 選択が必要な状態はSunset（アクセント）側の色で「要対応」を示す */
+.train-choice {
+  margin-top: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-light);
+  border-left: 4px solid var(--color-accent);
+}
+
+/* 選択不要（自動確定・完全一致）のときはSky側の落ち着いた色に切り替える */
+.train-choice.is-resolved {
+  background: var(--color-primary-light);
+  border-left-color: var(--color-primary);
+}
+
+.train-choice-lead {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--color-text);
+  margin-bottom: 0.75rem;
+}
+
+.train-choice-note {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--color-text-light);
+}
+
+.train-choice-note strong {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.train-choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.train-choice-option {
+  position: relative;
+}
+
+.train-choice-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.train-choice-option label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.train-choice-option label:hover {
+  border-color: var(--color-primary);
+}
+
+.train-choice-option input[type="radio"]:checked + label {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.train-choice-option input[type="radio"]:focus-visible + label {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.train-choice-letter {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-bg-section);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+}
+
+.train-choice-option input[type="radio"]:checked + label .train-choice-letter {
+  background: var(--color-primary);
+  color: white;
+}
+
+.train-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.train-choice-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.train-choice-desc {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+/* 希望との差が極端に大きい選択肢の注意書き */
+.train-choice-warning {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b4530a;
+}
+
+.form-submit-hint {
+  font-size: 0.78rem;
+  color: var(--color-accent);
+  font-weight: 500;
+  line-height: 1.5;
+  margin-right: auto;
+  text-align: left;
+}
+
+.form-submit-hint:empty {
+  display: none;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn:disabled:hover {
+  transform: none;
+  background: var(--color-primary);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ========================
+   Hotel Cards
+   ======================== */
+.hotel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.hotel-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  transition: box-shadow 0.25s;
+}
+
+.hotel-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.hotel-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--color-bg-section);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hotel-card-header h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.hotel-type {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.hotel-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.hotel-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hotel-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--color-bg-section);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.placeholder-icon {
+  font-size: 2rem;
+  opacity: 0.4;
+}
+
+.placeholder-text {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.hotel-card-body {
+  padding: 1.25rem;
+}
+
+.hotel-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.feature-tag {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.hotel-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.hotel-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+}
+
+.detail-icon {
+  font-size: 0.9rem;
+}
+
+.btn-simulate {
+  width: 100%;
+}
+
+/* ========================
+   Itinerary
+   ======================== */
+.itinerary-header {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+.itinerary-hotel-info {
+  margin-bottom: 1rem;
+}
+
+.itinerary-hotel-info h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.itinerary-hotel-info p {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Koharu Score */
+.koharu-score-box {
+  text-align: center;
+  padding: 1rem;
+  background: var(--color-bg-section);
+  border-radius: var(--radius-sm);
+}
+
+.koharu-score-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+
+.koharu-score-value {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-high { color: var(--color-score-high); }
+.score-mid { color: var(--color-score-mid); }
+.score-low { color: var(--color-score-low); }
+
+.koharu-score-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--color-border);
+  border-radius: 3px;
+  margin: 0.75rem 0 0.5rem;
+  overflow: hidden;
+}
+
+.koharu-score-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+
+.koharu-score-comment {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Timeline */
+.day-section {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+.day-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.day-date {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-light);
+  margin-left: 0.6rem;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 5rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 4.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.timeline-item {
+  position: relative;
+  padding: 0.5rem 0 1rem 1.5rem;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-time {
+  position: absolute;
+  left: -5rem;
+  top: 0.55rem;
+  width: 3.8rem;
+  text-align: right;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -0.35rem;
+  top: 0.65rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-border);
+  border: 2px solid var(--color-bg-card);
+  z-index: 1;
+}
+
+.type-food-lunch .timeline-dot { background: var(--color-food-lunch); }
+.type-food-dinner .timeline-dot { background: var(--color-food-dinner); }
+.type-food-snack .timeline-dot { background: var(--color-food-snack); }
+.type-food-breakfast .timeline-dot { background: var(--color-food-breakfast); }
+.type-transport .timeline-dot { background: var(--color-transport); }
+.type-hotel .timeline-dot { background: var(--color-hotel); }
+.type-spot .timeline-dot { background: var(--color-spot); }
+
+/* Transfer (movement between places) events */
+.type-transfer {
+  padding: 0.05rem 0 0.05rem 1.5rem;
+}
+
+.type-transfer .timeline-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-bg-card);
+  border: 1.5px dashed var(--color-text-muted);
+  top: 0.4rem;
+  left: -0.28rem;
+}
+
+.type-transfer .timeline-time {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  top: 0.25rem;
+}
+
+.type-transfer .timeline-content {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  padding: 0.1rem 0;
+  line-height: 1.4;
+}
+
+.transfer-icon {
+  margin-right: 0.1rem;
+  font-size: 0.85rem;
+}
+
+.transfer-cost {
+  font-size: 0.75rem;
+}
+
+.timeline-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* ========================
+   確定／概算バッジ
+   ======================== */
+.src-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.7;
+  vertical-align: middle;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* 確定＝Sky側。実データ区間では連続して並ぶため、主張しすぎない配色にする */
+.src-verified {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+/* 概算＝Sunset側。数字を鵜呑みにしてほしくない側なのでコントラストを上げる */
+.src-estimated {
+  background: var(--color-accent-light);
+  color: #a94d09;
+}
+
+.source-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  background: var(--color-bg-section);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  line-height: 1.6;
+}
+
+.source-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.source-legend .src-badge {
+  margin-left: 0;
+}
+
+.timeline-detail {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  margin-top: 0.2rem;
+}
+
+/* Map & Reservation Links */
+.map-link {
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.2s;
+}
+
+.map-link:hover {
+  color: var(--color-primary);
+}
+
+.map-icon {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.map-link:hover .map-icon {
+  opacity: 1;
+}
+
+.tabelog-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--color-accent);
+  text-decoration: none;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tabelog-link:hover {
+  background: var(--color-accent-light);
+  color: #c96209;
+}
+
+.reservation-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reservation-link-item {
+  padding: 0.85rem 1rem;
+  background: var(--color-bg-section);
+  border-radius: var(--radius-sm);
+}
+
+.reservation-link-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.2rem;
+}
+
+.reservation-link-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.btn-reservation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-ekinet {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-ekinet:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-tabelog {
+  background: var(--color-accent);
+  color: white;
+}
+
+.btn-tabelog:hover {
+  background: #c96209;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Cost Summary */
+.cost-summary {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.cost-row + .cost-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.cost-note {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  line-height: 1.5;
+  padding-bottom: 0.5rem;
+}
+
+.cost-note + .cost-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.cost-total-row {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--color-text);
+  border-top: 2px solid var(--color-primary) !important;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+}
+
+.itinerary-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  gap: 1rem;
+}
+
+/* ========================
+   Confirmed Plan
+   ======================== */
+.confirmed-header-block {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.confirmed-header-block h2 {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 1.5rem;
+  color: var(--color-primary);
+}
+
+.confirmed-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 0.3rem;
+}
+
+.confirmed-koharu {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.3rem 1.2rem;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.confirmed-section {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+.confirmed-section h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--color-primary);
+}
+
+.checklist {
+  list-style: none;
+}
+
+.checklist li {
+  padding: 0.4rem 0;
+}
+
+.checklist label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.checklist input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.cost-summary-final {
+  padding: 0;
+}
+
+.confirmed-actions {
+  text-align: center;
+  margin-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+/* ========================
+   Footer / Misc
+   ======================== */
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.step-dot.active {
+  background: var(--color-primary);
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* ========================
+   Responsive
+   ======================== */
+@media (max-width: 600px) {
+  .container {
+    padding: 1.5rem 1rem;
+  }
+
+  .app-title {
+    font-size: 3.5rem;
+  }
+
+  .welcome-features {
+    gap: 1.25rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .hotel-details {
+    grid-template-columns: 1fr;
+  }
+
+  .itinerary-hotel-info {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .itinerary-actions {
+    flex-direction: column;
+  }
+
+  .timeline {
+    padding-left: 4rem;
+  }
+
+  .timeline::before {
+    left: 3.5rem;
+  }
+
+  .timeline-time {
+    left: -4rem;
+    width: 3.1rem;
+    font-size: 0.85rem;
+  }
+
+  .type-transfer .timeline-time {
+    font-size: 0.65rem;
+  }
+
+  .type-transfer .timeline-content {
+    font-size: 0.75rem;
+  }
+}
+
+@media print {
+  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .qr-fab, .qr-modal {
+    display: none !important;
+  }
+
+  .step {
+    display: block !important;
+  }
+
+  #step-confirmed {
+    display: block !important;
+  }
+
+  .day-section, .confirmed-section {
+    break-inside: avoid;
+  }
+}
+
+/* ========================
+   QR: スマホで見る
+   ======================== */
+.qr-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.1rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: white;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.2s ease;
+}
+
+.qr-fab:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+/* スマホ幅（768px未満）では非表示。スマホ→スマホでQRを使う意味がないための措置 */
+@media (max-width: 767px) {
+  .qr-fab {
+    display: none;
+  }
+}
+
+.qr-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.qr-modal.is-open {
+  display: flex;
+}
+
+.qr-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(31, 41, 51, 0.55);
+}
+
+.qr-modal-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 340px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 1.75rem 1.5rem 1.5rem;
+  text-align: center;
+}
+
+.qr-modal-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.qr-modal-close:hover {
+  background: var(--color-bg-section);
+}
+
+.qr-modal-title {
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.qr-modal-caption {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.qr-code-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.6rem;
+}
+
+.qr-code-container img,
+.qr-code-container canvas {
+  border-radius: var(--radius-sm);
+}
+
+.qr-modal-hint {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  margin-bottom: 1.2rem;
+}
+
+.qr-modal-link-accordion {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.qr-modal-link-accordion summary {
+  display: inline-block;
+  list-style: none;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.qr-modal-link-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.qr-modal-link-accordion summary::before {
+  content: '🔗 ';
+}
+
+.qr-modal-link-accordion[open] summary {
+  margin-bottom: 0.7rem;
+}
+
+.qr-modal-url-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0;
+}
+
+.qr-modal-url-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  background: var(--color-bg-section);
+}
+
+.qr-modal-note {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* Station Setup Accordion */
+.station-accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+.station-accordion-header:hover {
+  background: #f1f5f9;
+}
+.station-accordion-summary {
+  font-weight: 600;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toggle-icon {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  transition: transform 0.3s ease;
+}
+.station-accordion-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 500px;
+  opacity: 1;
+}
+.station-accordion-body.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  pointer-events: none;
+}
+.station-accordion-header.collapsed .toggle-icon {
+  transform: rotate(-90deg);
+}
