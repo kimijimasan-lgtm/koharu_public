@@ -250,12 +250,23 @@ const App = {
 
     let transportHtml = '';
     if (stationName && dest.name) {
-      const comparison = compareTransportRoutes(stationName, dest.name);
+      const departTimeStr = document.getElementById('departure-time').value || '10:00';
+      const comparison = compareTransportRoutes(stationName, dest.name, departTimeStr);
       
       const formatTime = (mins) => {
         const h = Math.floor(mins / 60);
         const m = mins % 60;
         return h > 0 ? `${h}時間${m > 0 ? m + '分' : ''}` : `${m}分`;
+      };
+
+      const renderTimeline = (timeline) => {
+        return timeline.map(item => {
+          if (item.type === 'node') {
+            return `<div class="timeline-node"><span class="tl-time">${item.time}</span> <span class="tl-text">${item.text}</span></div>`;
+          } else {
+            return `<div class="timeline-edge">${item.text}</div>`;
+          }
+        }).join('');
       };
 
       const shin = comparison.shinkansen;
@@ -264,36 +275,34 @@ const App = {
       const shinHtml = shin ? `
         <div class="compare-item ${comparison.recommended === 'shinkansen' ? 'recommended' : ''}">
           <div class="compare-header">
-            <strong>🚄 新幹線の場合</strong>
+            <strong>🚄 新幹線</strong>
             <span class="compare-time">約 ${formatTime(shin.time)}</span>
           </div>
-          <ul class="compare-details">
-            <li>［経由］${shin.via}（乗り換え ${shin.transfers}回）</li>
-            <li>乗り換えが少なく、座りっぱなしで快適に移動できます。</li>
-          </ul>
+          <div class="timeline-container">
+            ${renderTimeline(shin.timeline)}
+          </div>
         </div>
       ` : '';
 
       const fliHtml = fli ? `
         <div class="compare-item ${comparison.recommended === 'flight' ? 'recommended' : ''}">
           <div class="compare-header">
-            <strong>✈️ 飛行機の場合</strong>
+            <strong>✈️ 飛行機</strong>
             <span class="compare-time">約 ${formatTime(fli.time)}</span>
           </div>
-          <ul class="compare-details">
-            ${fli.details.map(d => `<li>［${d.label}］約 ${formatTime(d.time)}</li>`).join('')}
-            <li>※保安検査や搭乗手続きなどの待ち時間を含んだ目安です。</li>
-          </ul>
+          <div class="timeline-container">
+            ${renderTimeline(fli.timeline)}
+          </div>
         </div>
       ` : '';
 
       const conclusionText = comparison.recommended === 'shinkansen' 
-        ? '🚄 5時間以内でアクセスできるため、疲労の少ない【新幹線】を推奨します！'
-        : '✈️ 新幹線だと5時間を超えて疲労に繋がるため、【飛行機】を推奨します！';
+        ? '🚄 5時間以内のため、疲労の少ない【新幹線】推奨'
+        : '✈️ 5時間超えのため、【飛行機】推奨';
 
       transportHtml = `
         <div class="transport-comparison">
-          <div class="comparison-title">💡 こはるの分析： ${conclusionText}</div>
+          <div class="comparison-title">💡 ${conclusionText}</div>
           <div class="comparison-grid">
             ${shinHtml}
             ${fliHtml}
