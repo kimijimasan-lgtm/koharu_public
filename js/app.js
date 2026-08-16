@@ -248,36 +248,68 @@ const App = {
     const dest = DESTINATIONS[destKey];
     const stationName = this.getSelectedStationName();
 
-    // 交通手段の判定
     let transportHtml = '';
     if (stationName && dest.name) {
-      const judgment = judgeTransportMode(stationName, dest.name);
-      if (judgment.mode === 'shinkansen') {
-        const h = Math.floor(judgment.minutes / 60);
-        const m = judgment.minutes % 60;
-        transportHtml = `
-          <div class="transport-badge transport-shinkansen">
-            🚄 新幹線で約${h}時間${m > 0 ? m + '分' : ''}
-            <span class="transport-note">5時間以内・新幹線がおすすめ</span>
-          </div>`;
-      } else {
-        transportHtml = `
-          <div class="transport-badge transport-flight">
-            ✈️ 飛行機を推奨
-            <span class="transport-note">${judgment.reason}</span>
-          </div>`;
-      }
+      const comparison = compareTransportRoutes(stationName, dest.name);
+      
+      const formatTime = (mins) => {
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return h > 0 ? `${h}時間${m > 0 ? m + '分' : ''}` : `${m}分`;
+      };
+
+      const shin = comparison.shinkansen;
+      const fli = comparison.flight;
+
+      const shinHtml = shin ? `
+        <div class="compare-item ${comparison.recommended === 'shinkansen' ? 'recommended' : ''}">
+          <div class="compare-header">
+            <strong>🚄 新幹線の場合</strong>
+            <span class="compare-time">約 ${formatTime(shin.time)}</span>
+          </div>
+          <ul class="compare-details">
+            <li>［経由］${shin.via}（乗り換え ${shin.transfers}回）</li>
+            <li>乗り換えが少なく、座りっぱなしで快適に移動できます。</li>
+          </ul>
+        </div>
+      ` : '';
+
+      const fliHtml = fli ? `
+        <div class="compare-item ${comparison.recommended === 'flight' ? 'recommended' : ''}">
+          <div class="compare-header">
+            <strong>✈️ 飛行機の場合</strong>
+            <span class="compare-time">約 ${formatTime(fli.time)}</span>
+          </div>
+          <ul class="compare-details">
+            ${fli.details.map(d => `<li>［${d.label}］約 ${formatTime(d.time)}</li>`).join('')}
+            <li>※保安検査や搭乗手続きなどの待ち時間を含んだ目安です。</li>
+          </ul>
+        </div>
+      ` : '';
+
+      const conclusionText = comparison.recommended === 'shinkansen' 
+        ? '🚄 5時間以内でアクセスできるため、疲労の少ない【新幹線】を推奨します！'
+        : '✈️ 新幹線だと5時間を超えて疲労に繋がるため、【飛行機】を推奨します！';
+
+      transportHtml = `
+        <div class="transport-comparison">
+          <div class="comparison-title">💡 こはるの分析： ${conclusionText}</div>
+          <div class="comparison-grid">
+            ${shinHtml}
+            ${fliHtml}
+          </div>
+        </div>
+      `;
     }
 
-    // 目的地がflightモードの場合は空港情報を表示
     const accessLabel = dest.transportMode === 'flight'
-      ? `✈️ ${dest.airport || '最寄り空港'}経由 → ${dest.station}`
-      : `🚄 ${dest.shinkansen || '新幹線'}で${dest.station}へ`;
+      ? `📍 ${dest.airport || '最寄り空港'}出発 ⇄ ${dest.station}`
+      : `📍 ${dest.shinkansen || '新幹線'}の${dest.station}駅`;
 
     infoEl.innerHTML = `
       <div class="dest-info-card">
         <span class="dest-info-label">${accessLabel}</span>
-        <span class="dest-info-highlights">${dest.highlights.join(' · ')}</span>
+        <span class="dest-info-highlights">${dest.highlights.join(' ・ ')}</span>
         ${transportHtml}
       </div>
     `;

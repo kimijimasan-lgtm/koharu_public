@@ -1449,3 +1449,75 @@ body {
 .station-accordion-header.collapsed .toggle-icon {
   transform: rotate(-90deg);
 }
+
+/* Transport Comparison UI */
+.transport-comparison {
+  margin-top: 16px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.comparison-title {
+  background: #f1f5f9;
+  padding: 12px 16px;
+  font-weight: bold;
+  color: var(--primary-color);
+  border-bottom: 1px solid var(--border-color);
+}
+.comparison-grid {
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 600px) {
+  .comparison-grid {
+    flex-direction: row;
+  }
+}
+.compare-item {
+  flex: 1;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+@media (min-width: 600px) {
+  .compare-item {
+    border-bottom: none;
+    border-right: 1px solid var(--border-color);
+  }
+  .compare-item:last-child {
+    border-right: none;
+  }
+}
+.compare-item.recommended {
+  background-color: #ebf8ff;
+  border: 2px solid var(--secondary-color);
+}
+.compare-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.compare-time {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--text-color);
+}
+.compare-details {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+.compare-details li {
+  margin-bottom: 6px;
+  padding-left: 12px;
+  position: relative;
+}
+.compare-details li::before {
+  content: "・";
+  position: absolute;
+  left: 0;
+  color: var(--text-light);
+}

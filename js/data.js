@@ -1172,31 +1172,67 @@ function getTravelTimes() {
 }
 
 // ============================================================
-// 5時間ルール判定（公開版・新規追加）
-// 出発駅名と目的地名を受け取り、新幹線か飛行機かを判定する
+// 5時間ルール判定と交通手段の詳細比較（公開版）
 // ============================================================
 const FIVE_HOUR_LIMIT = 300; // 分
 
-function judgeTransportMode(stationName, destName) {
-  // 新幹線ルートの所要時間を取得
+function estimateShinkansen(stationName, destName) {
   const times = getTravelTimes();
   const key = `${stationName}-${destName}`;
-  const shinkansenMin = times[key] || null;
+  if (times[key]) return { time: times[key], transfers: 0, via: '直通' };
 
-  if (shinkansenMin !== null && shinkansenMin <= FIVE_HOUR_LIMIT) {
-    return {
-      mode: 'shinkansen',
-      minutes: shinkansenMin,
-      reason: `新幹線で約${Math.floor(shinkansenMin/60)}時間${shinkansenMin%60}分。5時間以内に到着できます。`,
-    };
+  // 未登録駅の概算フォールバック（北海道方面）
+  const toOmiya = { '那須塩原': 45, '宇都宮': 30, '郡山': 60, '福島': 80 };
+  const toSendai = { '那須塩原': 60, '宇都宮': 80, '郡山': 40, '福島': 25, '白石蔵王': 15 };
+
+  if (destName.includes('函館')) {
+    if (toSendai[stationName]) return { time: toSendai[stationName] + times['仙台-函館'] + 20, transfers: 1, via: '仙台駅' };
+    if (toOmiya[stationName]) return { time: toOmiya[stationName] + times['大宮-函館'] + 20, transfers: 1, via: '大宮駅' };
+    return { time: times['東京-函館'] + 30, transfers: 1, via: '主要駅' }; // 最低限のフォールバック
+  }
+  if (destName.includes('札幌') || destName.includes('小樽') || destName.includes('旭川')) {
+     const hakodate = estimateShinkansen(stationName, '函館');
+     const plus = destName.includes('旭川') ? 300 : 220; // 函館から札幌/旭川への概算
+     return { time: hakodate.time + plus, transfers: hakodate.transfers + 1, via: hakodate.via === '直通' ? '新函館北斗駅' : `${hakodate.via}・新函館北斗駅` };
+  }
+  
+  return null;
+}
+
+function estimateFlight(stationName, destName) {
+   let airportTransferTime = 90; // 基本（首都圏から羽田など）
+   if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王'].includes(stationName)) {
+      airportTransferTime = 120; // 新幹線＋在来線での空港アクセス
+   }
+
+   const waitTime = 90; // 搭乗手続き・保安検査
+   const flightTime = 90; // フライト（羽田〜新千歳/函館など）
+   const localTransfer = 50; // 空港〜現地市街地
+   
+   const total = airportTransferTime + waitTime + flightTime + localTransfer;
+   return {
+     time: total,
+     details: [
+       { label: `空港への移動`, time: airportTransferTime },
+       { label: `搭乗手続き・待ち時間`, time: waitTime },
+       { label: `フライト`, time: flightTime },
+       { label: `現地空港からの移動`, time: localTransfer }
+     ]
+   };
+}
+
+function compareTransportRoutes(stationName, destName) {
+  const shinkansen = estimateShinkansen(stationName, destName);
+  const flight = estimateFlight(stationName, destName);
+
+  let recommended = 'flight';
+  if (shinkansen && shinkansen.time <= FIVE_HOUR_LIMIT) {
+    recommended = 'shinkansen';
   }
 
-  // 新幹線で5時間超の場合 → 飛行機を推奨
   return {
-    mode: 'flight',
-    minutes: shinkansenMin,
-    reason: shinkansenMin
-      ? `新幹線だと約${Math.floor(shinkansenMin/60)}時間${shinkansenMin%60}分かかります。飛行機の利用をおすすめします。`
-      : `この出発駅から${destName}への新幹線所要時間データがありません。飛行機の利用をご検討ください。`,
+    recommended,
+    shinkansen,
+    flight
   };
 }
