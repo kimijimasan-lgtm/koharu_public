@@ -1186,11 +1186,42 @@ function addMins(timeStr, mins) {
   return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
 }
 
+// 時刻の差分（分）を計算（24時間未満の待ち時間計算用）
+function diffMins(startStr, endStr) {
+  const [sh, sm] = startStr.split(':').map(Number);
+  const [eh, em] = endStr.split(':').map(Number);
+  let total = (eh * 60 + em) - (sh * 60 + sm);
+  if (total < 0) total += 24 * 60;
+  return total;
+}
+
+// 現在時刻以降の直近の出発時刻を探す（モックダイヤ）
+function findNextDeparture(currentTimeStr, schedules) {
+  const currentTotal = currentTimeStr.split(':').map(Number).reduce((h, m) => h * 60 + m);
+  
+  for (let s of schedules) {
+    const sTotal = s.split(':').map(Number).reduce((h, m) => h * 60 + m);
+    if (sTotal >= currentTotal) return s;
+  }
+  return schedules[0]; // その日に無い場合は翌日の始発
+}
+
+// 毎時決まった分に出発するパターンの生成
+function generateHourlySchedule(minuteList, startH = 6, endH = 22) {
+  let list = [];
+  for (let h = startH; h <= endH; h++) {
+    for (let m of minuteList) {
+      list.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    }
+  }
+  return list;
+}
+
 function generateShinkansenTimeline(stationName, destName, departTimeStr) {
   const times = getTravelTimes();
   const normStation = stationName.replace(/駅$/, '');
   const toOmiya = { '那須塩原': 45, '宇都宮': 30, '郡山': 60, '福島': 80 };
-  const toSendai = { '那須塩原': 60, '宇欠宮': 80, '宇都宮': 80, '郡山': 40, '福島': 25, '白石蔵王': 15, '新白河': 50, '白河': 55 };
+  const toSendai = { '那須塩原': 60, '宇都宮': 80, '郡山': 40, '福島': 25, '白石蔵王': 15, '新白河': 50, '白河': 55 };
 
   let t = departTimeStr;
   let timeline = [];
@@ -1199,67 +1230,129 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
   const pushNode = (time, text) => timeline.push({ type: 'node', time, text });
   const pushEdge = (text) => timeline.push({ type: 'edge', text });
 
+  // 仮想ダイヤ
+  const yamabikoSchedule = generateHourlySchedule([12]); // 毎時12分
+  const hayabusaSchedule = generateHourlySchedule([53]); // 毎時53分
+
   if (destName.includes('函館')) {
     if (toSendai[normStation]) {
       const dur1 = toSendai[normStation];
-      const wait = 20;
       const dur2 = times['仙台-函館'] || 159;
-      totalMins = dur1 + wait + dur2;
-
+      
+      const firstTrain = findNextDeparture(t, yamabikoSchedule);
+      const stationWait = diffMins(t, firstTrain);
+      
       pushNode(t, `${normStation}駅 発`);
+      if (stationWait > 0) {
+        pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+        t = addMins(t, stationWait);
+        totalMins += stationWait;
+      }
+      
       pushEdge(`🚄 やまびこ・なすの等（約${dur1}分）`);
       t = addMins(t, dur1);
+      totalMins += dur1;
       pushNode(t, `仙台駅 着`);
+      
+      const nextHayabusa = findNextDeparture(t, hayabusaSchedule);
+      const wait = diffMins(t, nextHayabusa);
+      
       pushEdge(`☕ 乗換・待ち（${wait}分）`);
       t = addMins(t, wait);
+      totalMins += wait;
       pushNode(t, `仙台駅 発`);
+      
       pushEdge(`🚄 はやぶさ（約${dur2}分）`);
       t = addMins(t, dur2);
+      totalMins += dur2;
       pushNode(t, `新函館北斗駅 着`);
+      
     } else if (toOmiya[normStation]) {
       const dur1 = toOmiya[normStation];
-      const wait = 20;
       const dur2 = times['大宮-函館'] || 231;
-      totalMins = dur1 + wait + dur2;
-
+      
+      const firstTrain = findNextDeparture(t, yamabikoSchedule);
+      const stationWait = diffMins(t, firstTrain);
+      
       pushNode(t, `${normStation}駅 発`);
+      if (stationWait > 0) {
+        pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+        t = addMins(t, stationWait);
+        totalMins += stationWait;
+      }
+      
       pushEdge(`🚄 なすの等（約${dur1}分）`);
       t = addMins(t, dur1);
+      totalMins += dur1;
       pushNode(t, `大宮駅 着`);
+      
+      const nextHayabusa = findNextDeparture(t, hayabusaSchedule);
+      const wait = diffMins(t, nextHayabusa);
+      
       pushEdge(`☕ 乗換・待ち（${wait}分）`);
       t = addMins(t, wait);
+      totalMins += wait;
       pushNode(t, `大宮駅 発`);
+      
       pushEdge(`🚄 はやぶさ（約${dur2}分）`);
       t = addMins(t, dur2);
+      totalMins += dur2;
       pushNode(t, `新函館北斗駅 着`);
+      
     } else {
       const dur = times[`${normStation}-函館`] || 255;
-      totalMins = dur;
+      const firstTrain = findNextDeparture(t, hayabusaSchedule);
+      const stationWait = diffMins(t, firstTrain);
+      
       pushNode(t, `${normStation}駅 発`);
+      if (stationWait > 0) {
+        pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+        t = addMins(t, stationWait);
+        totalMins += stationWait;
+      }
       pushEdge(`🚄 はやぶさ等（約${dur}分）`);
       t = addMins(t, dur);
+      totalMins += dur;
       pushNode(t, `新函館北斗駅 着`);
     }
   } else if (destName.includes('札幌') || destName.includes('小樽') || destName.includes('旭川')) {
     const hako = generateShinkansenTimeline(normStation, '函館', departTimeStr);
-    const plus = destName.includes('旭川') ? 120 : 220; // 旭川等はデモ用概算
-    const wait = 15;
-    totalMins = hako.totalMins + wait + plus;
+    const plus = destName.includes('旭川') ? 120 : 220; 
+    
+    const hokutoSchedule = generateHourlySchedule([5]);
     
     timeline = hako.timeline;
+    totalMins = hako.totalMins;
     t = hako.timeline[hako.timeline.length-1].time;
+    
+    const nextHokuto = findNextDeparture(t, hokutoSchedule);
+    const wait = diffMins(t, nextHokuto);
+    
     pushEdge(`☕ 乗換・待ち（${wait}分）`);
     t = addMins(t, wait);
+    totalMins += wait;
+    
     pushNode(t, `新函館北斗駅 発`);
     pushEdge(`🚃 特急北斗等（約${plus}分）`);
     t = addMins(t, plus);
+    totalMins += plus;
     pushNode(t, `${destName.replace('北海道', '')} 着`);
+    
   } else {
     const dur = times[`${normStation}-${destName}`] || 255;
-    totalMins = dur;
+    const genericSchedule = generateHourlySchedule([10, 40]);
+    const firstTrain = findNextDeparture(t, genericSchedule);
+    const stationWait = diffMins(t, firstTrain);
+    
     pushNode(t, `${normStation}駅 発`);
+    if (stationWait > 0) {
+      pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+      t = addMins(t, stationWait);
+      totalMins += stationWait;
+    }
     pushEdge(`🚄 新幹線（約${dur}分）`);
     t = addMins(t, dur);
+    totalMins += dur;
     pushNode(t, `${destName.replace('北海道', '')} 着`);
   }
 
@@ -1274,18 +1367,29 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   
   let useFukushima = false;
   let useSendai = false;
+  
+  let flightSchedule = ['10:45', '14:00']; 
+  
   if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'].includes(normStation)) {
     if (destName.includes('函館')) {
       useSendai = true;
       airportTransferTime = normStation === '宇都宮' ? 120 : 90;
       airportTransText = `🚗 自家用車・高速バス等（約${airportTransferTime}分）`;
       airport = '仙台空港';
+      flightSchedule = ['10:45', '14:00']; 
     } else {
       useFukushima = true;
       airportTransferTime = ['那須塩原', '宇都宮'].includes(normStation) ? 90 : 60;
       airportTransText = `🚗 自家用車等（約${airportTransferTime}分）`;
       airport = '福島空港';
+      flightSchedule = ['10:30']; 
     }
+  } else {
+    flightSchedule = ['08:00', '10:30', '13:00', '16:00', '18:30'];
+  }
+  
+  if (useSendai && !destName.includes('函館')) {
+    flightSchedule = ['08:30', '10:15', '12:00', '14:45', '17:30', '19:00'];
   }
 
   const flightTime = destName.includes('函館') ? 70 : 80;
@@ -1303,27 +1407,10 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     localTransText = '🚖 連絡バス等（約40分）';
   }
 
-  let tHomeDepart = departTimeStr;
-  let waitTime = 60;
-  let flightDepart = '';
-  let flightNote = '';
-
-  if (useFukushima) {
-     flightDepart = '10:30';
-     flightNote = ' ※ANA 1日1便';
-     const preMins = airportTransferTime + waitTime;
-     tHomeDepart = addMins(flightDepart, -preMins);
-  } else if (useSendai) {
-     waitTime = 90;
-     flightDepart = addMins(departTimeStr, airportTransferTime + waitTime);
-     flightNote = ' ※ANA/JAL/ADO等';
-  } else {
-     waitTime = 90;
-     flightDepart = addMins(departTimeStr, airportTransferTime + waitTime);
-     flightNote = ' ※複数便あり';
-  }
-
-  let t = tHomeDepart;
+  const REQUIRED_SECURE_TIME = 60; 
+  let totalMins = 0;
+  
+  let t = departTimeStr;
   let timeline = [];
   const pushNode = (time, text) => timeline.push({ type: 'node', time, text });
   const pushEdge = (text) => timeline.push({ type: 'edge', text });
@@ -1331,21 +1418,33 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   pushNode(t, `${normStation}（ご自宅周辺） 発`);
   pushEdge(airportTransText);
   t = addMins(t, airportTransferTime);
+  totalMins += airportTransferTime;
   pushNode(t, `${airport} 着`);
   
+  const readyToFly = addMins(t, REQUIRED_SECURE_TIME);
+  let flightDepart = findNextDeparture(readyToFly, flightSchedule);
+  
+  let flightNote = '';
+  if (useFukushima) flightNote = ' ※ANA 1日1便';
+  else if (useSendai) flightNote = ' ※ANA/ADO等';
+  else flightNote = ' ※複数便あり';
+  
+  let waitTime = diffMins(t, flightDepart);
   pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`);
   t = addMins(t, waitTime);
+  totalMins += waitTime;
   pushNode(t, `${airport} 発${flightNote}`);
   
   pushEdge(`✈️ フライト（約${flightTime}分）`);
   t = addMins(t, flightTime);
+  totalMins += flightTime;
   pushNode(t, `${destAirport} 着`);
   
   pushEdge(localTransText);
   t = addMins(t, localTransfer);
+  totalMins += localTransfer;
   pushNode(t, `${destName.replace('北海道', '')} 着`);
 
-  const totalMins = airportTransferTime + waitTime + flightTime + localTransfer;
   return { time: totalMins, timeline, totalMins };
 }
 
