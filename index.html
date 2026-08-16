@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>こはる 北海道編 — 疲れない旅プランナー</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+</head>
+<body>
+
+  <!-- ======================== -->
+  <!-- Step: Input              -->
+  <!-- ======================== -->
+  <div id="step-input" class="step active">
+    <div class="container">
+      <div class="page-header">
+        <h1>旅の条件</h1>
+        <p>北海道・2泊3日の疲れない旅を設計します</p>
+      </div>
+
+      <form id="form-input">
+        <!-- 公開版：自宅住所欄は削除（個人情報保護のため） -->
+
+        <div class="form-group station-accordion" id="station-accordion">
+          <div class="station-accordion-header" id="station-accordion-toggle">
+            <div class="station-accordion-summary">
+              <span class="station-icon">📍</span>
+              <span id="station-summary-text">出発駅を登録してください</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div class="station-accordion-body" id="station-accordion-body">
+            <p class="form-sublabel" style="margin-top:0;">よく使う駅を2つまで登録できます。2つ目は任意です</p>
+            <div class="form-row">
+              <div>
+                <label class="form-label" for="station-1" style="font-size:0.75rem">駅 ①（必須）</label>
+                <input type="text" id="station-1" class="form-input" placeholder="例：宇都宮、仙台、盛岡" required>
+              </div>
+              <div>
+                <label class="form-label" for="station-2" style="font-size:0.75rem">駅 ②（任意）</label>
+                <input type="text" id="station-2" class="form-input" placeholder="例：那須塩原、大宮">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">この旅行で使う駅</label>
+          <div class="station-choice">
+            <label class="station-choice-option">
+              <input type="radio" name="use-station" value="1" checked>
+              <span id="use-station-label-1">よく使う駅 ①</span>
+            </label>
+            <label class="station-choice-option">
+              <input type="radio" name="use-station" value="2">
+              <span id="use-station-label-2">よく使う駅 ②</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="destination">旅行先エリア</label>
+          <input type="text" id="destination" class="form-input" placeholder="例：函館、札幌、知床、旭川、釧路" required>
+          <div id="destination-info"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="departure-time">出発時刻（目安）</label>
+          <p class="form-sublabel">1日目、出発駅を出る時刻の目安です</p>
+          <input type="time" id="departure-time" class="form-input" value="10:00" required>
+          <div id="departure-train-choice" class="train-choice"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="departure-date">出発日</label>
+          <p class="form-sublabel">未定の場合は空欄のままで構いません</p>
+          <input type="date" id="departure-date" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="return-time">帰着希望時刻</label>
+          <p class="form-sublabel">3日目、出発した新幹線駅に戻りたい時刻です</p>
+          <input type="time" id="return-time" class="form-input" value="19:00" required>
+          <div id="return-train-choice" class="train-choice"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">荷物パターン</label>
+          <p class="form-sublabel">最終日の荷物の扱いを選んでください（観光範囲に影響します）</p>
+          <div class="luggage-options">
+            <div class="luggage-option">
+              <input type="radio" name="luggage" id="luggage-a" value="A" checked>
+              <label for="luggage-a">
+                <span class="luggage-pattern-letter">A</span>
+                <span class="luggage-label-text">
+                  <span class="luggage-label-title">宿に預けて最後に戻る</span>
+                  <span class="luggage-label-desc">宿から戻れる範囲で観光</span>
+                </span>
+              </label>
+            </div>
+            <div class="luggage-option">
+              <input type="radio" name="luggage" id="luggage-b" value="B">
+              <label for="luggage-b">
+                <span class="luggage-pattern-letter">B</span>
+                <span class="luggage-label-text">
+                  <span class="luggage-label-title">駅のコインロッカーに預ける</span>
+                  <span class="luggage-label-desc">駅を起点にした範囲で観光</span>
+                </span>
+              </label>
+            </div>
+            <div class="luggage-option">
+              <input type="radio" name="luggage" id="luggage-c" value="C">
+              <label for="luggage-c">
+                <span class="luggage-pattern-letter">C</span>
+                <span class="luggage-label-text">
+                  <span class="luggage-label-title">持ち歩く</span>
+                  <span class="luggage-label-desc">身軽な観光地に限定</span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <p id="luggage-description" class="luggage-description">
+            最終日、宿に荷物を預けて観光後に宿へ戻り、そこから駅へ向かいます。宿周辺の観光が中心になります。
+          </p>
+        </div>
+
+        <div class="form-actions" style="justify-content:flex-end;">
+          <p id="input-submit-hint" class="form-submit-hint"></p>
+          <button type="submit" id="btn-submit-input" class="btn btn-primary">宿の候補を見る →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- Step: Hotels             -->
+  <!-- ======================== -->
+  <div id="step-hotels" class="step">
+    <div class="container">
+      <div class="page-header">
+        <h1>宿の候補</h1>
+        <p><span id="hotels-area-name"></span>エリアのおすすめ宿</p>
+      </div>
+
+      <p style="font-size:0.8rem; color:var(--color-text-muted); text-align:center; margin-bottom:1.5rem;">
+        気になる宿を選ぶと、その宿を起点にした3日間の行程を試算します
+      </p>
+
+      <div id="hotel-list" class="hotel-list"></div>
+
+      <div class="form-actions" style="margin-top:1.5rem;">
+        <button type="button" id="btn-back-hotels" class="btn btn-ghost">← 条件を変更</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- Step: Itinerary          -->
+  <!-- ======================== -->
+  <div id="step-itinerary" class="step">
+    <div class="container">
+      <div class="page-header">
+        <h1>行程シミュレーション</h1>
+        <p>この宿を選んだ場合の3日間</p>
+      </div>
+
+      <div class="itinerary-header">
+        <div class="itinerary-hotel-info">
+          <h2 id="itinerary-hotel-name"></h2>
+          <p id="itinerary-area"></p>
+        </div>
+      </div>
+
+      <div id="busy-period-notice"></div>
+
+      <div class="source-legend">
+        <span class="source-legend-item"><span class="src-badge src-verified">確定</span>公式時刻表・公式運賃に基づく実データ</span>
+        <span class="source-legend-item"><span class="src-badge src-estimated">概算</span>距離や平均速度からの推定値</span>
+      </div>
+
+      <div id="timeline-day1" class="day-section"></div>
+      <div id="timeline-day2" class="day-section"></div>
+      <div id="timeline-day3" class="day-section"></div>
+
+      <div class="cost-summary">
+        <h3 class="section-title">料金概算（二人分）</h3>
+        <div class="cost-row">
+          <span id="cost-shinkansen-label">新幹線（往復・指定席）</span>
+          <span id="cost-shinkansen">-</span>
+        </div>
+        <div id="cost-shinkansen-note" class="cost-note"></div>
+        <div class="cost-row" id="cost-city-connection-row" hidden>
+          <span id="cost-city-connection-label">連絡列車（往復・2名）</span>
+          <span id="cost-city-connection">-</span>
+        </div>
+        <div class="cost-row">
+          <span>宿泊（2泊）</span>
+          <span id="cost-accommodation">-</span>
+        </div>
+        <div class="cost-row">
+          <span>タクシー</span>
+          <span id="cost-taxi">-</span>
+        </div>
+        <div id="cost-taxi-note" class="cost-note"></div>
+        <div class="cost-row">
+          <span>飲食</span>
+          <span id="cost-food">-</span>
+        </div>
+        <div class="cost-row cost-total-row">
+          <span>合計（概算）</span>
+          <span id="cost-total">-</span>
+        </div>
+      </div>
+
+      <div class="itinerary-actions">
+        <button type="button" id="btn-back-itinerary" class="btn btn-ghost">← 他の宿を見る</button>
+        <button type="button" id="btn-confirm" class="btn btn-primary">この行程で決定する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- Step: Confirmed          -->
+  <!-- ======================== -->
+  <div id="step-confirmed" class="step">
+    <div class="container">
+      <div id="confirmed-content"></div>
+
+      <div class="source-legend">
+        <span class="source-legend-item"><span class="src-badge src-verified">確定</span>公式時刻表・公式運賃に基づく実データ</span>
+        <span class="source-legend-item"><span class="src-badge src-estimated">概算</span>距離や平均速度からの推定値</span>
+      </div>
+
+      <div id="confirmed-day1" class="day-section"></div>
+      <div id="confirmed-day2" class="day-section"></div>
+      <div id="confirmed-day3" class="day-section"></div>
+
+      <div class="confirmed-actions">
+        <button type="button" id="btn-new-trip" class="btn btn-secondary">新しい旅を計画する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- QR: スマホで見る（全画面共通） -->
+  <!-- ======================== -->
+  <button type="button" id="btn-qr-open" class="qr-fab" aria-label="この条件をスマホで見る">
+    📱 スマホで見る
+  </button>
+
+  <div id="qr-modal" class="qr-modal" aria-hidden="true">
+    <div id="qr-modal-backdrop" class="qr-modal-backdrop"></div>
+    <div class="qr-modal-content" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
+      <button type="button" id="qr-modal-close" class="qr-modal-close" aria-label="閉じる">×</button>
+      <h2 id="qr-modal-title" class="qr-modal-title">スマホでこの条件を開く</h2>
+      <p id="qr-modal-caption" class="qr-modal-caption"></p>
+      <div id="qr-code-container" class="qr-code-container"></div>
+      <p class="qr-modal-hint">📷 スマホのカメラで読み取ってください</p>
+
+      <details class="qr-modal-link-accordion">
+        <summary>またはリンクをコピー</summary>
+        <div class="qr-modal-url-row">
+          <input type="text" id="qr-modal-url" class="qr-modal-url-input" readonly>
+          <button type="button" id="qr-modal-copy" class="btn btn-secondary">コピー</button>
+        </div>
+      </details>
+
+      <p class="qr-modal-note">※ 行程の計算結果ではなく、入力条件（出発地・日程・選んだ宿など）だけを引き継ぎます。スマホ側でも同じ内容が自動的に再計算されます。</p>
+    </div>
+  </div>
+
+  <script src="js/vendor/lz-string.min.js" defer></script>
+  <script src="js/vendor/qrcode.js" defer></script>
+  <script src="js/data.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
+</body>
+</html>
