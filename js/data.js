@@ -1,4 +1,4 @@
-const DESTINATIONS = {
+﻿const DESTINATIONS = {
   kanazawa: {
     name: '金沢',
     area: '石川県',
@@ -1179,16 +1179,18 @@ const FIVE_HOUR_LIMIT = 300; // 分
 function addMins(timeStr, mins) {
   if (!timeStr) return '';
   const [h, m] = timeStr.split(':').map(Number);
-  const total = h * 60 + m + mins;
+  let total = h * 60 + m + mins;
+  if (total < 0) total += 24 * 60; // 日付またぎ対応
   const newH = Math.floor(total / 60) % 24;
   const newM = total % 60;
-  return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+  return ${String(newH).padStart(2, '0')}:;
 }
 
 function generateShinkansenTimeline(stationName, destName, departTimeStr) {
   const times = getTravelTimes();
+  const normStation = stationName.replace(/駅$/, '');
   const toOmiya = { '那須塩原': 45, '宇都宮': 30, '郡山': 60, '福島': 80 };
-  const toSendai = { '那須塩原': 60, '宇都宮': 80, '郡山': 40, '福島': 25, '白石蔵王': 15 };
+  const toSendai = { '那須塩原': 60, '宇都宮': 80, '郡山': 40, '福島': 25, '白石蔵王': 15, '新白河': 50, '白河': 55 };
 
   let t = departTimeStr;
   let timeline = [];
@@ -1198,79 +1200,95 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
   const pushEdge = (text) => timeline.push({ type: 'edge', text });
 
   if (destName.includes('函館')) {
-    if (toSendai[stationName]) {
-      const dur1 = toSendai[stationName];
+    if (toSendai[normStation]) {
+      const dur1 = toSendai[normStation];
       const wait = 20;
       const dur2 = times['仙台-函館'] || 159;
       totalMins = dur1 + wait + dur2;
 
-      pushNode(t, `${stationName} 発`);
-      pushEdge(`🚄 やまびこ・なすの等（約${dur1}分）`);
+      pushNode(t, ${normStation}駅 発);
+      pushEdge(🚄 やまびこ・なすの等（約分）);
       t = addMins(t, dur1);
-      pushNode(t, `仙台駅 着 (乗換${wait}分)`);
+      pushNode(t, 仙台駅 着);
+      pushEdge(☕ 乗換・待ち（分）);
       t = addMins(t, wait);
-      pushEdge(`🚄 はやぶさ（約${dur2}分）`);
+      pushNode(t, 仙台駅 発);
+      pushEdge(🚄 はやぶさ（約分）);
       t = addMins(t, dur2);
-      pushNode(t, `新函館北斗駅 着`);
-    } else if (toOmiya[stationName]) {
-      const dur1 = toOmiya[stationName];
+      pushNode(t, 新函館北斗駅 着);
+    } else if (toOmiya[normStation]) {
+      const dur1 = toOmiya[normStation];
       const wait = 20;
       const dur2 = times['大宮-函館'] || 231;
       totalMins = dur1 + wait + dur2;
 
-      pushNode(t, `${stationName} 発`);
-      pushEdge(`🚄 なすの等（約${dur1}分）`);
+      pushNode(t, ${normStation}駅 発);
+      pushEdge(🚄 なすの等（約分）);
       t = addMins(t, dur1);
-      pushNode(t, `大宮駅 着 (乗換${wait}分)`);
+      pushNode(t, 大宮駅 着);
+      pushEdge(☕ 乗換・待ち（分）);
       t = addMins(t, wait);
-      pushEdge(`🚄 はやぶさ（約${dur2}分）`);
+      pushNode(t, 大宮駅 発);
+      pushEdge(🚄 はやぶさ（約分）);
       t = addMins(t, dur2);
-      pushNode(t, `新函館北斗駅 着`);
+      pushNode(t, 新函館北斗駅 着);
     } else {
-      const dur = times[`${stationName}-函館`] || 255;
+      const dur = times[${normStation}-函館] || 255;
       totalMins = dur;
-      pushNode(t, `${stationName} 発`);
-      pushEdge(`🚄 はやぶさ（約${dur}分）`);
+      pushNode(t, ${normStation}駅 発);
+      pushEdge(🚄 はやぶさ等（約分）);
       t = addMins(t, dur);
-      pushNode(t, `新函館北斗駅 着`);
+      pushNode(t, 新函館北斗駅 着);
     }
   } else if (destName.includes('札幌') || destName.includes('小樽') || destName.includes('旭川')) {
-    const hako = generateShinkansenTimeline(stationName, '函館', departTimeStr);
-    const plus = destName.includes('旭川') ? 120 : 220; // 札幌220分、旭川は本来もっと遠いがデモ用
+    const hako = generateShinkansenTimeline(normStation, '函館', departTimeStr);
+    const plus = destName.includes('旭川') ? 120 : 220; // 旭川等はデモ用概算
     const wait = 15;
     totalMins = hako.totalMins + wait + plus;
     
     timeline = hako.timeline;
-    t = addMins(timeline[timeline.length-1].time, wait);
-    pushEdge(`🚃 特急北斗等（約${plus}分）`);
+    t = hako.timeline[hako.timeline.length-1].time;
+    pushEdge(☕ 乗換・待ち（分）);
+    t = addMins(t, wait);
+    pushNode(t, 新函館北斗駅 発);
+    pushEdge(🚃 特急北斗等（約分）);
     t = addMins(t, plus);
-    pushNode(t, `${destName.replace('北海道', '')} 到着`);
+    pushNode(t, ${destName.replace('北海道', '')} 着);
   } else {
-    // 汎用フォールバック
-    const dur = times[`${stationName}-${destName}`] || 255;
+    const dur = times[${normStation}-] || 255;
     totalMins = dur;
-    pushNode(t, `${stationName} 発`);
-    pushEdge(`🚄 新幹線（約${dur}分）`);
+    pushNode(t, ${normStation}駅 発);
+    pushEdge(🚄 新幹線（約分）);
     t = addMins(t, dur);
-    pushNode(t, `${destName.replace('北海道', '')} 着`);
+    pushNode(t, ${destName.replace('北海道', '')} 着);
   }
 
-  return { time: totalMins, timeline };
+  return { time: totalMins, timeline, totalMins };
 }
 
 function generateFlightTimeline(stationName, destName, departTimeStr) {
+  const normStation = stationName.replace(/駅$/, '');
   let airportTransferTime = 90;
   let airportTransText = '🚃 在来線等（約90分）';
   let airport = '羽田空港(または主要空港)';
   
-  if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王'].includes(stationName)) {
-    airportTransferTime = 120;
-    airportTransText = '🚃 新幹線・在来線等（約120分）';
-    airport = '仙台空港/羽田空港';
+  let useFukushima = false;
+  let useSendai = false;
+  if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'].includes(normStation)) {
+    if (destName.includes('函館')) {
+      useSendai = true;
+      airportTransferTime = normStation === '宇都宮' ? 120 : 90;
+      airportTransText = 🚗 自家用車・高速バス等（約分）;
+      airport = '仙台空港';
+    } else {
+      useFukushima = true;
+      airportTransferTime = ['那須塩原', '宇都宮'].includes(normStation) ? 90 : 60;
+      airportTransText = 🚗 自家用車等（約分）;
+      airport = '福島空港';
+    }
   }
 
-  const waitTime = 90;
-  const flightTime = 90;
+  const flightTime = destName.includes('函館') ? 70 : 80;
   let localTransfer = 50;
   let localTransText = '🚃 快速エアポート等（約50分）';
   let destAirport = '新千歳空港';
@@ -1285,30 +1303,50 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     localTransText = '🚖 連絡バス等（約40分）';
   }
 
-  let t = departTimeStr;
+  let tHomeDepart = departTimeStr;
+  let waitTime = 60;
+  let flightDepart = '';
+  let flightNote = '';
+
+  if (useFukushima) {
+     flightDepart = '10:30';
+     flightNote = ' ※ANA 1日1便';
+     const preMins = airportTransferTime + waitTime;
+     tHomeDepart = addMins(flightDepart, -preMins);
+  } else if (useSendai) {
+     waitTime = 90;
+     flightDepart = addMins(departTimeStr, airportTransferTime + waitTime);
+     flightNote = ' ※ANA/JAL/ADO等';
+  } else {
+     waitTime = 90;
+     flightDepart = addMins(departTimeStr, airportTransferTime + waitTime);
+     flightNote = ' ※複数便あり';
+  }
+
+  let t = tHomeDepart;
   let timeline = [];
   const pushNode = (time, text) => timeline.push({ type: 'node', time, text });
   const pushEdge = (text) => timeline.push({ type: 'edge', text });
 
-  pushNode(t, `${stationName} 発`);
+  pushNode(t, ${normStation}（ご自宅周辺） 発);
   pushEdge(airportTransText);
   t = addMins(t, airportTransferTime);
-  pushNode(t, `${airport} 着`);
+  pushNode(t, ${airport} 着);
   
-  pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`);
+  pushEdge(🛂 搭乗手続き・待ち（約分）);
   t = addMins(t, waitTime);
-  pushNode(t, `${airport} 発`);
+  pushNode(t, ${airport} 発);
   
-  pushEdge(`✈️ フライト（約${flightTime}分）`);
+  pushEdge(✈️ フライト（約分）);
   t = addMins(t, flightTime);
-  pushNode(t, `${destAirport} 着`);
+  pushNode(t, ${destAirport} 着);
   
   pushEdge(localTransText);
   t = addMins(t, localTransfer);
-  pushNode(t, `${destName.replace('北海道', '')} 到着`);
+  pushNode(t, ${destName.replace('北海道', '')} 着);
 
   const totalMins = airportTransferTime + waitTime + flightTime + localTransfer;
-  return { time: totalMins, timeline };
+  return { time: totalMins, timeline, totalMins };
 }
 
 function compareTransportRoutes(stationName, destName, departTimeStr = '10:00') {
