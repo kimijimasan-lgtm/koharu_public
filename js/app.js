@@ -72,6 +72,16 @@ const App = {
     });
 
     // 公開版：departure（自宅住所）欄は削除済みのためイベントなし
+    document.getElementById('top-station-select')?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      const radio = document.querySelector(`input[name="use-station"][value="${val}"]`);
+      if (radio) radio.checked = true;
+      this.saveInputsToStorage();
+      this.updateStationChoiceLabels();
+      this.updateDestinationInfo();
+      this.refreshTrainChoices();
+    });
+    
     document.getElementById('station-1').addEventListener('input', () => {
       this.saveInputsToStorage();
       this.updateStationChoiceLabels();
@@ -96,14 +106,14 @@ const App = {
     const s1 = document.getElementById('station-1').value.trim();
     const s2 = document.getElementById('station-2').value.trim();
     
-    // Update top display
+    const topSelect = document.getElementById('top-station-select');
     const selectedRadio = document.querySelector('input[name="use-station"]:checked');
-    const displayEl = document.getElementById('selected-station-display');
-    if (displayEl && selectedRadio) {
-      if (selectedRadio.value === '1') {
-        displayEl.textContent = s1 || '未登録';
-      } else {
-        displayEl.textContent = s2 || '未登録';
+    
+    if (topSelect) {
+      topSelect.options[0].text = s1 || '未登録(駅①)';
+      topSelect.options[1].text = s2 || '未登録(駅②)';
+      if (selectedRadio) {
+        topSelect.value = selectedRadio.value;
       }
     }
   },
