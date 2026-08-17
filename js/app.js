@@ -1529,7 +1529,7 @@ const App = {
     // Only on mobile
     if (window.innerWidth > 768) return;
     
-    if (this.currentStep === 'input') {
+    if (this.state.currentStep === 'input') {
       const form = document.getElementById('form-input');
       if (form.checkValidity()) {
         this.collectInputs();
@@ -1540,7 +1540,7 @@ const App = {
       } else {
         form.reportValidity();
       }
-    } else if (this.currentStep === 'hotels') {
+    } else if (this.state.currentStep === 'hotels') {
       if (this.state.selectedHotel) {
         this.generateItinerary(this.state.selectedHotel);
       }
@@ -1551,11 +1551,11 @@ const App = {
     // Only on mobile
     if (window.innerWidth > 768) return;
 
-    if (this.currentStep === 'hotels') {
+    if (this.state.currentStep === 'hotels') {
       this.showStep('input');
-    } else if (this.currentStep === 'itinerary') {
+    } else if (this.state.currentStep === 'itinerary') {
       this.showStep('hotels');
-    } else if (this.currentStep === 'confirmed') {
+    } else if (this.state.currentStep === 'confirmed') {
       this.showStep('itinerary');
     }
   },
