@@ -1262,6 +1262,14 @@ const App = {
 
   renderItinerary(dest, hotel, day1, day2, day3, koharuScore, totalCost, departureStation, travelTime, busyPeriod) {
     document.getElementById('itinerary-hotel-name').textContent = hotel.name;
+    const imgContainer = document.getElementById('itinerary-hotel-image-container');
+    if (imgContainer) {
+      if (hotel.image) {
+        imgContainer.innerHTML = `<div class="hotel-image" style="height: 200px; background-image: url('${hotel.image}'); background-size: cover; background-position: center; border-radius: var(--radius-sm); margin-bottom: 1rem;"></div>`;
+      } else {
+        imgContainer.innerHTML = '';
+      }
+    }
     document.getElementById('itinerary-area').textContent = `${dest.name} · ${hotel.area}`;
 
     document.getElementById('busy-period-notice').innerHTML = busyPeriod
