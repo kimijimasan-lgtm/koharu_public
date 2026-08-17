@@ -22,13 +22,16 @@
       <form id="form-input">
         <!-- 公開版：自宅住所欄は削除（個人情報保護のため） -->
 
-        <div class="form-row" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 0.5rem;">
+        <div class="form-row" style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 0.5rem;">
           <div style="flex: 1;">
             <label class="form-label" for="destination">旅行先エリア</label>
             <input type="text" id="destination" class="form-input" placeholder="例：函館、札幌、知床..." required>
           </div>
-          <div style="flex: 1; padding-bottom: 0.5rem;">
-            <div style="font-size: 0.95rem; font-weight: bold; color: var(--color-text-main);">📍 出発駅: <span id="selected-station-display" style="color: var(--color-primary);">未登録</span></div>
+          <div style="flex: 1;">
+            <label class="form-label">出発駅</label>
+            <div class="form-input" style="background-color: var(--color-bg-sub); display: flex; align-items: center; cursor: default; padding: 0.75rem 1rem;">
+              <span style="flex-shrink: 0;">📍</span> <span id="selected-station-display" style="color: var(--color-primary); margin-left: 0.25rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">未登録</span>
+            </div>
           </div>
         </div>
         <div id="destination-info" style="margin-bottom: 1.5rem;"></div>
