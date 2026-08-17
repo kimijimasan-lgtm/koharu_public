@@ -1172,7 +1172,7 @@ body {
    ======================== */
 @media (max-width: 600px) {
   .container {
-    padding: 1.5rem 1rem;
+    padding: 1.5rem 1rem 6rem 1rem;
   }
 
   .app-title {
