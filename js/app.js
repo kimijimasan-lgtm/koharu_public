@@ -490,7 +490,6 @@ const App = {
       card.innerHTML = `
         <div class="hotel-card-header">
           <h3>${hotel.name}</h3>
-          <span class="hotel-type">${hotel.type}</span>
         </div>
         ${imageHtml}
         <div class="hotel-card-body">
@@ -1262,7 +1261,6 @@ const App = {
   },
 
   renderItinerary(dest, hotel, day1, day2, day3, koharuScore, totalCost, departureStation, travelTime, busyPeriod) {
-    document.getElementById('itinerary-hotel-name').textContent = hotel.name;
     const imgContainer = document.getElementById('itinerary-hotel-image-container');
     if (imgContainer) {
       if (hotel.image) {
@@ -1271,7 +1269,31 @@ const App = {
         imgContainer.innerHTML = '';
       }
     }
-    document.getElementById('itinerary-area').textContent = `${dest.name} · ${hotel.area}`;
+    
+    document.getElementById('itinerary-hotel-info').innerHTML = `
+      <h2 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">${hotel.name}</h2>
+      <div class="hotel-features" style="margin-bottom: 1rem;">
+        ${hotel.features.map((f) => `<span class="feature-tag">${f}</span>`).join('')}
+      </div>
+      <div class="hotel-details" style="font-size: 0.9rem;">
+        <div class="hotel-detail-item">
+          <span class="detail-icon">🚕</span>
+          <span>${dest.cityStation || dest.station}からタクシー約${hotel.taxiFromCityStation}分</span>
+        </div>
+        <div class="hotel-detail-item">
+          <span class="detail-icon">📍</span>
+          <span>${hotel.area}</span>
+        </div>
+        <div class="hotel-detail-item">
+          <span class="detail-icon">💴</span>
+          <span>¥${hotel.pricePerNight.toLocaleString()}/泊（税込目安）</span>
+        </div>
+        <div class="hotel-detail-item">
+          <span class="detail-icon">🍽️</span>
+          <span>${hotel.dinnerIncluded ? '夕食付' : '食事なし'}・${hotel.breakfastIncluded ? '朝食付' : '朝食なし'}</span>
+        </div>
+      </div>
+    `;
 
     document.getElementById('busy-period-notice').innerHTML = busyPeriod
       ? `<div class="cost-note">※ この時期（${busyPeriod.name}）は混雑が予想されます</div>`
