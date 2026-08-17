@@ -904,34 +904,27 @@ const App = {
   },
 
   reverseTimelineToEvents(timeline, returnHour, returnMin) {
-    // 逆算タイムラインの生成
-    // 例: returnHour: 19, returnMin: 00 の場合、最終到着時間を19:00として各ノードの時刻を逆算する
-    // 元のタイムラインの所要時間合計 (timeline[last].time - timeline[0].time) を算出
-    
-    const [startH, startM] = timeline[0].time.split(':').map(Number);
+    // タイムラインを完全に逆順に辿る
+    const startNode = timeline[0];
+    const [startH, startM] = startNode.time.split(':').map(Number);
     const startTotal = startH * 60 + startM;
     
-    const lastNode = timeline[timeline.length - 1];
-    const [endH, endM] = lastNode.time.split(':').map(Number);
+    const endNode = timeline[timeline.length - 1];
+    const [endH, endM] = endNode.time.split(':').map(Number);
     let endTotal = endH * 60 + endM;
-    if (endTotal < startTotal) endTotal += 24 * 60; // 日またぎ
+    if (endTotal < startTotal) endTotal += 24 * 60;
     
     const duration = endTotal - startTotal;
     
-    // 逆算開始
     let targetEndTotal = returnHour * 60 + returnMin;
-    let targetStartTotal = targetEndTotal - duration;
+    let currentMin = targetEndTotal - duration;
+    const destDepartMin = currentMin;
     
-    // タイムラインを逆順にたどってイベントを生成
     let events = [];
-    let currentMin = targetStartTotal;
-    
-    let reversedNodes = timeline.filter(t => t.type === 'node');
-    let reversedEdges = timeline.filter(t => t.type === 'edge');
     
     // 出発ノード
-    let firstNodeText = reversedNodes[reversedNodes.length - 1].text.replace('着', '発');
-    if (firstNodeText.includes('北海道')) firstNodeText = firstNodeText.replace('北海道', ''); // 札幌着などを発に
+    let firstNodeText = endNode.text.replace('着', '発');
+    if (firstNodeText.includes('北海道')) firstNodeText = firstNodeText.replace('北海道', '');
     
     events.push({
       time: this.minToTime(currentMin),
@@ -940,51 +933,44 @@ const App = {
       timeSource: 'verified'
     });
     
-    let destDepartMin = currentMin; // 宿からの出発時間に使う
-    
-    // エッジと中間ノードを処理
-    for (let i = reversedEdges.length - 1; i >= 0; i--) {
-      let edge = reversedEdges[i];
-      let icon = '❓';
-      if (edge.text.includes('✈️')) icon = '✈️';
-      else if (edge.text.includes('🚄')) icon = '🚄';
-      else if (edge.text.includes('☕') || edge.text.includes('🛂')) icon = '⏳';
-      else if (edge.text.includes('🚃')) icon = '🚃';
-      else if (edge.text.includes('🚗') || edge.text.includes('🚖')) icon = '🚕';
-      
-      let durMatch = edge.text.match(/（約(\d+)分）/);
-      let durationMins = durMatch ? parseInt(durMatch[1]) : 0;
-      let durationStr = durMatch ? '約' + durMatch[1] + '分' : '';
-      let label = edge.text.replace(/^[^\s]*\s*/, '').replace(/（約\d+分）$/, '');
-      
-      events.push({
-        type: 'transfer',
-        icon: icon,
-        label: label,
-        duration: durationStr,
-        cost: null,
-        timeSource: 'verified'
-      });
-      
-      currentMin += durationMins;
-      
-      let nextNode = reversedNodes[i];
-      let nodeText = nextNode.text;
-      
-      if (i > 0) {
-        // 中間ノードの場合は発着を反転するなどの処理が必要だが、シンプルなテキスト置換で対応
-        nodeText = nodeText.includes('着') ? nodeText.replace('着', '発') : nodeText.replace('発', '着');
-      } else {
-        // 最終到着地点（自宅）
-        nodeText = nodeText.replace('発', '着');
+    for (let i = timeline.length - 2; i >= 0; i--) {
+      const item = timeline[i];
+      if (item.type === 'edge') {
+        let icon = '❓';
+        if (item.text.includes('✈️')) icon = '✈️';
+        else if (item.text.includes('🚄')) icon = '🚄';
+        else if (item.text.includes('☕') || item.text.includes('🛂')) icon = '⏳';
+        else if (item.text.includes('🚃')) icon = '🚃';
+        else if (item.text.includes('🚗') || item.text.includes('🚖')) icon = '🚕';
+        
+        let durMatch = item.text.match(/（(?:約)?(\d+)分）/);
+        let durationMins = durMatch ? parseInt(durMatch[1]) : 0;
+        let durationStr = durMatch ? '約' + durMatch[1] + '分' : '';
+        let label = item.text.replace(/^[^\s]*\s*/, '').replace(/（(?:約)?\d+分）$/, '');
+        
+        events.push({
+          type: 'transfer',
+          icon: icon,
+          label: label,
+          duration: durationStr,
+          cost: null,
+          timeSource: 'verified'
+        });
+        currentMin += durationMins;
+      } else if (item.type === 'node') {
+        let nodeText = item.text;
+        if (i === 0) {
+          nodeText = nodeText.replace('発', '着');
+        } else {
+          nodeText = nodeText.includes('着') ? nodeText.replace('着', '発') : nodeText.replace('発', '着');
+        }
+        events.push({
+          time: this.minToTime(currentMin),
+          title: nodeText,
+          type: 'transport',
+          timeSource: 'verified'
+        });
       }
-      
-      events.push({
-        time: this.minToTime(currentMin),
-        title: nodeText,
-        type: 'transport',
-        timeSource: 'verified'
-      });
     }
     
     return { events, destDepartMin };
