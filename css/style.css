@@ -1579,3 +1579,13 @@ body {
   width: 2px;
   background-color: #cbd5e1;
 }
+
+.hotel-map-link {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.hotel-map-link:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
