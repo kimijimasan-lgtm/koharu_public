@@ -582,6 +582,7 @@ const App = {
     const destKey = this.resolveDestination(this.state.inputs.destination);
     const dest = DESTINATIONS[destKey];
     const inputs = this.state.inputs;
+    
     const returnTimeParts = inputs.returnTime.split(':');
     const returnHour = parseInt(returnTimeParts[0]);
     const returnMin = parseInt(returnTimeParts[1]);
@@ -591,18 +592,17 @@ const App = {
     const departureMin = parseInt(departureTimeParts[1]);
 
     const relevantStation = inputs.useStation === '2' ? inputs.station2 : inputs.station1;
-    const travelTime = this.lookupTravelTime(relevantStation, dest);
-    const fareData = this.lookupFareData(relevantStation, dest);
+    
+    const departStr = `${String(departureHour).padStart(2, '0')}:${String(departureMin).padStart(2, '0')}`;
+    const comparison = compareTransportRoutes(relevantStation, dest.name, departStr);
+    const selectedRoute = comparison[comparison.recommended]; // flight or shinkansen
 
+    const travelTime = selectedRoute.time;
     const koharuScore = this.calculateKoharuScore(hotel, travelTime, inputs.luggagePattern);
 
-    const localTrain = lookupLocalTrain(inputs.departure, relevantStation, inputs.departureDate);
-    // 実ダイヤが確定している区間はそれを優先し、無い区間だけ従来の概算計算にフォールバックする
-    const selected = this.getSelectedSchedule() || { outbound: null, inbound: null };
-
-    const day1 = this.planDay1(dest, hotel, travelTime, relevantStation, fareData, departureHour, departureMin, localTrain, selected.outbound);
+    const day1 = this.planDay1(dest, hotel, selectedRoute.timeline);
     const day2 = this.planDay2(dest, hotel);
-    const day3 = this.planDay3(dest, hotel, travelTime, returnHour, returnMin, relevantStation, inputs.luggagePattern, fareData, localTrain, selected.inbound);
+    const day3 = this.planDay3(dest, hotel, selectedRoute.timeline, returnHour, returnMin);
 
     this.enrichEventsWithLinks(day1.events, hotel, dest);
     this.enrichEventsWithLinks(day2.events, hotel, dest);
@@ -617,7 +617,7 @@ const App = {
     day3.dateLabel = this.getDayDateLabel(inputs.departureDate, 2);
 
     const busyPeriod = this.checkBusyPeriod(inputs.departureDate);
-
+    const fareData = this.lookupFareData(relevantStation, dest);
     const totalCost = this.calculateCost(hotel, travelTime, dest, inputs.luggagePattern, fareData);
 
     this.renderItinerary(dest, hotel, day1, day2, day3, koharuScore, totalCost, relevantStation, travelTime, busyPeriod);
@@ -864,103 +864,139 @@ const App = {
     return events;
   },
 
-  planDay1(dest, hotel, travelTime, departureStation, fareData, departureHour = 10, departureMin = 0, localTrain = null, schedule = null) {
-    const events = [];
-    let arrivalMin;
-
-    // 実ダイヤが確定している区間は、希望時刻からの逆算をやめて実際の列車時刻をそのまま使う
-    if (schedule) {
-      const lastStep = schedule.steps[schedule.steps.length - 1];
-      arrivalMin = this.timeToMin(lastStep.arr);
-      events.push(...this.buildScheduleTransportEvents(schedule));
-      return this.finishDay1(events, dest, hotel, arrivalMin);
-    }
-
-    const departureMinTotal = departureHour * 60 + departureMin;
-    arrivalMin = departureMinTotal + travelTime;
-    const arrivalHour = Math.floor(arrivalMin / 60);
-    const arrivalMinPart = arrivalMin % 60;
-
-    if (localTrain) {
-      // 在来線→新幹線の乗換は初見の駅・不慣れな導線を想定し、5分では現実的な余裕がないため10分を確保する
-      const transferBufferMin = 10;
-      const localDepartStr = pickLocalTrainDeparture(
-        localTrain.schedule.outboundDepartures,
-        departureMinTotal,
-        transferBufferMin,
-        localTrain.duration_min
-      );
-      const localDepartMin = this.timeToMin(localDepartStr);
-      const localArriveMin = localDepartMin + localTrain.duration_min;
-      const insufficientBuffer = localArriveMin > departureMinTotal - transferBufferMin;
-      const waitMin = departureMinTotal - localArriveMin;
-
-      const departNotes = [];
-      if (insufficientBuffer) departNotes.push('※ 目標時刻に間に合う便がなく始発を表示しています。時刻表をご確認ください');
-      if (localTrain.isApproximateSchedule) departNotes.push('※ 土休日は平日ダイヤを参考値として使用中');
-
-      events.push({
-        time: localDepartStr,
-        title: `${localTrain.fromStation} 出発`,
-        type: 'transport',
-        note: departNotes.length ? departNotes.join(' ') : undefined,
-        timeSource: 'verified',
-      });
-      events.push(this.makeTransfer('🚃', `${localTrain.line}・${localTrain.type}${localTrain.transfers === 0 ? '・乗換なし' : ''}`, `約${localTrain.duration_min}分`, null, 'verified'));
-      events.push({
-        time: this.minToTime(localArriveMin),
-        title: `${localTrain.toStation} 到着`,
-        type: 'transport',
-        // 矢板方面は在来線の運行間隔が30〜40分程度空くため、待ち時間が長くなる便を選ぶことがある。20分超なら明示する
-        note: !insufficientBuffer && waitMin > 20 ? `※ 乗り換え待ち時間：約${waitMin}分` : undefined,
-        timeSource: 'verified',
-      });
-    }
-    events.push({
-      time: `${String(departureHour).padStart(2, '0')}:${String(departureMin).padStart(2, '0')}`,
-      title: `${departureStation.replace(/駅$/, '')}駅 出発`,
-      type: 'transport',
-      note: localTrain ? undefined : '※ 出発時刻はご希望に応じて調整してください（目安表示）',
-      timeSource: fareData ? 'verified' : 'estimated',
+  convertTimelineToEvents(timeline) {
+    let events = [];
+    let arrivalMin = 0;
+    
+    timeline.forEach(item => {
+      if (item.type === 'node') {
+        events.push({
+          time: item.time,
+          title: item.text,
+          type: 'transport',
+          timeSource: 'verified'
+        });
+        const [h, m] = item.time.split(':').map(Number);
+        arrivalMin = h * 60 + m;
+      } else {
+        let icon = '❓';
+        if (item.text.includes('✈️')) icon = '✈️';
+        else if (item.text.includes('🚄')) icon = '🚄';
+        else if (item.text.includes('☕') || item.text.includes('🛂')) icon = '⏳';
+        else if (item.text.includes('🚃')) icon = '🚃';
+        else if (item.text.includes('🚗') || item.text.includes('🚖')) icon = '🚕';
+        
+        let durMatch = item.text.match(/（約(\d+)分）/);
+        let durationStr = durMatch ? '約' + durMatch[1] + '分' : '';
+        let label = item.text.replace(/^[^\s]*\s*/, '').replace(/（約\d+分）$/, '');
+        
+        events.push({
+          type: 'transfer',
+          icon: icon,
+          label: label,
+          duration: durationStr,
+          cost: null,
+          timeSource: 'verified'
+        });
+      }
     });
+    return { events, arrivalMin };
+  },
 
-    if (dest.transportMode === 'flight') {
-      events.push(this.makeTransfer('✈️', `空路（最寄り空港 → ${dest.airport || '現地空港'}）`, `約${travelTime}分`, '※空港までの移動と搭乗待機時間を含む目安', 'estimated'));
-    } else {
-      events.push(this.makeTransfer('🚄', fareData ? `${dest.shinkansen}（${fareData.transfer_station}で乗換）` : dest.shinkansen, `約${fareData ? fareData.duration_min : travelTime}分`, null, fareData ? 'verified' : 'estimated'));
-    }
-
+  reverseTimelineToEvents(timeline, returnHour, returnMin) {
+    // 逆算タイムラインの生成
+    // 例: returnHour: 19, returnMin: 00 の場合、最終到着時間を19:00として各ノードの時刻を逆算する
+    // 元のタイムラインの所要時間合計 (timeline[last].time - timeline[0].time) を算出
+    
+    const [startH, startM] = timeline[0].time.split(':').map(Number);
+    const startTotal = startH * 60 + startM;
+    
+    const lastNode = timeline[timeline.length - 1];
+    const [endH, endM] = lastNode.time.split(':').map(Number);
+    let endTotal = endH * 60 + endM;
+    if (endTotal < startTotal) endTotal += 24 * 60; // 日またぎ
+    
+    const duration = endTotal - startTotal;
+    
+    // 逆算開始
+    let targetEndTotal = returnHour * 60 + returnMin;
+    let targetStartTotal = targetEndTotal - duration;
+    
+    // タイムラインを逆順にたどってイベントを生成
+    let events = [];
+    let currentMin = targetStartTotal;
+    
+    let reversedNodes = timeline.filter(t => t.type === 'node');
+    let reversedEdges = timeline.filter(t => t.type === 'edge');
+    
+    // 出発ノード
+    let firstNodeText = reversedNodes[reversedNodes.length - 1].text.replace('着', '発');
+    if (firstNodeText.includes('北海道')) firstNodeText = firstNodeText.replace('北海道', ''); // 札幌着などを発に
+    
     events.push({
-      time: `${String(arrivalHour).padStart(2, '0')}:${String(arrivalMinPart).padStart(2, '0')}`,
-      title: `${dest.station} 到着`,
+      time: this.minToTime(currentMin),
+      title: firstNodeText,
       type: 'transport',
-      timeSource: fareData ? 'verified' : 'estimated',
+      timeSource: 'verified'
     });
+    
+    let destDepartMin = currentMin; // 宿からの出発時間に使う
+    
+    // エッジと中間ノードを処理
+    for (let i = reversedEdges.length - 1; i >= 0; i--) {
+      let edge = reversedEdges[i];
+      let icon = '❓';
+      if (edge.text.includes('✈️')) icon = '✈️';
+      else if (edge.text.includes('🚄')) icon = '🚄';
+      else if (edge.text.includes('☕') || edge.text.includes('🛂')) icon = '⏳';
+      else if (edge.text.includes('🚃')) icon = '🚃';
+      else if (edge.text.includes('🚗') || edge.text.includes('🚖')) icon = '🚕';
+      
+      let durMatch = edge.text.match(/（約(\d+)分）/);
+      let durationMins = durMatch ? parseInt(durMatch[1]) : 0;
+      let durationStr = durMatch ? '約' + durMatch[1] + '分' : '';
+      let label = edge.text.replace(/^[^\s]*\s*/, '').replace(/（約\d+分）$/, '');
+      
+      events.push({
+        type: 'transfer',
+        icon: icon,
+        label: label,
+        duration: durationStr,
+        cost: null,
+        timeSource: 'verified'
+      });
+      
+      currentMin += durationMins;
+      
+      let nextNode = reversedNodes[i];
+      let nodeText = nextNode.text;
+      
+      if (i > 0) {
+        // 中間ノードの場合は発着を反転するなどの処理が必要だが、シンプルなテキスト置換で対応
+        nodeText = nodeText.includes('着') ? nodeText.replace('着', '発') : nodeText.replace('発', '着');
+      } else {
+        // 最終到着地点（自宅）
+        nodeText = nodeText.replace('発', '着');
+      }
+      
+      events.push({
+        time: this.minToTime(currentMin),
+        title: nodeText,
+        type: 'transport',
+        timeSource: 'verified'
+      });
+    }
+    
+    return { events, destDepartMin };
+  },
+
+  planDay1(dest, hotel, timeline) {
+    const { events, arrivalMin } = this.convertTimelineToEvents(timeline);
     return this.finishDay1(events, dest, hotel, arrivalMin);
   },
 
-  // 新幹線駅と市内拠点駅が離れている都市（函館）だけ連絡列車データを返す。他都市は null
-  getCityConnection(dest) {
-    return dest.connectionToCityStation ? CITY_STATION_CONNECTIONS[dest.connectionToCityStation] : null;
-  },
-
-  // 目的地の新幹線駅に着いたあと（連絡列車→タクシー→チェックイン→初日の観光）の組み立ては、
-  // 実ダイヤ利用時も従来の概算計算時も共通なのでここにまとめる
   finishDay1(events, dest, hotel, arrivalMin) {
-    // 函館は新幹線駅(新函館北斗)から市内拠点駅(函館)まで17.9km離れており、
-    // タクシーではなく はこだてライナー で移動するのが実態。タクシーはそのあとの市内移動だけ
     let taxiStartMin = arrivalMin;
-    const conn = this.getCityConnection(dest);
-    if (conn) {
-      const leg = pickCityConnectionAfter(conn.toCityStation, arrivalMin, 8);
-      if (leg) {
-        events.push(this.makeTransfer('⏳', `${dest.station}で乗り換え`, `待ち時間 約${leg.depMin - arrivalMin}分`, null, 'verified'));
-        events.push({ time: this.minToTime(leg.depMin), title: `${dest.station} 出発`, type: 'transport', timeSource: 'verified' });
-        events.push(this.makeTransfer('🚃', `${conn.line}・${conn.name}${leg.rapid ? '（快速）' : ''}`, `約${leg.durationMin}分`, `¥${conn.fare_yen.toLocaleString()}`, 'verified'));
-        events.push({ time: this.minToTime(leg.arrMin), title: `${dest.cityStation} 到着`, type: 'transport', timeSource: 'verified' });
-        taxiStartMin = leg.arrMin;
-      }
-    }
 
     const taxiArrivalMin = taxiStartMin + hotel.taxiFromCityStation;
     const luggageDropMin = taxiArrivalMin + 15;
@@ -1050,284 +1086,60 @@ const App = {
     return { events, label: '1日目（到着日）' };
   },
 
-  planDay2(dest, hotel) {
+  planDay3(dest, hotel, timeline, returnHour = 19, returnMin = 0) {
+    const { events: transportEvents, destDepartMin } = this.reverseTimelineToEvents(timeline, returnHour, returnMin);
+    
     const events = [];
-
+    const checkOutMin = Math.min(10 * 60, destDepartMin - hotel.taxiFromCityStation - 15);
+    
     events.push({
       time: '07:30',
       title: hotel.breakfastIncluded ? '宿の朝食' : '朝食',
       type: 'food-breakfast',
-      detail: hotel.breakfastIncluded ? '宿にて' : '駅前で軽く',
+      detail: hotel.breakfastIncluded ? '宿にて' : null,
     });
-
+    
     events.push({
-      time: '09:30',
-      title: '宿を出発',
+      time: this.minToTime(checkOutMin),
+      title: `${hotel.name} チェックアウト`,
       type: 'hotel',
     });
-
-    const mainSpots = dest.spots.slice(0, 3);
-    const lunch = dest.restaurants.lunch[1] || dest.restaurants.lunch[0];
-    const dinner = dest.restaurants.dinner[1] || dest.restaurants.dinner[0];
-    const snack = dest.restaurants.snack[1] || dest.restaurants.snack[0];
-
-    let currentMin = 10 * 60;
-
-    if (mainSpots[0]) {
+    
+    const availableMinutes = destDepartMin - checkOutMin - hotel.taxiFromCityStation - 15;
+    let currentMin = checkOutMin + 15;
+    
+    if (availableMinutes > 120 && dest.spots.length > 2) {
+      events.push(this.makeTransfer('🚕', 'タクシー等', '約15分', null, 'estimated'));
+      const spot = dest.spots[2];
       events.push({
-        time: this.minToTime(currentMin),
-        title: mainSpots[0].name,
-        type: 'spot',
-        detail: `滞在約${mainSpots[0].duration}分`,
-        duration: mainSpots[0].duration,
-      });
-      currentMin += mainSpots[0].duration + 15;
-    }
-
-    const lunchTime = Math.max(currentMin, 11.5 * 60);
-    events.push({
-      time: this.minToTime(lunchTime),
-      title: `昼食：${lunch.name}`,
-      type: 'food-lunch',
-      detail: `${lunch.area}${lunch.reservationNeeded ? '・要予約' : ''}`,
-      budget: lunch.budget,
-    });
-    currentMin = lunchTime + 75;
-
-    if (snack) {
-      events.push({
-        time: this.minToTime(currentMin),
-        title: `食べ歩き：${snack.name}`,
-        type: 'food-snack',
-        detail: snack.area,
-        budget: snack.budget,
-      });
-      currentMin += 30;
-    }
-
-    if (mainSpots[1]) {
-      events.push({
-        time: this.minToTime(currentMin),
-        title: mainSpots[1].name,
-        type: 'spot',
-        detail: `滞在約${mainSpots[1].duration}分`,
-        duration: mainSpots[1].duration,
-      });
-      currentMin += mainSpots[1].duration + 15;
-    }
-
-    if (mainSpots[2] && currentMin < 16 * 60) {
-      events.push({
-        time: this.minToTime(currentMin),
-        title: mainSpots[2].name,
-        type: 'spot',
-        detail: `滞在約${mainSpots[2].duration}分`,
-        duration: mainSpots[2].duration,
-      });
-      currentMin += mainSpots[2].duration + 15;
-    }
-
-    events.push({
-      time: '17:30',
-      title: `${hotel.name}へ戻る`,
-      type: 'hotel',
-    });
-
-    events.push({
-      time: '18:00',
-      title: hotel.dinnerIncluded ? '宿の夕食' : `夕食：${dinner.name}`,
-      type: 'food-dinner',
-      detail: hotel.dinnerIncluded
-        ? '宿にて'
-        : `${dinner.area}・要予約`,
-      budget: hotel.dinnerIncluded ? 0 : dinner.budget,
-    });
-
-    return { events, label: '2日目（まる一日）' };
-  },
-
-  planDay3(dest, hotel, travelTime, returnHour, returnMin, departureStation, luggagePattern, fareData, localTrain = null, schedule = null) {
-    const events = [];
-
-    const rawReturnMin = returnHour * 60 + returnMin;
-    const transferBufferMin = 5;
-
-    let localArrivalStr = null;
-    let localDepartMin = null;
-    let homeArrivalMin; // 新幹線側の乗換駅（例: 那須塩原駅）到着時刻
-    let trainDepartMin;
-
-    if (schedule) {
-      // 実ダイヤ確定済み：帰宅希望時刻からの逆算をやめ、実際の列車の発車時刻を起点にする
-      trainDepartMin = this.timeToMin(schedule.steps[0].dep);
-    } else {
-      if (localTrain) {
-        localArrivalStr = pickLocalTrainArrival(localTrain.schedule.inboundArrivals, rawReturnMin);
-        const finalArrivalMin = this.timeToMin(localArrivalStr);
-        localDepartMin = finalArrivalMin - localTrain.duration_min; // 実データ通り、到着の16分前が出発
-        homeArrivalMin = localDepartMin - transferBufferMin;
-      } else {
-        homeArrivalMin = rawReturnMin;
-      }
-      trainDepartMin = homeArrivalMin - travelTime - 15;
-    }
-
-    // 函館は市内拠点駅(函館)から連絡列車で新幹線駅(新函館北斗)へ向かうため、
-    // 逆算の起点は「新幹線の発車30分前」ではなく「連絡列車に乗る15分前に函館駅にいること」になる
-    const cityConn = this.getCityConnection(dest);
-    const linerLeg = cityConn
-      ? pickCityConnectionBefore(cityConn.fromCityStation, trainDepartMin, 15)
-      : null;
-    // 観光・チェックアウトの逆算に使う「駅にいなければならない時刻」
-    const stationArrivalMin = linerLeg ? linerLeg.depMin - 15 : trainDepartMin - 30;
-    // 表示上の駅名（函館は市内拠点駅、他都市は新幹線駅）
-    const departFromStationName = cityConn ? dest.cityStation : dest.station;
-
-    let luggageNote = '';
-    let observationStartMin;
-
-    if (luggagePattern === 'A') {
-      luggageNote = '荷物は宿に預けたまま観光 → 宿に戻って回収 → 駅へ';
-      const returnToHotelMin = stationArrivalMin - hotel.taxiFromCityStation - 15;
-      observationStartMin = returnToHotelMin - 180;
-    } else if (luggagePattern === 'B') {
-      luggageNote = 'まず駅のコインロッカーに荷物を預けてから周辺を観光';
-      observationStartMin = stationArrivalMin - 180;
-    } else {
-      luggageNote = '荷物を持ち歩いて身軽な観光地を巡る';
-      observationStartMin = stationArrivalMin - 120;
-    }
-
-    events.push({
-      time: '07:30',
-      title: hotel.breakfastIncluded ? '宿の朝食' : '朝食',
-      type: 'food-breakfast',
-      detail: hotel.breakfastIncluded ? '宿にて' : '駅前で軽く',
-    });
-
-    const checkoutMin = Math.max(9 * 60, observationStartMin - hotel.taxiFromCityStation - 15);
-    events.push({
-      time: this.minToTime(Math.max(9 * 60, checkoutMin)),
-      title: 'チェックアウト',
-      type: 'hotel',
-      detail: luggageNote,
-    });
-
-    let currentMin = checkoutMin + 15 + hotel.taxiFromCityStation;
-
-    if (luggagePattern === 'B') {
-      events.push({
-        time: this.minToTime(currentMin),
-        title: `${dest.station}でコインロッカーに荷物を預ける`,
-        type: 'transport',
-      });
-      currentMin += 15;
-    }
-
-    const nearbySpots = luggagePattern === 'C'
-      ? dest.spots.filter((s) => s.indoor)
-      : dest.spots.slice(3);
-
-    if (nearbySpots.length > 0 && currentMin < stationArrivalMin - 90) {
-      const spot = nearbySpots[0];
-      events.push({
-        time: this.minToTime(currentMin),
+        time: this.minToTime(currentMin + 15),
         title: spot.name,
         type: 'spot',
-        detail: `滞在約${Math.min(spot.duration, 45)}分`,
+        detail: `滞在約${spot.duration}分`,
+        duration: spot.duration,
       });
-      currentMin += Math.min(spot.duration, 45) + 15;
+      currentMin += 15 + spot.duration;
     }
-
-    const lunch = dest.restaurants.lunch[2] || dest.restaurants.lunch[0];
-    if (currentMin < 13 * 60 && stationArrivalMin > 13 * 60) {
-      const lunchTime = Math.max(currentMin, 11.5 * 60);
+    
+    if (destDepartMin > 13.5 * 60 && dest.restaurants.lunch.length > 1) {
+      const lunch = dest.restaurants.lunch[1];
+      const lunchTime = Math.max(currentMin + 15, 12 * 60);
+      events.push(this.makeTransfer('🚶', '移動', '約15分', null, 'estimated'));
       events.push({
         time: this.minToTime(lunchTime),
         title: `昼食：${lunch.name}`,
         type: 'food-lunch',
-        detail: lunch.area,
+        detail: `${lunch.area}${lunch.reservationNeeded ? '・要予約' : ''}`,
         budget: lunch.budget,
       });
-      currentMin = lunchTime + 50;
+      currentMin = lunchTime + 60;
     }
-
-    if (luggagePattern === 'A') {
-      const returnToHotelMin = stationArrivalMin - hotel.taxiFromCityStation - 15;
-      events.push({
-        time: this.minToTime(returnToHotelMin),
-        title: `${hotel.name}で荷物回収`,
-        type: 'hotel',
-      });
-      events.push(this.makeTransfer('🚕', `タクシーで${departFromStationName}へ`, `約${hotel.taxiFromCityStation}分`, `¥${this.estimateTaxiFare(dest.name, hotel.taxiFromCityStation).toLocaleString()}`, 'estimated'));
-    }
-
-    events.push({
-      time: this.minToTime(stationArrivalMin),
-      title: `${departFromStationName} 到着`,
-      type: 'transport',
-    });
-
-    // 函館は市内拠点駅から新幹線駅まで、はこだてライナーで移動する区間を挟む
-    if (cityConn && linerLeg) {
-      events.push({ time: this.minToTime(linerLeg.depMin), title: `${dest.cityStation} 出発`, type: 'transport', timeSource: 'verified' });
-      events.push(this.makeTransfer('🚃', `${cityConn.line}・${cityConn.name}${linerLeg.rapid ? '（快速）' : ''}`, `約${linerLeg.durationMin}分`, `¥${cityConn.fare_yen.toLocaleString()}`, 'verified'));
-      events.push({ time: this.minToTime(linerLeg.arrMin), title: `${dest.station} 到着`, type: 'transport', timeSource: 'verified' });
-      events.push(this.makeTransfer('⏳', `${dest.station}で乗り換え`, `待ち時間 約${trainDepartMin - linerLeg.arrMin}分`, null, 'verified'));
-    }
-
-    // 実ダイヤ確定済みなら、以降の帰路は実際の列車時刻（乗換待ちを含む）をそのまま並べる
-    if (schedule) {
-      events.push(...this.buildScheduleTransportEvents(schedule));
-      events[events.length - 1].detail = '🏠 おつかれさまでした';
-      return { events, label: '3日目（帰路）' };
-    }
-
-    events.push({
-      time: this.minToTime(trainDepartMin),
-      title: `${dest.station} 出発`,
-      type: 'transport',
-      timeSource: fareData ? 'verified' : 'estimated',
-    });
-
-    if (dest.transportMode === 'flight') {
-      events.push(this.makeTransfer('✈️', `空路（${dest.airport || '現地空港'} → 最寄り空港）`, `約${travelTime}分`, '※空港での搭乗待機時間や最寄り駅への移動時間を含む目安', 'estimated'));
-    } else {
-      events.push(this.makeTransfer('🚄', fareData ? `${dest.shinkansen}（${fareData.transfer_station}で乗換）` : dest.shinkansen, `約${fareData ? fareData.duration_min : travelTime}分`, null, fareData ? 'verified' : 'estimated'));
-    }
-
-    if (localTrain) {
-      events.push({
-        time: this.minToTime(homeArrivalMin),
-        title: `${departureStation.replace(/駅$/, '')}駅 到着`,
-        type: 'transport',
-        timeSource: fareData ? 'verified' : 'estimated',
-      });
-      events.push({
-        time: this.minToTime(localDepartMin),
-        title: `${departureStation.replace(/駅$/, '')}駅 出発`,
-        type: 'transport',
-        note: localTrain.isApproximateSchedule ? '※ 土休日は平日ダイヤを参考値として使用中' : undefined,
-        timeSource: 'verified',
-      });
-      events.push(this.makeTransfer('🚃', `${localTrain.line}・${localTrain.type}${localTrain.transfers === 0 ? '・乗換なし' : ''}`, `約${localTrain.duration_min}分`, null, 'verified'));
-      events.push({
-        time: localArrivalStr,
-        title: `${localTrain.fromStation} 到着`,
-        type: 'transport',
-        detail: '🏠 おつかれさまでした',
-        timeSource: 'verified',
-      });
-    } else {
-      events.push({
-        time: this.minToTime(homeArrivalMin),
-        title: `${departureStation.replace(/駅$/, '')}駅 到着 → 帰宅`,
-        type: 'transport',
-        detail: '🏠 おつかれさまでした',
-        timeSource: fareData ? 'verified' : 'estimated',
-      });
-    }
-
+    
+    events.push(this.makeTransfer('🚕', 'タクシー等', `約${hotel.taxiFromCityStation}分`, null, 'estimated'));
+    
+    // トランスポートイベント（逆算したタイムライン）を追加
+    events.push(...transportEvents);
+    
     return { events, label: '3日目（帰路）' };
   },
 
