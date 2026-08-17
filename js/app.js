@@ -1276,7 +1276,7 @@ const App = {
       if (hotel.image) {
         imgContainer.innerHTML = `<div class="hotel-image" style="height: 200px; background-image: url('${hotel.image}'); background-size: cover; background-position: center; border-radius: var(--radius-sm); margin-bottom: 1rem;"></div>`;
       } else {
-        imgContainer.innerHTML = '';
+        imgContainer.innerHTML = '<div class="hotel-image hotel-image-placeholder" style="height: 200px; margin-bottom: 1rem; border-radius: var(--radius-sm);"><span class="placeholder-icon">📷</span><span class="placeholder-text">写真準備中</span></div>';
       }
     }
     
