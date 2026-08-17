@@ -34,6 +34,7 @@ const App = {
   },
 
   bindEvents() {
+    this.bindSwipeEvents();
     document.getElementById('form-input').addEventListener('submit', (e) => {
       e.preventDefault();
       this.collectInputs();
@@ -1500,6 +1501,65 @@ const App = {
   // ==== QR: スマホで見る ====
   // 行程の計算結果ではなく「入力条件＋選択中の宿ID」だけをURLハッシュに圧縮エンコードする。
   // スキャンした端末側はこのハッシュから条件を復元し、フォーム入力を経由せず結果画面へ直行する。
+
+  bindSwipeEvents() {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    
+    document.addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+    
+    document.addEventListener('touchend', e => {
+      const touchEndX = e.changedTouches[0].screenX;
+      const touchEndY = e.changedTouches[0].screenY;
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      
+      // Only trigger if horizontal swipe is larger than vertical (not scrolling)
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        if (deltaX < 0) this.navigateNext();
+        else this.navigatePrev();
+      }
+    }, { passive: true });
+  },
+
+  navigateNext() {
+    // Only on mobile
+    if (window.innerWidth > 768) return;
+    
+    if (this.currentStep === 'input') {
+      const form = document.getElementById('form-input');
+      if (form.checkValidity()) {
+        this.collectInputs();
+        this.saveInputsToStorage();
+        if (this.generateHotelCandidates()) {
+          this.showStep('hotels');
+        }
+      } else {
+        form.reportValidity();
+      }
+    } else if (this.currentStep === 'hotels') {
+      if (this.state.selectedHotel) {
+        this.generateItinerary(this.state.selectedHotel);
+      }
+    }
+  },
+
+  navigatePrev() {
+    // Only on mobile
+    if (window.innerWidth > 768) return;
+
+    if (this.currentStep === 'hotels') {
+      this.showStep('input');
+    } else if (this.currentStep === 'itinerary') {
+      this.showStep('hotels');
+    } else if (this.currentStep === 'confirmed') {
+      this.showStep('itinerary');
+    }
+  },
+
   bindQrModalEvents() {
     document.getElementById('btn-qr-open').addEventListener('click', () => this.openQrModal());
     document.getElementById('qr-modal-close').addEventListener('click', () => this.closeQrModal());
