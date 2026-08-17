@@ -489,7 +489,7 @@ const App = {
 
       card.innerHTML = `
         <div class="hotel-card-header">
-          <h3>${hotel.name}</h3>
+          <h3><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.name + ' ' + dest.name)}" target="_blank" rel="noopener" class="hotel-map-link">${hotel.name}</a></h3>
         </div>
         ${imageHtml}
         <div class="hotel-card-body">
@@ -1271,7 +1271,9 @@ const App = {
     }
     
     document.getElementById('itinerary-hotel-info').innerHTML = `
-      <h2 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">${hotel.name}</h2>
+      <h2 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">
+        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.name + ' ' + dest.name)}" target="_blank" rel="noopener" class="hotel-map-link">${hotel.name}</a>
+      </h2>
       <div class="hotel-features" style="margin-bottom: 1rem;">
         ${hotel.features.map((f) => `<span class="feature-tag">${f}</span>`).join('')}
       </div>
