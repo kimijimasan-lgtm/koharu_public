@@ -565,10 +565,6 @@ body {
 .hotel-card-header h3 {
   font-size: 1.25rem;
   font-weight: bold;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-right: 0.5rem;
 }
 
 .hotel-type {
