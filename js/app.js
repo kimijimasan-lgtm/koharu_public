@@ -53,7 +53,7 @@ const App = {
       this.showStep('input');
     });
 
-    document.getElementById('destination').addEventListener('input', () => {
+    document.getElementById('destination').addEventListener('change', () => {
       this.saveInputsToStorage();
       this.updateDestinationInfo();
       this.refreshTrainChoices();
