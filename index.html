@@ -25,7 +25,20 @@
         <div class="form-row" style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 0.5rem;">
           <div style="flex: 1;">
             <label class="form-label" for="destination">旅行先エリア</label>
-            <input type="text" id="destination" class="form-input" placeholder="例：函館、札幌、知床..." required>
+            <select id="destination" class="form-input form-select" required style="cursor: pointer; appearance: auto;">
+              <option value="" disabled selected>選択してください</option>
+              <option value="札幌">北海道・札幌</option>
+              <option value="函館">北海道・函館</option>
+              <option value="旭川">北海道・旭川</option>
+              <option value="帯広">北海道・帯広</option>
+              <option value="釧路">北海道・釧路</option>
+              <option value="網走">北海道・網走</option>
+              <option value="稚内">北海道・稚内</option>
+              <option value="金沢">石川・金沢</option>
+              <option value="京都">京都</option>
+              <option value="箱根">神奈川・箱根</option>
+              <option value="熱海">静岡・熱海</option>
+            </select>
           </div>
           <div style="flex: 1;">
             <label class="form-label" style="display: flex; white-space: nowrap; align-items: baseline; overflow: hidden; text-overflow: ellipsis;">出発駅</label>
