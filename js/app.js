@@ -1086,6 +1086,102 @@ const App = {
     return { events, label: '1日目（到着日）' };
   },
 
+  planDay2(dest, hotel) {
+    const events = [];
+
+    events.push({
+      time: '07:30',
+      title: hotel.breakfastIncluded ? '宿の朝食' : '朝食',
+      type: 'food-breakfast',
+      detail: hotel.breakfastIncluded ? '宿にて' : '駅前で軽く',
+    });
+
+    events.push({
+      time: '09:30',
+      title: '宿を出発',
+      type: 'hotel',
+    });
+
+    const mainSpots = dest.spots.slice(0, 3);
+    const lunch = dest.restaurants.lunch[1] || dest.restaurants.lunch[0];
+    const dinner = dest.restaurants.dinner[1] || dest.restaurants.dinner[0];
+    const snack = dest.restaurants.snack[1] || dest.restaurants.snack[0];
+
+    let currentMin = 10 * 60;
+
+    if (mainSpots[0]) {
+      events.push({
+        time: this.minToTime(currentMin),
+        title: mainSpots[0].name,
+        type: 'spot',
+        detail: `滞在約${mainSpots[0].duration}分`,
+        duration: mainSpots[0].duration,
+      });
+      currentMin += mainSpots[0].duration + 15;
+    }
+
+    const lunchTime = Math.max(currentMin, 11.5 * 60);
+    events.push({
+      time: this.minToTime(lunchTime),
+      title: `昼食：${lunch.name}`,
+      type: 'food-lunch',
+      detail: `${lunch.area}${lunch.reservationNeeded ? '・要予約' : ''}`,
+      budget: lunch.budget,
+    });
+    currentMin = lunchTime + 75;
+
+    if (snack) {
+      events.push({
+        time: this.minToTime(currentMin),
+        title: `食べ歩き：${snack.name}`,
+        type: 'food-snack',
+        detail: snack.area,
+        budget: snack.budget,
+      });
+      currentMin += 30;
+    }
+
+    if (mainSpots[1]) {
+      events.push({
+        time: this.minToTime(currentMin),
+        title: mainSpots[1].name,
+        type: 'spot',
+        detail: `滞在約${mainSpots[1].duration}分`,
+        duration: mainSpots[1].duration,
+      });
+      currentMin += mainSpots[1].duration + 15;
+    }
+
+    if (mainSpots[2] && currentMin < 16 * 60) {
+      events.push({
+        time: this.minToTime(currentMin),
+        title: mainSpots[2].name,
+        type: 'spot',
+        detail: `滞在約${mainSpots[2].duration}分`,
+        duration: mainSpots[2].duration,
+      });
+      currentMin += mainSpots[2].duration + 15;
+    }
+
+    events.push({
+      time: '17:30',
+      title: `${hotel.name}へ戻る`,
+      type: 'hotel',
+    });
+
+    events.push({
+      time: '18:00',
+      title: hotel.dinnerIncluded ? '宿の夕食' : `夕食：${dinner.name}`,
+      type: 'food-dinner',
+      detail: hotel.dinnerIncluded
+        ? '宿にて'
+        : `${dinner.area}・要予約`,
+      budget: hotel.dinnerIncluded ? 0 : dinner.budget,
+    });
+
+    return { events, label: '2日目（まる一日）' };
+  },
+
   planDay3(dest, hotel, timeline, returnHour = 19, returnMin = 0) {
     const { events: transportEvents, destDepartMin } = this.reverseTimelineToEvents(timeline, returnHour, returnMin);
     
@@ -1141,6 +1237,12 @@ const App = {
     events.push(...transportEvents);
     
     return { events, label: '3日目（帰路）' };
+  },
+
+
+  // 新幹線駅と市内拠点駅が離れている都市（函館）だけ連絡列車データを返す。他都市は null
+  getCityConnection(dest) {
+    return dest.connectionToCityStation ? CITY_STATION_CONNECTIONS[dest.connectionToCityStation] : null;
   },
 
   calculateCost(hotel, travelTime, dest, luggagePattern, fareData) {
