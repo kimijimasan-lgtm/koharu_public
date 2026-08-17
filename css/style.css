@@ -1557,8 +1557,9 @@ body {
 }
 .tl-time {
   display: inline-block;
-  width: 45px;
-  color: var(--text-light);
+  min-width: 55px;
+  margin-right: 5px;
+  color: var(--color-text-muted);
   font-family: monospace;
 }
 .tl-text {
