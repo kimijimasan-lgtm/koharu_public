@@ -1390,8 +1390,13 @@ const App = {
     const container = document.getElementById('confirmed-content');
     container.innerHTML = `
       <div class="confirmed-header-block">
-        <h2>${dest.name}への二泊三日</h2>
-        <p class="confirmed-subtitle">${hotel.name}（${hotel.area}）連泊</p>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <h2>${dest.name}への二泊三日</h2>
+            <p class="confirmed-subtitle">${hotel.name}（${hotel.area}）連泊</p>
+          </div>
+          <button class="action-button" onclick="window.print()" style="margin-top: 10px; background-color: #f8f9fa; color: #333; border: 1px solid #ddd;">🖨️ 印刷する</button>
+        </div>
       </div>
 
       <div class="confirmed-section">
