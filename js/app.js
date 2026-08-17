@@ -83,46 +83,26 @@ const App = {
     });
     document.querySelectorAll('input[name="use-station"]').forEach((radio) => {
       radio.addEventListener('change', () => {
-        this.updateDestinationInfo(); // 使う駅が変わると判定も変わる
+        this.saveInputsToStorage();
+        this.updateStationChoiceLabels();
+        this.updateDestinationInfo();
+        this.refreshTrainChoices();
       });
     });
-
-    // アコーディオンのトグルイベント
-    document.getElementById('station-accordion-toggle').addEventListener('click', () => {
-      document.getElementById('station-accordion-body').classList.toggle('collapsed');
-      document.getElementById('station-accordion-toggle').classList.toggle('collapsed');
-    });
-
-    // 駅入力からフォーカスが外れた時に要約を更新
-    document.getElementById('station-1').addEventListener('blur', () => this.updateStationAccordion(false));
-    document.getElementById('station-2').addEventListener('blur', () => this.updateStationAccordion(false));
   },
 
   updateStationChoiceLabels() {
-    const s1 = document.getElementById('station-1').value || '駅 ①';
-    const s2 = document.getElementById('station-2').value || '駅 ②';
-    document.getElementById('use-station-label-1').textContent = s1;
-    document.getElementById('use-station-label-2').textContent = s2;
-  },
-
-  updateStationAccordion(initialLoad = false) {
-    const s1 = document.getElementById('station-1').value;
-    const s2 = document.getElementById('station-2').value;
-    const summaryEl = document.getElementById('station-summary-text');
-    const bodyEl = document.getElementById('station-accordion-body');
-    const headerEl = document.getElementById('station-accordion-toggle');
-
-    if (s1) {
-      summaryEl.textContent = `出発駅: ${s1}${s2 ? ' / ' + s2 : ''}`;
-      if (initialLoad) {
-        bodyEl.classList.add('collapsed');
-        headerEl.classList.add('collapsed');
-      }
-    } else {
-      summaryEl.textContent = '出発駅を登録してください';
-      if (initialLoad) {
-        bodyEl.classList.remove('collapsed');
-        headerEl.classList.remove('collapsed');
+    const s1 = document.getElementById('station-1').value.trim();
+    const s2 = document.getElementById('station-2').value.trim();
+    
+    // Update top display
+    const selectedRadio = document.querySelector('input[name="use-station"]:checked');
+    const displayEl = document.getElementById('selected-station-display');
+    if (displayEl && selectedRadio) {
+      if (selectedRadio.value === '1') {
+        displayEl.textContent = s1 || '未登録';
+      } else {
+        displayEl.textContent = s2 || '未登録';
       }
     }
   },
@@ -198,7 +178,7 @@ const App = {
     this.updateDestinationInfo();
     // 復元した時刻・区間に対して選択肢を組み直す（選択済みの便が今も有効なら維持される）
     this.refreshTrainChoices();
-    this.updateStationAccordion(true);
+    
   },
 
   showStep(step) {

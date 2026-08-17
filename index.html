@@ -22,10 +22,15 @@
       <form id="form-input">
         <!-- 公開版：自宅住所欄は削除（個人情報保護のため） -->
 
-        <div class="form-group">
-          <label class="form-label" for="destination">旅行先エリア</label>
-          <input type="text" id="destination" class="form-input" placeholder="例：函館、札幌、知床、旭川、釧路" required>
-          <div id="destination-info"></div>
+        <div class="form-row" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem;">
+          <div style="flex: 1;">
+            <label class="form-label" for="destination">旅行先エリア</label>
+            <input type="text" id="destination" class="form-input" placeholder="例：函館、札幌、知床..." required>
+            <div id="destination-info"></div>
+          </div>
+          <div style="flex: 1; padding-bottom: 0.5rem;">
+            <div style="font-size: 0.95rem; font-weight: bold; color: var(--color-text-main);">📍 出発駅: <span id="selected-station-display" style="color: var(--color-primary);">未登録</span></div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -89,39 +94,17 @@
         </div>
 
         <hr style="margin: 2rem 0; border:none; border-top: 1px dashed var(--color-border);">
-        <div class="form-group station-accordion" id="station-accordion">
-          <div class="station-accordion-header" id="station-accordion-toggle">
-            <div class="station-accordion-summary">
-              <span class="station-icon">📍</span>
-              <span id="station-summary-text">出発駅を登録してください</span>
-            </div>
-            <span class="toggle-icon">▼</span>
-          </div>
-          <div class="station-accordion-body" id="station-accordion-body">
-            <p class="form-sublabel" style="margin-top:0;">よく使う駅を2つまで登録できます。2つ目は任意です</p>
-            <div class="form-row">
-              <div>
-                <label class="form-label" for="station-1" style="font-size:0.75rem">駅 ①（必須）</label>
-                <input type="text" id="station-1" class="form-input" placeholder="例：宇都宮、仙台、盛岡" required>
-              </div>
-              <div>
-                <label class="form-label" for="station-2" style="font-size:0.75rem">駅 ②（任意）</label>
-                <input type="text" id="station-2" class="form-input" placeholder="例：那須塩原、大宮">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">この旅行で使う駅</label>
-          <div class="station-choice">
-            <label class="station-choice-option">
-              <input type="radio" name="use-station" value="1" checked>
-              <span id="use-station-label-1">よく使う駅 ①</span>
+        <div class="form-group" id="station-settings">
+          <label class="form-label">この旅行で使う出発駅</label>
+          <p class="form-sublabel">よく使う駅を登録し、今回の旅行で使う方にチェックを入れてください</p>
+          <div class="station-choice-group" style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 0.5rem;">
+            <label class="station-choice-option" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; background-color: var(--color-bg);">
+              <input type="radio" name="use-station" value="1" checked style="width: 1.2rem; height: 1.2rem; margin: 0; cursor: pointer;">
+              <input type="text" id="station-1" class="form-input" placeholder="駅①（必須） 例：宇都宮" required style="flex: 1; margin: 0;">
             </label>
-            <label class="station-choice-option">
-              <input type="radio" name="use-station" value="2">
-              <span id="use-station-label-2">よく使う駅 ②</span>
+            <label class="station-choice-option" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; background-color: var(--color-bg);">
+              <input type="radio" name="use-station" value="2" style="width: 1.2rem; height: 1.2rem; margin: 0; cursor: pointer;">
+              <input type="text" id="station-2" class="form-input" placeholder="駅②（任意） 例：那須塩原" style="flex: 1; margin: 0;">
             </label>
           </div>
         </div>
