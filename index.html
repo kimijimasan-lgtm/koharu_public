@@ -22,43 +22,6 @@
       <form id="form-input">
         <!-- 公開版：自宅住所欄は削除（個人情報保護のため） -->
 
-        <div class="form-group station-accordion" id="station-accordion">
-          <div class="station-accordion-header" id="station-accordion-toggle">
-            <div class="station-accordion-summary">
-              <span class="station-icon">📍</span>
-              <span id="station-summary-text">出発駅を登録してください</span>
-            </div>
-            <span class="toggle-icon">▼</span>
-          </div>
-          <div class="station-accordion-body" id="station-accordion-body">
-            <p class="form-sublabel" style="margin-top:0;">よく使う駅を2つまで登録できます。2つ目は任意です</p>
-            <div class="form-row">
-              <div>
-                <label class="form-label" for="station-1" style="font-size:0.75rem">駅 ①（必須）</label>
-                <input type="text" id="station-1" class="form-input" placeholder="例：宇都宮、仙台、盛岡" required>
-              </div>
-              <div>
-                <label class="form-label" for="station-2" style="font-size:0.75rem">駅 ②（任意）</label>
-                <input type="text" id="station-2" class="form-input" placeholder="例：那須塩原、大宮">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">この旅行で使う駅</label>
-          <div class="station-choice">
-            <label class="station-choice-option">
-              <input type="radio" name="use-station" value="1" checked>
-              <span id="use-station-label-1">よく使う駅 ①</span>
-            </label>
-            <label class="station-choice-option">
-              <input type="radio" name="use-station" value="2">
-              <span id="use-station-label-2">よく使う駅 ②</span>
-            </label>
-          </div>
-        </div>
-
         <div class="form-group">
           <label class="form-label" for="destination">旅行先エリア</label>
           <input type="text" id="destination" class="form-input" placeholder="例：函館、札幌、知床、旭川、釧路" required>
@@ -125,6 +88,45 @@
           </p>
         </div>
 
+        <hr style="margin: 2rem 0; border:none; border-top: 1px dashed var(--color-border);">
+        <div class="form-group station-accordion" id="station-accordion">
+          <div class="station-accordion-header" id="station-accordion-toggle">
+            <div class="station-accordion-summary">
+              <span class="station-icon">📍</span>
+              <span id="station-summary-text">出発駅を登録してください</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div class="station-accordion-body" id="station-accordion-body">
+            <p class="form-sublabel" style="margin-top:0;">よく使う駅を2つまで登録できます。2つ目は任意です</p>
+            <div class="form-row">
+              <div>
+                <label class="form-label" for="station-1" style="font-size:0.75rem">駅 ①（必須）</label>
+                <input type="text" id="station-1" class="form-input" placeholder="例：宇都宮、仙台、盛岡" required>
+              </div>
+              <div>
+                <label class="form-label" for="station-2" style="font-size:0.75rem">駅 ②（任意）</label>
+                <input type="text" id="station-2" class="form-input" placeholder="例：那須塩原、大宮">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">この旅行で使う駅</label>
+          <div class="station-choice">
+            <label class="station-choice-option">
+              <input type="radio" name="use-station" value="1" checked>
+              <span id="use-station-label-1">よく使う駅 ①</span>
+            </label>
+            <label class="station-choice-option">
+              <input type="radio" name="use-station" value="2">
+              <span id="use-station-label-2">よく使う駅 ②</span>
+            </label>
+          </div>
+        </div>
+
+        
         <div class="form-actions" style="justify-content:flex-end;">
           <p id="input-submit-hint" class="form-submit-hint"></p>
           <button type="submit" id="btn-submit-input" class="btn btn-primary">宿の候補を見る →</button>
