@@ -1489,26 +1489,25 @@ const App = {
         ${routeInfoHtml}
         
         ${hotelInfoHtml}
-        
-        <div style="display:flex; gap: 2rem; align-items: flex-start; margin-top:1rem;">
-          <div style="flex:1;">
-            <h3 style="margin-bottom:0.5rem;">料金概算</h3>
-            <div class="cost-summary-final" style="border: 1px solid #ddd; padding: 1rem; border-radius: 8px;">
-              <div class="cost-row"><span>新幹線（往復2名${totalCost.shinkansenEstimated ? '・概算' : ''}）</span><span>¥${totalCost.shinkansen.toLocaleString()}</span></div>
-              <div class="cost-row"><span>宿泊（2泊2名）</span><span>¥${totalCost.accommodation.toLocaleString()}</span></div>
-              <div class="cost-row"><span>タクシー</span><span>¥${totalCost.taxi.toLocaleString()}</span></div>
-              <div class="cost-row"><span>飲食</span><span>¥${totalCost.food.toLocaleString()}</span></div>
-              <div class="cost-row cost-total-row" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid #eee; font-weight:bold;"><span>合計（概算）</span><span>¥${totalCost.total.toLocaleString()}</span></div>
-            </div>
+      </div>
+
+      <div class="print-only print-page-2">
+        <div style="margin-top:1rem;">
+          <h3 style="margin-bottom:0.5rem; font-size:1.3rem;">料金概算</h3>
+          <div class="cost-summary-final" style="border: 1px solid #ddd; padding: 1.5rem; border-radius: 8px; font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
+            <div class="cost-row"><span>新幹線（往復2名${totalCost.shinkansenEstimated ? '・概算' : ''}）</span><span>¥${totalCost.shinkansen.toLocaleString()}</span></div>
+            <div class="cost-row"><span>宿泊（2泊2名）</span><span>¥${totalCost.accommodation.toLocaleString()}</span></div>
+            <div class="cost-row"><span>タクシー</span><span>¥${totalCost.taxi.toLocaleString()}</span></div>
+            <div class="cost-row"><span>飲食</span><span>¥${totalCost.food.toLocaleString()}</span></div>
+            <div class="cost-row cost-total-row" style="margin-top:1rem; padding-top:1rem; border-top:1px solid #eee; font-weight:bold; font-size: 1.3rem;"><span>合計（概算）</span><span>¥${totalCost.total.toLocaleString()}</span></div>
           </div>
-          <div style="flex:1;">
-            <h3 style="margin-bottom:0.5rem;">予約チェックリスト</h3>
-            <ul class="checklist" style="border: 1px solid #ddd; padding: 1rem 1rem 1rem 2rem; border-radius: 8px; margin:0;">
-              <li><label><input type="checkbox"> ${dest.shinkansen}（往復・指定席）</label></li>
-              <li><label><input type="checkbox"> ${hotel.name}（2泊）</label></li>
-              ${this.getReservationItems(day1, day2, day3).map((item) => `<li><label><input type="checkbox"> ${item}</label></li>`).join('')}
-            </ul>
-          </div>
+          
+          <h3 style="margin-bottom:0.5rem; font-size:1.3rem;">予約チェックリスト</h3>
+          <ul class="checklist" style="border: 1px solid #ddd; padding: 1.5rem 1.5rem 1.5rem 2.5rem; border-radius: 8px; font-size: 1.1rem; line-height: 1.8;">
+            <li><label><input type="checkbox"> ${dest.shinkansen}（往復・指定席）</label></li>
+            <li><label><input type="checkbox"> ${hotel.name}（2泊）</label></li>
+            ${this.getReservationItems(day1, day2, day3).map((item) => `<li><label><input type="checkbox"> ${item}</label></li>`).join('')}
+          </ul>
         </div>
       </div>
 
