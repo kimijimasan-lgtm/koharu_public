@@ -307,7 +307,7 @@ const App = {
       let conclusionText = '';
       if (shin && shin.time <= 300 && fli && fli.time <= 300) {
         conclusionText = comparison.recommended === 'shinkansen' 
-          ? '🚄 5時間以内のため、疲労の少ない【新幹線】推奨'
+          ? '🚄 乗り換えや待ち時間・疲労の少なさから【新幹線】推奨'
           : '✈️ 【飛行機】推奨';
       } else if (shin && shin.time <= 300) {
         conclusionText = '🚄 疲労の少ない【新幹線】推奨';
