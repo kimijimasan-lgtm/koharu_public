@@ -72,26 +72,22 @@ const App = {
     });
 
     // 公開版：departure（自宅住所）欄は削除済みのためイベントなし
-    document.getElementById('top-station-select')?.addEventListener('change', (e) => {
-      const val = e.target.value;
-      const radio = document.querySelector(`input[name="use-station"][value="${val}"]`);
-      if (radio) radio.checked = true;
+    document.getElementById('user-prefecture')?.addEventListener('change', () => {
+      this.populateStationsForPrefecture();
       this.saveInputsToStorage();
-      this.updateStationChoiceLabels();
       this.updateDestinationInfo();
       this.refreshTrainChoices();
     });
     
-    document.getElementById('station-1').addEventListener('input', () => {
+    document.getElementById('top-station-select')?.addEventListener('change', () => {
       this.saveInputsToStorage();
-      this.updateStationChoiceLabels();
-      this.updateDestinationInfo(); // 駅が変わると交通手段判定も変わる
+      this.updateDestinationInfo();
+      this.refreshTrainChoices();
     });
-    document.getElementById('station-2').addEventListener('input', () => {
-      this.saveInputsToStorage();
-      this.updateStationChoiceLabels();
-      this.updateDestinationInfo(); // 駅が変わると交通手段判定も変わる
     });
+    
+
+
     document.querySelectorAll('input[name="use-station"]').forEach((radio) => {
       radio.addEventListener('change', () => {
         this.saveInputsToStorage();
@@ -103,33 +99,47 @@ const App = {
   },
 
   updateStationChoiceLabels() {
-    const s1 = document.getElementById('station-1').value.trim();
-    const s2 = document.getElementById('station-2').value.trim();
+    // Deprecated
+  },
+
+  populateStationsForPrefecture() {
+    const prefSelect = document.getElementById('user-prefecture');
+    const stationSelect = document.getElementById('top-station-select');
+    if (!prefSelect || !stationSelect) return;
     
-    const topSelect = document.getElementById('top-station-select');
-    const selectedRadio = document.querySelector('input[name="use-station"]:checked');
+    const pref = prefSelect.value;
+    const stations = PREFECTURE_STATIONS[pref] || [];
     
-    if (topSelect) {
-      topSelect.options[0].text = s1 || '未登録(駅①)';
-      topSelect.options[1].text = s2 || '未登録(駅②)';
-      if (selectedRadio) {
-        topSelect.value = selectedRadio.value;
+    // Preserve current selection if possible
+    const currentVal = stationSelect.value;
+    
+    stationSelect.innerHTML = '';
+    if (stations.length === 0) {
+      stationSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+    } else {
+      stations.forEach(st => {
+        const opt = document.createElement('option');
+        opt.value = st;
+        opt.textContent = st + '駅';
+        stationSelect.appendChild(opt);
+      });
+      if (stations.includes(currentVal)) {
+        stationSelect.value = currentVal;
+      } else {
+        stationSelect.selectedIndex = 0;
       }
     }
   },
 
   saveInputsToStorage() {
     const data = {
-      // 公開版：departure（自宅住所）は保存しない
-      station1: document.getElementById('station-1').value,
-      station2: document.getElementById('station-2').value,
-      useStation: document.querySelector('input[name="use-station"]:checked').value,
+      userPrefecture: document.getElementById('user-prefecture')?.value,
+      topStation: document.getElementById('top-station-select')?.value,
       destination: document.getElementById('destination').value,
       departureTime: document.getElementById('departure-time').value,
       departureDate: document.getElementById('departure-date').value,
       returnTime: document.getElementById('return-time').value,
-      luggagePattern: document.querySelector('input[name="luggage"]:checked').value,
-      // フォーム項目ではないが、選んだ便まで復元しないと同じ行程を再現できないため一緒に保存する
+      luggagePattern: document.querySelector('input[name="luggage"]:checked')?.value || 'A',
       trainChoice: { ...this.state.trainChoice },
     };
     try {
@@ -149,12 +159,16 @@ const App = {
   // 保存済み/QR経由の入力データをフォームDOMとstate.inputsの両方に反映する
   applyInputsToForm(data) {
     if (!data) return;
-    // 公開版：departure（自宅住所）は復元しない
-    if (data.station1 != null) {
-      document.getElementById('station-1').value = data.station1;
+    if (data.userPrefecture != null) {
+      const prefEl = document.getElementById('user-prefecture');
+      if (prefEl) prefEl.value = data.userPrefecture;
+      this.populateStationsForPrefecture();
     }
-    if (data.station2 != null) {
-      document.getElementById('station-2').value = data.station2;
+    if (data.topStation != null) {
+      const topSelect = document.getElementById('top-station-select');
+      if (topSelect && [...topSelect.options].some(o => o.value === data.topStation)) {
+        topSelect.value = data.topStation;
+      }
     }
     if (data.destination != null) {
       document.getElementById('destination').value = data.destination;
@@ -168,8 +182,8 @@ const App = {
     if (data.returnTime) {
       document.getElementById('return-time').value = data.returnTime;
     }
-    if (data.useStation) {
-      const radio = document.querySelector(`input[name="use-station"][value="${data.useStation}"]`);
+    if (data.luggagePattern) {
+      const radio = document.querySelector(`input[name="luggage"][value="${data.luggagePattern}"]`);
       if (radio) radio.checked = true;
     }
     if (data.luggagePattern) {
@@ -201,15 +215,13 @@ const App = {
 
   collectInputs() {
     this.state.inputs = {
-      // 公開版：departure（自宅住所）は収集しない
-      station1: document.getElementById('station-1').value,
-      station2: document.getElementById('station-2').value,
-      useStation: document.querySelector('input[name="use-station"]:checked').value,
+      userPrefecture: document.getElementById('user-prefecture')?.value,
+      topStation: document.getElementById('top-station-select')?.value,
       destination: document.getElementById('destination').value,
       departureTime: document.getElementById('departure-time').value,
       departureDate: document.getElementById('departure-date').value,
       returnTime: document.getElementById('return-time').value,
-      luggagePattern: document.querySelector('input[name="luggage"]:checked').value,
+      luggagePattern: document.querySelector('input[name="luggage"]:checked')?.value || 'A',
     };
   },
 
@@ -223,9 +235,7 @@ const App = {
 
   // 現在選択中の新幹線駅名を返す（公開版：departure欄がないためstation-1/2を参照）
   getSelectedStationName() {
-    const useStation = document.querySelector('input[name="use-station"]:checked')?.value || '1';
-    const stationId = useStation === '2' ? 'station-2' : 'station-1';
-    return document.getElementById(stationId)?.value || '';
+    return document.getElementById('top-station-select')?.value || '';
   },
 
   updateDestinationInfo() {
