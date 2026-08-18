@@ -84,18 +84,6 @@ const App = {
       this.updateDestinationInfo();
       this.refreshTrainChoices();
     });
-    });
-    
-
-
-    document.querySelectorAll('input[name="use-station"]').forEach((radio) => {
-      radio.addEventListener('change', () => {
-        this.saveInputsToStorage();
-        this.updateStationChoiceLabels();
-        this.updateDestinationInfo();
-        this.refreshTrainChoices();
-      });
-    });
   },
 
   updateStationChoiceLabels() {
@@ -115,7 +103,7 @@ const App = {
     
     stationSelect.innerHTML = '';
     if (stations.length === 0) {
-      stationSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+      stationSelect.innerHTML = '<option value="" disabled selected>未登録</option><option value="" disabled>↓お住まいの都道府県を画面下部で登録してください</option>';
     } else {
       stations.forEach(st => {
         const opt = document.createElement('option');
