@@ -1446,6 +1446,29 @@ const App = {
 
   renderConfirmed(dest, hotel, day1, day2, day3, koharuScore, totalCost, departureStation) {
     const container = document.getElementById('confirmed-content');
+    
+    // Copy the route info html from the destination info container
+    const routeInfoHtml = document.getElementById('destination-info') ? document.getElementById('destination-info').innerHTML : '';
+    
+    // Construct the hotel info html for print
+    const hotelImageHtml = hotel.image ? `<div class="hotel-image" style="text-align:center;"><img src="${hotel.image}" alt="${hotel.name} 外観" style="max-height:220px; object-fit:cover;"></div>` : '';
+    const hotelFeaturesHtml = hotel.features ? hotel.features.map(f => `<span class="feature-tag">${f}</span>`).join('') : '';
+    const hotelInfoHtml = `
+      <div class="hotel-card" style="box-shadow:none; border: 1px solid #ddd; padding: 1rem; margin-bottom: 0;">
+        <div class="hotel-card-header"><h3>${hotel.name}</h3></div>
+        ${hotelImageHtml}
+        <div class="hotel-card-body" style="padding-top: 1rem;">
+          <div class="hotel-features">${hotelFeaturesHtml}</div>
+          <div class="hotel-details" style="display:flex; flex-wrap:wrap; gap:1rem; margin-top:0.5rem;">
+            <div class="hotel-detail-item"><span>🚕 ${dest.cityStation || dest.station}からタクシー約${hotel.taxiFromCityStation}分</span></div>
+            <div class="hotel-detail-item"><span>📍 ${hotel.area}</span></div>
+            <div class="hotel-detail-item"><span>💴 ¥${hotel.pricePerNight.toLocaleString()}/泊（税込目安）</span></div>
+            <div class="hotel-detail-item"><span>🍽️ ${hotel.dinnerIncluded ? '夕食付' : '食事なし'}・${hotel.breakfastIncluded ? '朝食付' : '朝食なし'}</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+
     container.innerHTML = `
       <div class="confirmed-header-block">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -1457,47 +1480,80 @@ const App = {
         </div>
       </div>
 
-      <div class="confirmed-section">
-        <h3>予約チェックリスト</h3>
-        <ul class="checklist">
-          <li><label><input type="checkbox"> ${dest.shinkansen}（往復・指定席）</label></li>
-          <li><label><input type="checkbox"> ${hotel.name}（2泊）</label></li>
-          ${this.getReservationItems(day1, day2, day3).map((item) => `<li><label><input type="checkbox"> ${item}</label></li>`).join('')}
-        </ul>
-      </div>
-
-      <div class="confirmed-section">
-        <h3>予約リンク</h3>
-        <div class="reservation-links">
-          <div class="reservation-link-item">
-            <div class="reservation-link-label">🚄 新幹線を予約する</div>
-            <p class="reservation-link-desc">${dest.shinkansen}の指定席予約はえきねっとから行えます</p>
-            <a href="https://www.eki-net.com/" target="_blank" rel="noopener" class="btn btn-reservation btn-ekinet">
-              えきねっとで予約する
-            </a>
+      <div class="print-only print-page-1">
+        <div class="print-header" style="text-align:center; margin-bottom:1rem;">
+          <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">こはる旅の条件</h2>
+          <p style="color:#555;">${dest.area}・片道５時間以内で到着。<br>２泊３日の疲れない旅を設計します。</p>
+        </div>
+        
+        ${routeInfoHtml}
+        
+        ${hotelInfoHtml}
+        
+        <div style="display:flex; gap: 2rem; align-items: flex-start; margin-top:1rem;">
+          <div style="flex:1;">
+            <h3 style="margin-bottom:0.5rem;">料金概算</h3>
+            <div class="cost-summary-final" style="border: 1px solid #ddd; padding: 1rem; border-radius: 8px;">
+              <div class="cost-row"><span>新幹線（往復2名${totalCost.shinkansenEstimated ? '・概算' : ''}）</span><span>¥${totalCost.shinkansen.toLocaleString()}</span></div>
+              <div class="cost-row"><span>宿泊（2泊2名）</span><span>¥${totalCost.accommodation.toLocaleString()}</span></div>
+              <div class="cost-row"><span>タクシー</span><span>¥${totalCost.taxi.toLocaleString()}</span></div>
+              <div class="cost-row"><span>飲食</span><span>¥${totalCost.food.toLocaleString()}</span></div>
+              <div class="cost-row cost-total-row" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid #eee; font-weight:bold;"><span>合計（概算）</span><span>¥${totalCost.total.toLocaleString()}</span></div>
+            </div>
           </div>
-          ${this.getDinnerReservationLinks(day1, day2, day3)}
+          <div style="flex:1;">
+            <h3 style="margin-bottom:0.5rem;">予約チェックリスト</h3>
+            <ul class="checklist" style="border: 1px solid #ddd; padding: 1rem 1rem 1rem 2rem; border-radius: 8px; margin:0;">
+              <li><label><input type="checkbox"> ${dest.shinkansen}（往復・指定席）</label></li>
+              <li><label><input type="checkbox"> ${hotel.name}（2泊）</label></li>
+              ${this.getReservationItems(day1, day2, day3).map((item) => `<li><label><input type="checkbox"> ${item}</label></li>`).join('')}
+            </ul>
+          </div>
         </div>
       </div>
 
-      <div class="confirmed-section">
-        <h3>料金概算</h3>
-        <div class="cost-summary-final">
-          <div class="cost-row"><span>新幹線（往復2名${totalCost.shinkansenEstimated ? '・概算' : ''}）</span><span>¥${totalCost.shinkansen.toLocaleString()}</span></div>
-          ${totalCost.fareData ? `<div class="cost-note">片道 ¥${totalCost.fareData.fare_yen.toLocaleString()}/人・${totalCost.fareData.transfer_station}乗換・${totalCost.fareData.train_name}（${totalCost.fareData.verified_date}確認）</div>` : ''}
-          <div class="cost-row"><span>宿泊（2泊2名）</span><span>¥${totalCost.accommodation.toLocaleString()}</span></div>
-          <div class="cost-row"><span>タクシー</span><span>¥${totalCost.taxi.toLocaleString()}</span></div>
-          ${totalCost.taxiOfficialBase ? '<div class="cost-note">函館市公式運賃に基づく概算</div>' : ''}
-          <div class="cost-row"><span>飲食</span><span>¥${totalCost.food.toLocaleString()}</span></div>
-          <div class="cost-row cost-total-row"><span>合計（概算）</span><span>¥${totalCost.total.toLocaleString()}</span></div>
+      <div class="print-hidden">
+        <div class="confirmed-section">
+          <h3>予約チェックリスト</h3>
+          <ul class="checklist">
+            <li><label><input type="checkbox"> ${dest.shinkansen}（往復・指定席）</label></li>
+            <li><label><input type="checkbox"> ${hotel.name}（2泊）</label></li>
+            ${this.getReservationItems(day1, day2, day3).map((item) => `<li><label><input type="checkbox"> ${item}</label></li>`).join('')}
+          </ul>
+        </div>
+
+        <div class="confirmed-section">
+          <h3>予約リンク</h3>
+          <div class="reservation-links">
+            <div class="reservation-link-item">
+              <div class="reservation-link-label">🚄 新幹線を予約する</div>
+              <p class="reservation-link-desc">${dest.shinkansen}の指定席予約はえきねっとから行えます</p>
+              <a href="https://www.eki-net.com/" target="_blank" rel="noopener" class="btn btn-reservation btn-ekinet">
+                えきねっとで予約する
+              </a>
+            </div>
+            ${this.getDinnerReservationLinks(day1, day2, day3)}
+          </div>
+        </div>
+
+        <div class="confirmed-section">
+          <h3>料金概算</h3>
+          <div class="cost-summary-final">
+            <div class="cost-row"><span>新幹線（往復2名${totalCost.shinkansenEstimated ? '・概算' : ''}）</span><span>¥${totalCost.shinkansen.toLocaleString()}</span></div>
+            ${totalCost.fareData ? `<div class="cost-note">片道 ¥${totalCost.fareData.fare_yen.toLocaleString()}/人・${totalCost.fareData.transfer_station}乗換・${totalCost.fareData.train_name}（${totalCost.fareData.verified_date}確認）</div>` : ''}
+            <div class="cost-row"><span>宿泊（2泊2名）</span><span>¥${totalCost.accommodation.toLocaleString()}</span></div>
+            <div class="cost-row"><span>タクシー</span><span>¥${totalCost.taxi.toLocaleString()}</span></div>
+            ${totalCost.taxiOfficialBase ? '<div class="cost-note">函館市公式運賃に基づく概算</div>' : ''}
+            <div class="cost-row"><span>飲食</span><span>¥${totalCost.food.toLocaleString()}</span></div>
+            <div class="cost-row cost-total-row"><span>合計（概算）</span><span>¥${totalCost.total.toLocaleString()}</span></div>
+          </div>
         </div>
       </div>
     `;
 
     this.renderTimeline('confirmed-day1', day1);
     this.renderTimeline('confirmed-day2', day2);
-    this.renderTimeline('confirmed-day3', day3);
-  },
+    this.renderTimeline('confirmed-day3', day3);},
 
   enrichEventsWithLinks(events, hotel, dest) {
     events.forEach(event => {
