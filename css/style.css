@@ -1227,20 +1227,60 @@ body {
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .btn, .form-actions, .itinerary-actions, .confirmed-actions, .qr-fab, .qr-modal {
     display: none !important;
   }
 
   .step {
-    display: block !important;
+    display: none !important;
   }
 
   #step-confirmed {
     display: block !important;
   }
 
-  .day-section, .confirmed-section {
-    break-inside: avoid;
+  /* 画面表示用ですが印刷時に不要なヘッダ類や予約リンクを隠す */
+  .confirmed-header-block,
+  .print-hidden,
+  .reservation-links,
+  .confirmed-section:has(.reservation-links) {
+    display: none !important;
+  }
+
+  /* 印刷専用要素 */
+  .print-only {
+    display: block !important;
+  }
+  
+  .print-page-1 {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* 各日を1ページに割り当て（2ページ目以降） */
+  .day-section {
+    page-break-before: always;
+    break-before: page;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 1rem 0 !important;
+  }
+  
+  .timeline {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* バランス調整用 */
+  .hotel-image {
+    max-height: 200px;
   }
 }
 
@@ -1589,3 +1629,5 @@ body {
   text-decoration: underline;
   opacity: 0.8;
 }
+
+@media screen { .print-only { display: none; } }
