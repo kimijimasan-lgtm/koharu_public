@@ -1242,7 +1242,7 @@ body {
     line-height: 1.5 !important;
   }
 
-  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .qr-fab, .qr-modal {
+  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .qr-fab, .qr-modal, .home-fab {
     display: none !important;
   }
 
@@ -1303,6 +1303,40 @@ body {
 /* ========================
    QR: スマホで見る
    ======================== */
+/* ========================
+   Home: トップへ戻る
+   ======================== */
+.home-fab {
+  position: fixed;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: white;
+  color: var(--color-primary);
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.home-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  background: #fdfdfd;
+}
+
+.home-fab:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
 .qr-fab {
   position: fixed;
   right: 1.25rem;
