@@ -1251,6 +1251,31 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
   const yamabikoSchedule = generateHourlySchedule([12]); // 毎時12分
   const hayabusaSchedule = generateHourlySchedule([53]); // 毎時53分
 
+  if (['札幌', '函館', '新函館北斗', '旭川', '帯広', '釧路', '網走', '稚内'].includes(normStation)) {
+    let dur = 120;
+    if (normStation === '函館' && destName.includes('札幌')) dur = 220;
+    if (normStation === '札幌' && destName.includes('函館')) dur = 220;
+    if (normStation === '札幌' && destName.includes('旭川')) dur = 85;
+    if (normStation === '旭川' && destName.includes('札幌')) dur = 85;
+    
+    const genericSchedule = generateHourlySchedule([10, 40]);
+    const firstTrain = findNextDeparture(t, genericSchedule);
+    const stationWait = diffMins(t, firstTrain);
+    
+    pushNode(t, `${normStation}駅 発`);
+    if (stationWait > 0) {
+      pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+      t = addMins(t, stationWait);
+      totalMins += stationWait;
+    }
+    pushEdge(`🚃 特急等（約${dur}分）`);
+    t = addMins(t, dur);
+    totalMins += dur;
+    pushNode(t, `${destName.replace('北海道', '')} 着`);
+    
+    return { time: totalMins, timeline, totalMins };
+  }
+
   if (destName.includes('函館')) {
     if (toSendai[normStation]) {
       const dur1 = toSendai[normStation];
@@ -1381,35 +1406,59 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   let airportTransferTime = 90;
   let airportTransText = '🚃 在来線等（約90分）';
   let airport = '羽田空港(または主要空港)';
+  let flightSchedule = ['08:00', '10:30', '13:00', '16:00', '18:30'];
+  let overrideFlightTime = null;
   
-  let useFukushima = false;
-  let useSendai = false;
-  
-  let flightSchedule = ['10:45', '14:00']; 
-  
-  if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'].includes(normStation)) {
+  if (['新青森', '青森', '八戸'].includes(normStation)) {
+    airport = '青森空港(または三沢空港)';
+    airportTransferTime = 40;
+    airportTransText = '🚌 リムジンバス等（約40分）';
+    flightSchedule = ['09:50', '11:45', '14:25', '19:40'];
+    overrideFlightTime = 45;
+  } else if (['秋田'].includes(normStation)) {
+    airport = '秋田空港';
+    airportTransferTime = 40;
+    airportTransText = '🚌 リムジンバス等（約40分）';
+    flightSchedule = ['09:40', '19:00'];
+    overrideFlightTime = 55;
+  } else if (['盛岡', '一ノ関'].includes(normStation)) {
+    airport = 'いわて花巻空港';
+    airportTransferTime = 45;
+    airportTransText = '🚌 特急バス等（約45分）';
+    flightSchedule = ['11:55', '15:20', '18:50'];
+    overrideFlightTime = 55;
+  } else if (['仙台', '古川'].includes(normStation)) {
+    airport = '仙台空港';
+    airportTransferTime = 30;
+    airportTransText = '🚃 仙台空港アクセス線（約30分）';
+    flightSchedule = ['08:30', '10:15', '12:00', '14:45', '17:30', '19:00'];
+    overrideFlightTime = 70;
+  } else if (['山形', '米沢'].includes(normStation)) {
+    airport = '山形空港';
+    airportTransferTime = 30;
+    airportTransText = '🚌 シャトルバス（約30分）';
+    flightSchedule = ['08:45', '16:30'];
+    overrideFlightTime = 75;
+  } else if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'].includes(normStation)) {
     if (destName.includes('函館')) {
-      useSendai = true;
       airportTransferTime = normStation === '宇都宮' ? 120 : 90;
       airportTransText = `🚗 自家用車・高速バス等（約${airportTransferTime}分）`;
       airport = '仙台空港';
       flightSchedule = ['10:45', '14:00']; 
     } else {
-      useFukushima = true;
       airportTransferTime = ['那須塩原', '宇都宮'].includes(normStation) ? 90 : 60;
       airportTransText = `🚗 自家用車等（約${airportTransferTime}分）`;
       airport = '福島空港';
       flightSchedule = ['10:30']; 
     }
-  } else {
-    flightSchedule = ['08:00', '10:30', '13:00', '16:00', '18:30'];
-  }
-  
-  if (useSendai && !destName.includes('函館')) {
-    flightSchedule = ['08:30', '10:15', '12:00', '14:45', '17:30', '19:00'];
+  } else if (['札幌', '函館', '新函館北斗', '旭川', '帯広', '釧路', '網走', '稚内'].includes(normStation)) {
+    airport = '丘珠空港(または最寄り空港)';
+    airportTransferTime = 30;
+    airportTransText = '🚌 連絡バス（約30分）';
+    overrideFlightTime = 40;
   }
 
-  const flightTime = destName.includes('函館') ? 70 : 80;
+  const flightTime = overrideFlightTime ? overrideFlightTime : (destName.includes('函館') ? 70 : 80);
   let localTransfer = 50;
   let localTransText = '🚃 快速エアポート等（約50分）';
   let destAirport = '新千歳空港';
@@ -1442,8 +1491,8 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   let flightDepart = findNextDeparture(readyToFly, flightSchedule);
   
   let flightNote = '';
-  if (useFukushima) flightNote = ' ※ANA 1日1便';
-  else if (useSendai) flightNote = ' ※ANA/ADO等';
+  if (airport === '福島空港') flightNote = ' ※ANA 1日1便';
+  else if (airport === '仙台空港' || airport === '青森空港' || airport === '秋田空港' || airport === 'いわて花巻空港') flightNote = ' ※JAL/ANA/ADO等';
   else flightNote = ' ※複数便あり';
   
   let waitTime = diffMins(t, flightDepart);
@@ -1470,7 +1519,11 @@ function compareTransportRoutes(stationName, destName, departTimeStr = '10:00') 
   const flight = generateFlightTimeline(stationName, destName, departTimeStr);
 
   let recommended = 'flight';
-  if (shinkansen && shinkansen.time <= FIVE_HOUR_LIMIT) {
+  if (shinkansen && flight) {
+    if (shinkansen.time <= 300 || shinkansen.time < flight.time) {
+      recommended = 'shinkansen';
+    }
+  } else if (shinkansen) {
     recommended = 'shinkansen';
   }
 
