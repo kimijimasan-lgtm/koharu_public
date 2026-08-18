@@ -528,7 +528,40 @@ const App = {
         </div>
       `;
 
-      card.querySelector('.btn-simulate').addEventListener('click', () => {
+      card.querySelector('.btn-simulate').addEventListener('click', async () => {
+        const btn = card.querySelector('.btn-simulate');
+        const originalText = btn.textContent;
+        
+        // ユーザー提案：行程を見る際に動的データ取得をシミュレート
+        if (!hotel.image) {
+          btn.textContent = '最新データを取得中...';
+          btn.disabled = true;
+          
+          // 動的フェッチをシミュレート（API通信の代わり）
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // ホテルのタイプに応じた画像を割り当て
+          if (hotel.type.includes('旅館')) {
+            hotel.image = 'japanese_ryokan_exterior_1786936235983.jpg';
+          } else if (hotel.type.includes('ラグジュアリー') || hotel.type.includes('リゾート')) {
+            hotel.image = 'luxury_resort_hotel_exterior_1786936651694.jpg';
+          } else if (hotel.type.includes('デザイナーズ')) {
+            hotel.image = 'designer_boutique_hotel_exterior_1786936674207.jpg';
+          } else {
+            hotel.image = 'modern_city_hotel_exterior_1786936631848.jpg';
+          }
+          
+          // 一覧UI側の画像も更新（フェードイン効果つき）
+          const imgContainer = card.querySelector('.hotel-image');
+          if (imgContainer) {
+            imgContainer.className = 'hotel-image';
+            imgContainer.innerHTML = `<img src="${hotel.image}" alt="${hotel.name} 外観" style="animation: fadeIn 0.5s;">`;
+          }
+        }
+        
+        btn.textContent = originalText;
+        btn.disabled = false;
+        
         this.state.selectedHotel = hotel;
         this.generateItinerary(hotel);
         this.showStep('itinerary');
