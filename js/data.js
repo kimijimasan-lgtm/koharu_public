@@ -1234,7 +1234,19 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     destAirport = '函館空港';
     localTransfer = 20;
     localTransText = '🚖 連絡バス・タクシー等（約20分）';
+  } else if (destName.includes('江差')) {
+    destAirport = '函館空港';
+    localTransfer = 90;
+    localTransText = '🚌 バス・タクシー等（約90分）';
   } else if (destName.includes('旭川')) {
+    destAirport = '旭川空港';
+    localTransfer = 40;
+    localTransText = '🚌 連絡バス等（約40分）';
+  } else if (destName.includes('富良野')) {
+    destAirport = '旭川空港';
+    localTransfer = 60;
+    localTransText = '🚌 連絡バス等（約60分）';
+  } else if (destName.includes('美瑛')) {
     destAirport = '旭川空港';
     localTransfer = 40;
     localTransText = '🚌 連絡バス等（約40分）';
@@ -1242,10 +1254,22 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     destAirport = '女満別空港';
     localTransfer = 30;
     localTransText = '🚌 連絡バス（約30分）';
+  } else if (destName.includes('知床')) {
+    destAirport = '女満別空港';
+    localTransfer = 100;
+    localTransText = '🚌 知床エアポートライナー等（約100分）';
   } else if (destName.includes('釧路')) {
     destAirport = 'たんちょう釧路空港';
     localTransfer = 45;
     localTransText = '🚌 連絡バス（約45分）';
+  } else if (destName.includes('摩周湖')) {
+    destAirport = 'たんちょう釧路空港';
+    localTransfer = 60;
+    localTransText = '🚌 連絡バス等（約60分）';
+  } else if (destName.includes('根室')) {
+    destAirport = 'たんちょう釧路空港';
+    localTransfer = 120;
+    localTransText = '🚌 連絡バス等（約120分）';
   } else if (destName.includes('帯広')) {
     destAirport = 'とかち帯広空港';
     localTransfer = 40;
@@ -1254,6 +1278,27 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     destAirport = '稚内空港';
     localTransfer = 30;
     localTransText = '🚌 連絡バス（約30分）';
+  } else if (destName.includes('千歳')) {
+    localTransfer = 10;
+    localTransText = '🚕 タクシー等（約10分）';
+  } else if (destName.includes('苫小牧')) {
+    localTransfer = 30;
+    localTransText = '🚌 連絡バス等（約30分）';
+  } else if (destName.includes('小樽')) {
+    localTransfer = 90;
+    localTransText = '🚃 快速エアポート等（約90分）';
+  } else if (destName.includes('ニセコ')) {
+    localTransfer = 150;
+    localTransText = '🚌 高速バス等（約150分）';
+  } else if (destName.includes('洞爺湖')) {
+    localTransfer = 150;
+    localTransText = '🚌 高速バス等（約150分）';
+  } else if (destName.includes('登別')) {
+    localTransfer = 60;
+    localTransText = '🚃 特急等（約60分）';
+  } else if (destName.includes('積丹')) {
+    localTransfer = 150;
+    localTransText = '🚃 快速エアポート・バス等（約150分）';
   }
 
   const REQUIRED_SECURE_TIME = 60; 
