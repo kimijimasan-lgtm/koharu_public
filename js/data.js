@@ -1,4 +1,4 @@
-﻿const PREFECTURE_STATIONS = {
+const PREFECTURE_STATIONS = {
   '北海道': ['札幌', '函館', '新函館北斗', '旭川', '帯広', '釧路', '網走', '稚内'],
   '青森県': ['新青森', '八戸'],
   '岩手県': ['盛岡', '一ノ関'],
@@ -1425,13 +1425,13 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     airport = '秋田空港';
     airportTransferTime = 40;
     airportTransText = '🚌 リムジンバス等（約40分）';
-    flightSchedule = ['08:40', '11:40', '15:10', '19:00']; // シミュレーション用に追加
+    flightSchedule = ['09:40', '19:00'];
     overrideFlightTime = 55;
   } else if (['盛岡', '一ノ関'].includes(normStation)) {
     airport = 'いわて花巻空港';
     airportTransferTime = 45;
     airportTransText = '🚌 特急バス等（約45分）';
-    flightSchedule = ['09:15', '11:55', '15:20', '18:50']; // シミュレーション用に追加
+    flightSchedule = ['11:55', '15:20', '18:50'];
     overrideFlightTime = 55;
   } else if (['仙台', '古川'].includes(normStation)) {
     airport = '仙台空港';
@@ -1443,7 +1443,7 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     airport = '山形空港';
     airportTransferTime = 30;
     airportTransText = '🚌 シャトルバス（約30分）';
-    flightSchedule = ['08:45', '11:30', '14:45', '16:30']; // シミュレーション用に追加
+    flightSchedule = ['08:45', '16:30'];
     overrideFlightTime = 75;
   } else if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'].includes(normStation)) {
     if (destName.includes('函館')) {
@@ -1518,9 +1518,14 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   else flightNote = ' ※複数便あり';
   
   let waitTime = diffMins(t, flightDepart);
-  pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`);
-  t = addMins(t, waitTime);
-  totalMins += waitTime;
+  if (waitTime > 0) {
+    if (waitTime >= 180) {
+      pushEdge(`⚠️ ご注意：ご希望時刻に近い便がないため、大幅な待ち時間が発生しています`);
+    }
+    pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`);
+    t = addMins(t, waitTime);
+    totalMins += waitTime;
+  }
   pushNode(t, `${airport} 発${flightNote}`);
   
   pushEdge(`✈️ フライト（約${flightTime}分）`);
