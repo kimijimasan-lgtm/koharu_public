@@ -1229,7 +1229,7 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm;
+    margin: 15mm;
   }
 
   * {
@@ -1239,6 +1239,7 @@ body {
 
   body {
     font-size: 11pt !important;
+    line-height: 1.5 !important;
   }
 
   .btn, .form-actions, .itinerary-actions, .confirmed-actions, .qr-fab, .qr-modal {
@@ -1264,52 +1265,28 @@ body {
     display: block !important;
   }
   
-  /* Pages 1 and 2 (Overview Split) */
+  /* 連続フロー (自然な改ページ) */
   .print-page-1, .print-page-2 {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem !important;
-    page-break-after: always;
-    break-after: page;
-    page-break-inside: avoid;
-    height: 275mm;
-    max-height: 275mm;
-    overflow: hidden;
+    gap: 1.5rem !important;
+    margin-bottom: 2rem;
   }
 
-  /* Pages 3 and 6 (Day 1 and Day 3 - Exactly 1 page) */
-  #confirmed-day1, #confirmed-day3 {
-    page-break-after: always;
-    break-after: page;
-    page-break-inside: avoid;
-    height: 275mm;
-    max-height: 275mm;
-    overflow: hidden;
+  .day-section {
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 !important;
+    margin: 0 0 2rem 0 !important;
     padding: 0 !important;
   }
   
-  /* Pages 4 and 5 (Day 2 - Allow 2 pages max) */
-  #confirmed-day2 {
-    page-break-after: always;
-    break-after: page;
-    max-height: 550mm; /* Up to 2 A4 pages height */
-    overflow: hidden;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* 最後のday-sectionは改ページしない */
-  #step-confirmed .day-section:last-of-type {
-    page-break-after: auto !important;
-    break-after: auto !important;
+  /* 要素の途中で不格好に切れるのを防ぐ */
+  .hotel-card, .cost-summary-final, .checklist, .print-header, .timeline-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   
-  /* Timeline compaction */
+  /* Timeline compaction slightly relaxed for readability */
   .timeline {
     width: 100% !important;
     max-width: 100% !important;
@@ -1325,21 +1302,21 @@ body {
   }
   
   .timeline-item {
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0.8rem !important;
     padding: 0.25rem 0 !important;
   }
 
-  /* UI compaction */
+  /* UI sizes */
   .hotel-image img {
-    max-height: 180px !important;
+    max-height: 200px !important;
   }
   
   .hotel-card, .cost-summary-final, .checklist {
-    padding: 0.5rem !important;
+    padding: 1rem !important;
   }
   
   h1, h2, h3, p {
-    margin: 0.2rem 0 !important;
+    margin: 0.4rem 0 !important;
   }
 }
 
