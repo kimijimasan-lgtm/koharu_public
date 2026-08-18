@@ -1482,7 +1482,7 @@ const App = {
 
       <div class="print-only print-page-1">
         <div class="print-header" style="text-align:center; margin-bottom:1rem;">
-          <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">こはる旅の条件</h2>
+          <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">『こはる』旅の条件</h2>
           <p style="color:#555;">${dest.area}・片道５時間以内で到着。<br>２泊３日の疲れない旅を設計します。</p>
         </div>
         
