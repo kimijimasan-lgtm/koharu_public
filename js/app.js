@@ -501,7 +501,7 @@ const App = {
     const destKey = this.resolveDestination(this.state.inputs.destination);
     if (!destKey) {
       const infoEl = document.getElementById('destination-info');
-      infoEl.innerHTML = '<div class="dest-info-card dest-info-notice">このエリアはまだ準備中です。現在は金沢・京都・箱根・熱海に対応しています。</div>';
+      infoEl.innerHTML = '<div class="dest-info-card dest-info-notice">このエリアはまだ準備中です。現在は北海道エリアのみに対応しています。</div>';
       return false;
     }
     const dest = DESTINATIONS[destKey];

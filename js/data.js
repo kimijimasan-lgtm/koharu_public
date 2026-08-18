@@ -16,28 +16,100 @@ const PREFECTURE_STATIONS = {
 };
 
 const DESTINATIONS = {
-  kanazawa: {
-    name: '金沢',
-    area: '石川県',
-    station: '金沢駅',
-    shinkansen: '北陸新幹線',
-    direction: 'north',
-    travelTimeFromTokyo: 150,
-    travelTimeFromShin_Osaka: 165,
-    highlights: ['兼六園', '近江町市場', 'ひがし茶屋街', '21世紀美術館'],
+
+  chitose: {
+    name: '千歳', area: '道央', station: '千歳駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 105,
+    highlights: ['支笏湖', 'サケのふるさと', '新千歳空港温泉'],
     hotels: [
-      {
-        id: 'k1',
-        name: '界 加賀',
-        type: '温泉旅館',
-        image: null,
-        features: ['露天風呂付客室', '部屋食対応', '加賀伝統工芸の設え'],
-        taxiFromCityStation: 55,
-        area: '山代温泉',
-        pricePerNight: 45000,
-        dinnerIncluded: true,
-        breakfastIncluded: true,
-      },
+      { id: 'chitose1', name: 'しこつ湖鶴雅リゾートスパ 水の謌', type: '温泉リゾート', features: ['支笏湖畔', 'ビュッフェ', 'スパ'], taxiFromCityStation: 40, area: '支笏湖温泉', pricePerNight: 40000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  tomakomai: {
+    name: '苫小牧', area: '道央', station: '苫小牧駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 130,
+    highlights: ['ウトナイ湖', 'ノーザンホースパーク', 'マルトマ食堂'],
+    hotels: [
+      { id: 'tomakomai1', name: 'グランドホテルニュー王子', type: 'シティホテル', features: ['駅周辺', '展望レストラン'], taxiFromCityStation: 5, area: '苫小牧駅周辺', pricePerNight: 15000, dinnerIncluded: false, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  otaru: {
+    name: '小樽', area: '道央', station: '小樽駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 195,
+    highlights: ['小樽運河', '堺町通り', '天狗山'],
+    hotels: [
+      { id: 'otaru1', name: '運河の宿 おたる ふる川', type: '温泉旅館', features: ['運河沿い', 'レトロな雰囲気', '温泉大浴場'], taxiFromCityStation: 5, area: '小樽運河', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  niseko: {
+    name: 'ニセコ', area: '道央', station: 'ニセコ駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 255,
+    highlights: ['ニセコアンヌプリ', '羊蹄山', 'ミルク工房'],
+    hotels: [
+      { id: 'niseko1', name: 'パークハイアット ニセコ', type: 'ラグジュアリー', features: ['マウンテンビュー', '温泉', '高級フレンチ'], taxiFromCityStation: 15, area: '花園', pricePerNight: 80000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  toyako: {
+    name: '洞爺湖', area: '道央', station: '洞爺駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 255,
+    highlights: ['洞爺湖', '有珠山', '昭和新山'],
+    hotels: [
+      { id: 'toyako1', name: 'ザ・ウィンザーホテル洞爺', type: 'リゾート', features: ['絶景', 'フレンチ', '温泉'], taxiFromCityStation: 20, area: '洞爺湖畔', pricePerNight: 60000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  noboribetsu: {
+    name: '登別', area: '道南', station: '登別駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 165,
+    highlights: ['登別地獄谷', 'のぼりべつクマ牧場', '大湯沼'],
+    hotels: [
+      { id: 'noboribetsu1', name: '登別温泉 滝乃家', type: '温泉旅館', features: ['源泉かけ流し', '割烹', '庭園'], taxiFromCityStation: 15, area: '登別温泉', pricePerNight: 55000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  shakotan: {
+    name: '積丹', area: '道央', station: '余市駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 255,
+    highlights: ['神威岬', '積丹ブルー', 'ウニ丼'],
+    hotels: [
+      { id: 'shakotan1', name: '積丹の宿', type: '民宿', features: ['海鮮', 'アットホーム'], taxiFromCityStation: 40, area: '積丹半島', pricePerNight: 20000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  esashi: {
+    name: '江差', area: '道南', station: '木古内駅', transportMode: 'flight', airport: '函館空港', direction: 'hokkaido', travelTimeFromTokyo: 195,
+    highlights: ['江差追分', 'かもめ島', 'いにしえ街道'],
+    hotels: [
+      { id: 'esashi1', name: '群来', type: '高級旅館', features: ['全室離れ', '温泉', '江差の食材'], taxiFromCityStation: 60, area: '江差町', pricePerNight: 70000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  furano: {
+    name: '富良野', area: '道北', station: '富良野駅', transportMode: 'flight', airport: '旭川空港', direction: 'hokkaido', travelTimeFromTokyo: 165,
+    highlights: ['ファーム富田', 'ニングルテラス', '青い池'],
+    hotels: [
+      { id: 'furano1', name: 'フラノ寶亭留', type: 'リゾート', features: ['ラベンダー畑', 'フレンチ', '温泉'], taxiFromCityStation: 10, area: '富良野', pricePerNight: 45000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  biei: {
+    name: '美瑛', area: '道北', station: '美瑛駅', transportMode: 'flight', airport: '旭川空港', direction: 'hokkaido', travelTimeFromTokyo: 135,
+    highlights: ['パッチワークの路', '四季彩の丘', '白金青い池'],
+    hotels: [
+      { id: 'biei1', name: '森の旅亭 びえい', type: '温泉旅館', features: ['離れ', '白金温泉', '和食'], taxiFromCityStation: 25, area: '白金温泉', pricePerNight: 40000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  teshikaga: {
+    name: '摩周湖', area: '道東', station: '摩周駅', transportMode: 'flight', airport: '釧路空港', direction: 'hokkaido', travelTimeFromTokyo: 165,
+    highlights: ['摩周湖', '屈斜路湖', '硫黄山'],
+    hotels: [
+      { id: 'teshikaga1', name: 'あかん遊久の里 鶴雅', type: '温泉旅館', features: ['阿寒湖畔', '屋上露天風呂', 'アイヌ文化'], taxiFromCityStation: 60, area: '阿寒湖温泉', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  shiretoko: {
+    name: '知床', area: '道東', station: '知床斜里駅', transportMode: 'flight', airport: '女満別空港', direction: 'hokkaido', travelTimeFromTokyo: 225,
+    highlights: ['知床五湖', '知床峠', 'クルーズ'],
+    hotels: [
+      { id: 'shiretoko1', name: '北こぶし知床 ホテル＆リゾート', type: 'リゾート', features: ['オホーツク海ビュー', 'サウナ', 'ブッフェ'], taxiFromCityStation: 40, area: 'ウトロ', pricePerNight: 30000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+  nemuro: {
+    name: '根室', area: '道東', station: '根室駅', transportMode: 'flight', airport: '釧路空港', direction: 'hokkaido', travelTimeFromTokyo: 225,
+    highlights: ['納沙布岬', '春国岱', 'エスカロップ'],
+    hotels: [
+      { id: 'nemuro1', name: '根室グランドホテル', type: 'シティホテル', features: ['市内中心', 'レストラン'], taxiFromCityStation: 5, area: '根室', pricePerNight: 12000, dinnerIncluded: false, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
+    ]
+  },
+
+
       {
         id: 'k2',
         name: 'ホテル日航金沢',
@@ -102,28 +174,7 @@ const DESTINATIONS = {
       { name: '金沢城公園', area: '兼六園', duration: 50, indoor: false, taxiFromCityStation: 10 },
     ],
   },
-  kyoto: {
-    name: '京都',
-    area: '京都府',
-    station: '京都駅',
-    shinkansen: '東海道新幹線',
-    direction: 'south',
-    travelTimeFromTokyo: 135,
-    travelTimeFromShin_Osaka: 15,
-    highlights: ['清水寺', '嵐山', '伏見稲荷', '祇園'],
-    hotels: [
-      {
-        id: 'ky1',
-        name: 'ザ・ホテル青龍 京都清水',
-        type: 'ラグジュアリーホテル',
-        image: null,
-        features: ['元小学校リノベーション', '清水寺徒歩圏', 'ルーフトップバー'],
-        taxiFromCityStation: 12,
-        area: '東山・清水',
-        pricePerNight: 55000,
-        dinnerIncluded: false,
-        breakfastIncluded: true,
-      },
+
       {
         id: 'ky2',
         name: '嵐山 翠嵐',
@@ -188,28 +239,7 @@ const DESTINATIONS = {
       { name: '建仁寺', area: '祇園', duration: 40, indoor: true, taxiFromCityStation: 10 },
     ],
   },
-  hakone: {
-    name: '箱根',
-    area: '神奈川県',
-    station: '小田原駅',
-    shinkansen: '東海道新幹線',
-    direction: 'south',
-    travelTimeFromTokyo: 35,
-    travelTimeFromShin_Osaka: 120,
-    highlights: ['芦ノ湖', '大涌谷', '彫刻の森美術館', '箱根神社'],
-    hotels: [
-      {
-        id: 'h1',
-        name: '強羅花壇',
-        type: '温泉旅館',
-        image: null,
-        features: ['露天風呂付客室', '懐石料理', '庭園美'],
-        taxiFromCityStation: 30,
-        area: '強羅',
-        pricePerNight: 60000,
-        dinnerIncluded: true,
-        breakfastIncluded: true,
-      },
+
       {
         id: 'h2',
         name: 'ラフォーレ倶楽部 箱根強羅 湯の棲',
@@ -274,28 +304,7 @@ const DESTINATIONS = {
       { name: '岡田美術館', area: '小涌谷', duration: 70, indoor: true, taxiFromCityStation: 25 },
     ],
   },
-  atami: {
-    name: '熱海',
-    area: '静岡県',
-    station: '熱海駅',
-    shinkansen: '東海道新幹線',
-    direction: 'south',
-    travelTimeFromTokyo: 50,
-    travelTimeFromShin_Osaka: 110,
-    highlights: ['熱海サンビーチ', 'MOA美術館', '來宮神社', '起雲閣'],
-    hotels: [
-      {
-        id: 'a1',
-        name: 'ATAMI せかいえ',
-        type: 'リゾートホテル',
-        image: null,
-        features: ['全室オーシャンビュー', '露天風呂付客室', 'モダン和食'],
-        taxiFromCityStation: 10,
-        area: '伊豆山',
-        pricePerNight: 50000,
-        dinnerIncluded: true,
-        breakfastIncluded: true,
-      },
+
       {
         id: 'a2',
         name: 'HOTEL ACAO',
@@ -1357,7 +1366,7 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
       totalMins += dur;
       pushNode(t, `新函館北斗駅 着`);
     }
-  } else if (['札幌', '小樽', '旭川', '網走', '釧路', '帯広', '稚内'].some(d => destName.includes(d))) {
+  } else if (['札幌', '小樽', '旭川', '網走', '釧路', '帯広', '稚内', '千歳', '苫小牧', 'ニセコ', '洞爺湖', '登別', '積丹', '江差', '富良野', '美瑛', '摩周湖', '知床', '根室'].some(d => destName.includes(d))) {
     const hako = generateShinkansenTimeline(normStation, '函館', departTimeStr);
     let plus = 220; // 札幌まで
     if (destName.includes('旭川')) plus = 220 + 85;
@@ -1365,7 +1374,19 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
     if (destName.includes('釧路')) plus = 220 + 260;
     if (destName.includes('帯広')) plus = 220 + 160;
     if (destName.includes('稚内')) plus = 220 + 310;
-    if (destName.includes('小樽')) plus = 220 + 40; 
+    if (destName.includes('小樽')) plus = 220 + 40;
+    if (destName.includes('千歳')) plus = 200;
+    if (destName.includes('苫小牧')) plus = 180;
+    if (destName.includes('ニセコ')) plus = 150;
+    if (destName.includes('洞爺湖')) plus = 100;
+    if (destName.includes('登別')) plus = 130;
+    if (destName.includes('積丹')) plus = 250;
+    if (destName.includes('江差')) plus = 80;
+    if (destName.includes('富良野')) plus = 320;
+    if (destName.includes('美瑛')) plus = 340;
+    if (destName.includes('摩周湖')) plus = 500;
+    if (destName.includes('知床')) plus = 600;
+    if (destName.includes('根室')) plus = 600; 
     
     const hokutoSchedule = generateHourlySchedule([5]);
     
