@@ -1227,9 +1227,18 @@ body {
 }
 
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  body {
+    font-size: 11pt !important;
   }
 
   .btn, .form-actions, .itinerary-actions, .confirmed-actions, .qr-fab, .qr-modal {
@@ -1244,7 +1253,6 @@ body {
     display: block !important;
   }
 
-  /* 画面表示用ですが印刷時に不要なヘッダ類や予約リンクを隠す */
   .confirmed-header-block,
   .print-hidden,
   .reservation-links,
@@ -1252,35 +1260,74 @@ body {
     display: none !important;
   }
 
-  /* 印刷専用要素 */
   .print-only {
     display: block !important;
   }
   
+  /* Page 1 (Overview) */
   .print-page-1 {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 0.5rem !important;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    height: 275mm;
+    max-height: 275mm;
+    overflow: hidden;
   }
 
-  /* 各日を1ページに割り当て（2ページ目以降） */
+  /* Pages 2, 3, 4 (Days 1, 2, 3) */
   .day-section {
-    page-break-before: always;
-    break-before: page;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    height: 275mm;
+    max-height: 275mm;
+    overflow: hidden;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 1rem 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 最後のday-sectionは改ページしない */
+  #step-confirmed .day-section:last-of-type {
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
   
+  /* Timeline compaction */
   .timeline {
     width: 100% !important;
     max-width: 100% !important;
+    padding-left: 3rem !important;
+  }
+  
+  .timeline::before {
+    left: 2.5rem !important;
+  }
+  
+  .timeline-time {
+    left: -3rem !important;
+  }
+  
+  .timeline-item {
+    margin-bottom: 0.5rem !important;
+    padding: 0.25rem 0 !important;
   }
 
-  /* バランス調整用 */
-  .hotel-image {
-    max-height: 200px;
+  /* UI compaction for page 1 */
+  .hotel-image img {
+    max-height: 120px !important;
+  }
+  
+  .hotel-card, .cost-summary-final, .checklist {
+    padding: 0.5rem !important;
+  }
+  
+  h1, h2, h3, p {
+    margin: 0.2rem 0 !important;
   }
 }
 
