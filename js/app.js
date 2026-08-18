@@ -230,11 +230,15 @@ const App = {
     const infoEl = document.getElementById('destination-info');
     const text = document.getElementById('destination').value;
     const destKey = this.resolveDestination(text);
+    const subtitleEl = document.getElementById('top-subtitle');
+    
     if (!destKey) {
       infoEl.innerHTML = '';
+      if (subtitleEl) subtitleEl.innerHTML = '旅行先エリアを選択してください。';
       return;
     }
     const dest = DESTINATIONS[destKey];
+    if (subtitleEl) subtitleEl.innerHTML = `${dest.area}・片道５時間以内で到着。<br>２泊３日の疲れない旅を設計します。`;
     const stationName = this.getSelectedStationName();
 
     let transportHtml = '';
