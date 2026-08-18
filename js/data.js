@@ -1425,13 +1425,13 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     airport = '秋田空港';
     airportTransferTime = 40;
     airportTransText = '🚌 リムジンバス等（約40分）';
-    flightSchedule = ['09:40', '19:00'];
+    flightSchedule = ['08:40', '11:40', '15:10', '19:00']; // シミュレーション用に追加
     overrideFlightTime = 55;
   } else if (['盛岡', '一ノ関'].includes(normStation)) {
     airport = 'いわて花巻空港';
     airportTransferTime = 45;
     airportTransText = '🚌 特急バス等（約45分）';
-    flightSchedule = ['11:55', '15:20', '18:50'];
+    flightSchedule = ['09:15', '11:55', '15:20', '18:50']; // シミュレーション用に追加
     overrideFlightTime = 55;
   } else if (['仙台', '古川'].includes(normStation)) {
     airport = '仙台空港';
@@ -1443,7 +1443,7 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     airport = '山形空港';
     airportTransferTime = 30;
     airportTransText = '🚌 シャトルバス（約30分）';
-    flightSchedule = ['08:45', '16:30'];
+    flightSchedule = ['08:45', '11:30', '14:45', '16:30']; // シミュレーション用に追加
     overrideFlightTime = 75;
   } else if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'].includes(normStation)) {
     if (destName.includes('函館')) {
