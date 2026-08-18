@@ -280,7 +280,7 @@ const App = {
       const shin = comparison.shinkansen;
       const fli = comparison.flight;
 
-      const shinHtml = shin ? `
+      const shinHtml = (shin && shin.time <= 300) ? `
         <div class="compare-item ${comparison.recommended === 'shinkansen' ? 'recommended' : ''}">
           <div class="compare-header">
             <strong>🚄 新幹線</strong>
@@ -292,7 +292,7 @@ const App = {
         </div>
       ` : '';
 
-      const fliHtml = fli ? `
+      const fliHtml = (fli && fli.time <= 300) ? `
         <div class="compare-item ${comparison.recommended === 'flight' ? 'recommended' : ''}">
           <div class="compare-header">
             <strong>✈️ 飛行機</strong>
@@ -304,9 +304,18 @@ const App = {
         </div>
       ` : '';
 
-      const conclusionText = comparison.recommended === 'shinkansen' 
-        ? '🚄 5時間以内のため、疲労の少ない【新幹線】推奨'
-        : '✈️ 5時間超えのため、【飛行機】推奨';
+      let conclusionText = '';
+      if (shin && shin.time <= 300 && fli && fli.time <= 300) {
+        conclusionText = comparison.recommended === 'shinkansen' 
+          ? '🚄 5時間以内のため、疲労の少ない【新幹線】推奨'
+          : '✈️ 【飛行機】推奨';
+      } else if (shin && shin.time <= 300) {
+        conclusionText = '🚄 疲労の少ない【新幹線】推奨';
+      } else if (fli && fli.time <= 300) {
+        conclusionText = '✈️ 【飛行機】推奨';
+      } else {
+        conclusionText = '⚠️ 片道5時間超えのルートです';
+      }
 
       transportHtml = `
         <div class="transport-comparison">
