@@ -579,7 +579,7 @@ const App = {
     const departureHour = parseInt(departureTimeParts[0]);
     const departureMin = parseInt(departureTimeParts[1]);
 
-    const relevantStation = inputs.useStation === '2' ? inputs.station2 : inputs.station1;
+    const relevantStation = inputs.topStation || '';
     
     const departStr = `${String(departureHour).padStart(2, '0')}:${String(departureMin).padStart(2, '0')}`;
     const comparison = compareTransportRoutes(relevantStation, dest.name, departStr);
