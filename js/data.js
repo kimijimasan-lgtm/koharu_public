@@ -1357,9 +1357,15 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
       totalMins += dur;
       pushNode(t, `新函館北斗駅 着`);
     }
-  } else if (destName.includes('札幌') || destName.includes('小樽') || destName.includes('旭川')) {
+  } else if (['札幌', '小樽', '旭川', '網走', '釧路', '帯広', '稚内'].some(d => destName.includes(d))) {
     const hako = generateShinkansenTimeline(normStation, '函館', departTimeStr);
-    const plus = destName.includes('旭川') ? 120 : 220; 
+    let plus = 220; // 札幌まで
+    if (destName.includes('旭川')) plus = 220 + 85;
+    if (destName.includes('網走')) plus = 220 + 330;
+    if (destName.includes('釧路')) plus = 220 + 260;
+    if (destName.includes('帯広')) plus = 220 + 160;
+    if (destName.includes('稚内')) plus = 220 + 310;
+    if (destName.includes('小樽')) plus = 220 + 40; 
     
     const hokutoSchedule = generateHourlySchedule([5]);
     
@@ -1470,7 +1476,23 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   } else if (destName.includes('旭川')) {
     destAirport = '旭川空港';
     localTransfer = 40;
-    localTransText = '🚖 連絡バス等（約40分）';
+    localTransText = '🚌 連絡バス等（約40分）';
+  } else if (destName.includes('網走')) {
+    destAirport = '女満別空港';
+    localTransfer = 30;
+    localTransText = '🚌 連絡バス（約30分）';
+  } else if (destName.includes('釧路')) {
+    destAirport = 'たんちょう釧路空港';
+    localTransfer = 45;
+    localTransText = '🚌 連絡バス（約45分）';
+  } else if (destName.includes('帯広')) {
+    destAirport = 'とかち帯広空港';
+    localTransfer = 40;
+    localTransText = '🚌 連絡バス（約40分）';
+  } else if (destName.includes('稚内')) {
+    destAirport = '稚内空港';
+    localTransfer = 30;
+    localTransText = '🚌 連絡バス（約30分）';
   }
 
   const REQUIRED_SECURE_TIME = 60; 
