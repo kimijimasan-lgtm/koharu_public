@@ -115,18 +115,25 @@
 
         <hr style="margin: 2rem 0; border:none; border-top: 1px dashed var(--color-border);">
         <div class="form-group" id="station-settings">
-          <label class="form-label">この旅行で使う出発駅</label>
-          <p class="form-sublabel">よく使う駅を登録し、今回の旅行で使う方にチェックを入れてください</p>
-          <div class="station-choice-group" style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 0.5rem;">
-            <label class="station-choice-option" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; background-color: var(--color-bg);">
-              <input type="radio" name="use-station" value="1" checked style="width: 1.2rem; height: 1.2rem; margin: 0; cursor: pointer;">
-              <input type="text" id="station-1" class="form-input" placeholder="駅①（必須） 例：宇都宮" required style="flex: 1; margin: 0;">
-            </label>
-            <label class="station-choice-option" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; background-color: var(--color-bg);">
-              <input type="radio" name="use-station" value="2" style="width: 1.2rem; height: 1.2rem; margin: 0; cursor: pointer;">
-              <input type="text" id="station-2" class="form-input" placeholder="駅②（任意） 例：那須塩原" style="flex: 1; margin: 0;">
-            </label>
-          </div>
+          <label class="form-label" for="user-prefecture">お住まいの都道府県</label>
+          <p class="form-sublabel">出発駅の候補を設定します</p>
+          <select id="user-prefecture" class="form-input form-select" required style="cursor: pointer; appearance: auto;">
+            <option value="" disabled selected>選択してください</option>
+            <option value="北海道">北海道</option>
+            <option value="青森県">青森県</option>
+            <option value="岩手県">岩手県</option>
+            <option value="宮城県">宮城県</option>
+            <option value="秋田県">秋田県</option>
+            <option value="山形県">山形県</option>
+            <option value="福島県">福島県</option>
+            <option value="茨城県">茨城県</option>
+            <option value="栃木県">栃木県</option>
+            <option value="群馬県">群馬県</option>
+            <option value="埼玉県">埼玉県</option>
+            <option value="千葉県">千葉県</option>
+            <option value="東京都">東京都</option>
+            <option value="神奈川県">神奈川県</option>
+          </select>
         </div>
 
         
