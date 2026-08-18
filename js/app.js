@@ -238,6 +238,21 @@ const App = {
       return;
     }
     const dest = DESTINATIONS[destKey];
+
+    // Check if the route is valid and under 5 hours
+    const station = this.state.inputs.topStation;
+    if (station && station.includes('駅')) {
+        const routeInfo = compareTransportRoutes(station, dest.name, this.state.inputs.departureTime || '10:00');
+        const recommendedRoute = routeInfo[routeInfo.recommended];
+        if (!recommendedRoute || recommendedRoute.time === 0) {
+            alert('ご指定の出発時刻では、本日中に到着できる交通機関がありません。\n出発時刻を早めるか、別の出発地をご検討ください。');
+            return false;
+        }
+        if (recommendedRoute && recommendedRoute.time > 300) {
+            alert('ご指定の出発駅からだと片道5時間（300分）を超えてしまうため、「疲れない旅」の基準を満たしません。\n出発地または目的地を変更してください。');
+            return false;
+        }
+    }
     if (subtitleEl) subtitleEl.innerHTML = `${dest.area}・片道５時間以内で到着。<br>２泊３日の疲れない旅を設計します。`;
     const stationName = this.getSelectedStationName();
 
