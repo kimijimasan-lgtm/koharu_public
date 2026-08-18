@@ -1264,8 +1264,8 @@ body {
     display: block !important;
   }
   
-  /* Page 1 (Overview) */
-  .print-page-1 {
+  /* Pages 1 and 2 (Overview Split) */
+  .print-page-1, .print-page-2 {
     display: flex;
     flex-direction: column;
     gap: 0.5rem !important;
@@ -1277,13 +1277,25 @@ body {
     overflow: hidden;
   }
 
-  /* Pages 2, 3, 4 (Days 1, 2, 3) */
-  .day-section {
+  /* Pages 3 and 6 (Day 1 and Day 3 - Exactly 1 page) */
+  #confirmed-day1, #confirmed-day3 {
     page-break-after: always;
     break-after: page;
     page-break-inside: avoid;
     height: 275mm;
     max-height: 275mm;
+    overflow: hidden;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Pages 4 and 5 (Day 2 - Allow 2 pages max) */
+  #confirmed-day2 {
+    page-break-after: always;
+    break-after: page;
+    max-height: 550mm; /* Up to 2 A4 pages height */
     overflow: hidden;
     width: 100% !important;
     max-width: 100% !important;
@@ -1317,9 +1329,9 @@ body {
     padding: 0.25rem 0 !important;
   }
 
-  /* UI compaction for page 1 */
+  /* UI compaction */
   .hotel-image img {
-    max-height: 120px !important;
+    max-height: 180px !important;
   }
   
   .hotel-card, .cost-summary-final, .checklist {
