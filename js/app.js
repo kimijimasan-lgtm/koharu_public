@@ -1569,7 +1569,7 @@ const App = {
     for(let i=1; i<=4; i++) {
       const preview = document.getElementById(`preview-${i}`);
       if(preview && preview.style.display !== 'none' && preview.src) {
-        allImages.push(`<img src="${preview.src}" style="border-radius:8px; border:1px solid #ddd;" />`);
+        allImages.push(`<img src="${preview.src}" style="border-radius:8px; border:1px solid #ddd; width:100%; flex:1; min-height:0; object-fit:contain; margin-bottom:10px;" />`);
       }
     }
 
@@ -1578,18 +1578,25 @@ const App = {
       const col2Images = allImages.slice(2, 4).join('');
       
       allScreenshotsLayoutHtml = `
-        <div class="print-screenshots-grid" style="display:flex; gap:2rem; border-top:1px dashed #ccc;">
-          <div style="flex:1;" class="print-screenshots-col">
-            ${col1Images ? `
-              <h3 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem; flex: 0 0 auto;">📌 実際の乗換ルート（1・2枚目）</h3>
-              ${col1Images}
-            ` : ''}
+        <div class="print-only print-page-screenshots" style="page-break-before: always; height: 260mm; display: flex; flex-direction: column; padding-top: 2rem;">
+          <div style="text-align:center; margin-bottom:1rem;">
+            <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">📱 実際の乗換ルート（スクショ）</h2>
+            <p style="color:#555;">無料乗換アプリでの検索結果（ダイヤ詳細）</p>
           </div>
-          <div style="flex:1;" class="print-screenshots-col">
-            ${col2Images ? `
-              <h3 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem; flex: 0 0 auto;">📌 実際の乗換ルート（3・4枚目）</h3>
-              ${col2Images}
-            ` : ''}
+          
+          <div class="print-screenshots-grid" style="display:flex; gap:2rem; flex: 1; min-height: 0;">
+            <div style="flex:1; display:flex; flex-direction:column; min-height: 0;">
+              ${col1Images ? `
+                <h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem; flex: 0 0 auto;">📌 往路など（1・2枚目）</h3>
+                ${col1Images}
+              ` : ''}
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; min-height: 0;">
+              ${col2Images ? `
+                <h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem; flex: 0 0 auto;">📌 復路など（3・4枚目）</h3>
+                ${col2Images}
+              ` : ''}
+            </div>
           </div>
         </div>
       `;
@@ -1631,10 +1638,11 @@ const App = {
         ${routeInfoHtml}
         
         ${hotelInfoHtml}
-        ${allScreenshotsLayoutHtml}
       </div>
+      
+      ${allScreenshotsLayoutHtml}
 
-      <div class="print-only print-page-2">
+      <div class="print-only print-page-2" style="page-break-before: always;">
           <div style="margin-top:1rem;">
             <h3 style="margin-bottom:0.5rem; font-size:1.3rem;">料金概算</h3>
           <div class="cost-summary-final" style="border: 1px solid #ddd; padding: 1.5rem; border-radius: 8px; font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
