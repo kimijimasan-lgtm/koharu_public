@@ -1693,6 +1693,8 @@ body {
   }
 }
 .screenshot-slot {
+  cursor: pointer !important;
+  outline: none !important;
   border: 2px dashed #b8c2cc;
   border-radius: 8px;
   background: #ffffff;

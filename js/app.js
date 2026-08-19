@@ -2008,15 +2008,38 @@ document.addEventListener('DOMContentLoaded', () => App.init());
       });
       
       // Handle paste on the container
+      // Prevent typing text into contenteditable
+      container.addEventListener('keydown', (e) => {
+        // Allow Tab, Ctrl+V, Cmd+V
+        if (e.key === 'Tab' || (e.key === 'v' && (e.ctrlKey || e.metaKey))) {
+          return;
+        }
+        e.preventDefault();
+      });
+
       container.addEventListener('paste', (e) => {
         e.preventDefault();
-        const items = e.clipboardData.items;
-        for (let j = 0; j < items.length; j++) {
-          if (items[j].type.indexOf('image') !== -1) {
-            const file = items[j].getAsFile();
-            setSlotImage(i, file);
-            break;
+        const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
+        let fileToPaste = null;
+        
+        if (clipboardData.files && clipboardData.files.length > 0) {
+          for (let j = 0; j < clipboardData.files.length; j++) {
+            if (clipboardData.files[j].type.startsWith('image/')) {
+              fileToPaste = clipboardData.files[j];
+              break;
+            }
           }
+        } else if (clipboardData.items) {
+          for (let j = 0; j < clipboardData.items.length; j++) {
+            if (clipboardData.items[j].type.startsWith('image/')) {
+              fileToPaste = clipboardData.items[j].getAsFile();
+              break;
+            }
+          }
+        }
+        
+        if (fileToPaste) {
+          setSlotImage(i, fileToPaste);
         }
       });
     }
@@ -2026,18 +2049,33 @@ document.addEventListener('DOMContentLoaded', () => App.init());
       // Ignore if a specific slot is focused to avoid double pasting
       if(document.activeElement && document.activeElement.classList.contains('screenshot-slot')) return;
       
-      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-      for (let j = 0; j < items.length; j++) {
-        if (items[j].type.indexOf('image') !== -1) {
-          const file = items[j].getAsFile();
-          // Find first empty slot
-          for(let i=1; i<=4; i++) {
-            const preview = document.getElementById(`preview-${i}`);
-            if(preview && preview.style.display === 'none') {
-              setSlotImage(i, file);
-              e.preventDefault();
-              return;
-            }
+      const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
+      let fileToPaste = null;
+      
+      if (clipboardData.files && clipboardData.files.length > 0) {
+        for (let j = 0; j < clipboardData.files.length; j++) {
+          if (clipboardData.files[j].type.startsWith('image/')) {
+            fileToPaste = clipboardData.files[j];
+            break;
+          }
+        }
+      } else if (clipboardData.items) {
+        for (let j = 0; j < clipboardData.items.length; j++) {
+          if (clipboardData.items[j].type.startsWith('image/')) {
+            fileToPaste = clipboardData.items[j].getAsFile();
+            break;
+          }
+        }
+      }
+      
+      if (fileToPaste) {
+        // Find first empty slot
+        for(let i=1; i<=4; i++) {
+          const preview = document.getElementById(`preview-${i}`);
+          if(preview && preview.style.display === 'none') {
+            setSlotImage(i, fileToPaste);
+            e.preventDefault();
+            return;
           }
         }
       }
