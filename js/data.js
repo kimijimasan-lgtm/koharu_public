@@ -1364,3 +1364,32 @@ function compareTransportRoutes(stationName, destName, departTimeStr = '10:00') 
 
   return { recommended, shinkansen, flight };
 }
+
+
+// --- Auto-fill missing spots and restaurants for mock destinations ---
+Object.keys(DESTINATIONS).forEach(key => {
+  const dest = DESTINATIONS[key];
+  if (!dest.spots) {
+    dest.spots = [
+      { name: dest.name + '周辺の観光スポット1', duration: 90, taxiFromCityStation: 10, category: 'view' },
+      { name: dest.name + '周辺の観光スポット2', duration: 60, taxiFromCityStation: 15, category: 'culture' },
+      { name: dest.name + '周辺の観光スポット3', duration: 120, taxiFromCityStation: 5, category: 'shopping' }
+    ];
+  }
+  if (!dest.restaurants) {
+    dest.restaurants = {
+      lunch: [
+        { name: dest.name + '名物ランチ', type: '和食', price: '2,000円〜', waitTime: 15 },
+        { name: '地元レストラン', type: '洋食', price: '1,500円〜', waitTime: 10 }
+      ],
+      dinner: [
+        { name: dest.name + 'の郷土料理', type: '居酒屋・和食', price: '5,000円〜', waitTime: 20 },
+        { name: 'ホテル内レストラン', type: 'フレンチ', price: '12,000円〜', waitTime: 0 }
+      ],
+      snack: [
+        { name: 'カフェ＆スイーツ', type: 'カフェ', price: '1,000円〜', waitTime: 5 }
+      ]
+    };
+  }
+});
+
