@@ -2080,6 +2080,48 @@ document.addEventListener('DOMContentLoaded', () => App.init());
         }
       }
     });
+    const globalPasteBtn = document.getElementById('btn-global-paste');
+    if (globalPasteBtn) {
+      globalPasteBtn.addEventListener('click', async () => {
+        try {
+          if (!navigator.clipboard || !navigator.clipboard.read) {
+            alert('お使いのブラウザはペーストボタンに対応していません。枠をタップして「写真を選択」するか、PCの場合は直接 Ctrl+V を押してください。');
+            return;
+          }
+          const clipboardItems = await navigator.clipboard.read();
+          let fileToPaste = null;
+          for (const item of clipboardItems) {
+            const imageTypes = item.types.filter(type => type.startsWith('image/'));
+            if (imageTypes.length > 0) {
+              const blob = await item.getType(imageTypes[0]);
+              fileToPaste = new File([blob], "pasted-image.png", { type: blob.type });
+              break;
+            }
+          }
+          if (fileToPaste) {
+            // Find first empty slot
+            let slotFound = false;
+            for(let i=1; i<=4; i++) {
+              const preview = document.getElementById(`preview-${i}`);
+              if(preview && preview.style.display === 'none') {
+                setSlotImage(i, fileToPaste);
+                slotFound = true;
+                break;
+              }
+            }
+            if (!slotFound) {
+              alert('すべての枠が埋まっています。');
+            }
+          } else {
+            alert('クリップボードに画像が見つかりませんでした。');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('画像の読み取りに失敗しました。クリップボードのアクセス許可を確認してください。');
+        }
+      });
+    }
+
   };
 
   const setSlotImage = (index, file) => {

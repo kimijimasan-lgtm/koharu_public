@@ -226,10 +226,17 @@
           <span style="font-size: 0.85rem; color: #666;">（印刷時、1と2は左側に、3と4は右側に並んで配置されます）</span>
         </p>
         <div class="upload-container no-print">
-          <p style="font-size: 0.85rem; color: #555; margin-bottom: 0.5rem;">※枠をタップして画像を選択するか、コピーした画像をペースト（Ctrl+V）してください</p>
+          <p style="font-size: 0.85rem; color: #555; margin-bottom: 0.5rem;">※枠をタップして写真を選択するか、ペーストボタンを押してください</p>
+          
+          <div style="text-align: center; margin-bottom: 15px;">
+            <button type="button" id="btn-global-paste" style="background: #eef2f9; color: var(--color-primary); border: 2px solid var(--color-primary); padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              📋 コピーした画像をペースト
+            </button>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">※画像枠をタップして「写真ライブラリ」から選ぶこともできます</p>
+          </div>
           <div class="screenshot-slots" id="screenshot-slots-container">
 
-            <div class="screenshot-slot" id="slot-container-1" tabindex="0" contenteditable="true" inputmode="none" style="caret-color: transparent;">
+            <div class="screenshot-slot" id="slot-container-1" tabindex="0" >
               <input type="file" id="upload-1" accept="image/*" style="display:none;" />
               <div class="slot-content" id="slot-content-1">
                 <span class="slot-icon">📋</span><br>
@@ -238,7 +245,7 @@
               <img id="preview-1" class="slot-preview" style="display:none;" />
               <button type="button" class="slot-delete" id="delete-1" style="display:none;">×</button>
             </div>
-            <div class="screenshot-slot" id="slot-container-2" tabindex="0" contenteditable="true" inputmode="none" style="caret-color: transparent;">
+            <div class="screenshot-slot" id="slot-container-2" tabindex="0" >
               <input type="file" id="upload-2" accept="image/*" style="display:none;" />
               <div class="slot-content" id="slot-content-2">
                 <span class="slot-icon">📋</span><br>
@@ -247,7 +254,7 @@
               <img id="preview-2" class="slot-preview" style="display:none;" />
               <button type="button" class="slot-delete" id="delete-2" style="display:none;">×</button>
             </div>
-            <div class="screenshot-slot" id="slot-container-3" tabindex="0" contenteditable="true" inputmode="none" style="caret-color: transparent;">
+            <div class="screenshot-slot" id="slot-container-3" tabindex="0" >
               <input type="file" id="upload-3" accept="image/*" style="display:none;" />
               <div class="slot-content" id="slot-content-3">
                 <span class="slot-icon">📋</span><br>
@@ -256,7 +263,7 @@
               <img id="preview-3" class="slot-preview" style="display:none;" />
               <button type="button" class="slot-delete" id="delete-3" style="display:none;">×</button>
             </div>
-            <div class="screenshot-slot" id="slot-container-4" tabindex="0" contenteditable="true" inputmode="none" style="caret-color: transparent;">
+            <div class="screenshot-slot" id="slot-container-4" tabindex="0" >
               <input type="file" id="upload-4" accept="image/*" style="display:none;" />
               <div class="slot-content" id="slot-content-4">
                 <span class="slot-icon">📋</span><br>
