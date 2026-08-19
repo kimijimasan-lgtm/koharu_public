@@ -1681,3 +1681,73 @@ body {
 }
 
 @media screen { .print-only { display: none; } }
+.screenshot-slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 1rem;
+}
+@media (max-width: 600px) {
+  .screenshot-slots {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.screenshot-slot {
+  border: 2px dashed #b8c2cc;
+  border-radius: 8px;
+  background: #ffffff;
+  aspect-ratio: 9 / 16;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  text-align: center;
+  transition: all 0.2s;
+}
+.screenshot-slot:hover, .screenshot-slot:focus {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  outline: none;
+}
+.screenshot-slot .slot-content {
+  padding: 10px;
+  color: #5b6b78;
+  pointer-events: none;
+}
+.screenshot-slot .slot-icon {
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+  display: inline-block;
+}
+.screenshot-slot .slot-text {
+  font-size: 0.8rem;
+  font-weight: bold;
+  line-height: 1.4;
+}
+.screenshot-slot .slot-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: white;
+}
+.screenshot-slot .slot-delete {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(255,68,68,0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  z-index: 10;
+  font-size: 14px;
+  line-height: 1;
+}

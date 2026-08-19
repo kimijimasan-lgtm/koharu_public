@@ -210,15 +210,50 @@
         <p class="text-secondary" style="margin-bottom: 1rem; font-size: 0.9rem; line-height: 1.5;">
           本アプリの交通時間は「疲れない旅」を提案するための<strong>プロトタイプ概算（目安）</strong>です。<br>
           実際の正確なダイヤは乗換アプリ等で検索し、そのスクショを<strong>最大４枚まで</strong>アップロードできます。<br>
-          <span style="font-size: 0.85rem; color: #666;">（1〜2枚目は印刷の1ページ目に、3〜4枚目は2ページ目の左側に綺麗に配置されます）</span>
+          <span style="font-size: 0.85rem; color: #666;">（印刷時、1と2は左側に、3と4は右側に並んで配置されます）</span>
         </p>
         <div class="upload-container no-print">
-          <input type="file" id="route-screenshot-upload" accept="image/*" multiple style="display:none;" />
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('route-screenshot-upload').click()" style="width: 100%; max-width: 300px; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-            <span>📱 スクリーンショットを選択</span>
-          </button>
+          <p style="font-size: 0.85rem; color: #555; margin-bottom: 0.5rem;">※枠をタップして画像を選択するか、コピーした画像をペースト（Ctrl+V）してください</p>
+          <div class="screenshot-slots" id="screenshot-slots-container">
+
+            <div class="screenshot-slot" id="slot-container-1" tabindex="0">
+              <input type="file" id="upload-1" accept="image/*" style="display:none;" />
+              <div class="slot-content" id="slot-content-1">
+                <span class="slot-icon">📋</span><br>
+                <span class="slot-text">画像1<br>ペースト<br>または選択</span>
+              </div>
+              <img id="preview-1" class="slot-preview" style="display:none;" />
+              <button type="button" class="slot-delete" id="delete-1" style="display:none;">×</button>
+            </div>
+            <div class="screenshot-slot" id="slot-container-2" tabindex="0">
+              <input type="file" id="upload-2" accept="image/*" style="display:none;" />
+              <div class="slot-content" id="slot-content-2">
+                <span class="slot-icon">📋</span><br>
+                <span class="slot-text">画像2<br>ペースト<br>または選択</span>
+              </div>
+              <img id="preview-2" class="slot-preview" style="display:none;" />
+              <button type="button" class="slot-delete" id="delete-2" style="display:none;">×</button>
+            </div>
+            <div class="screenshot-slot" id="slot-container-3" tabindex="0">
+              <input type="file" id="upload-3" accept="image/*" style="display:none;" />
+              <div class="slot-content" id="slot-content-3">
+                <span class="slot-icon">📋</span><br>
+                <span class="slot-text">画像3<br>ペースト<br>または選択</span>
+              </div>
+              <img id="preview-3" class="slot-preview" style="display:none;" />
+              <button type="button" class="slot-delete" id="delete-3" style="display:none;">×</button>
+            </div>
+            <div class="screenshot-slot" id="slot-container-4" tabindex="0">
+              <input type="file" id="upload-4" accept="image/*" style="display:none;" />
+              <div class="slot-content" id="slot-content-4">
+                <span class="slot-icon">📋</span><br>
+                <span class="slot-text">画像4<br>ペースト<br>または選択</span>
+              </div>
+              <img id="preview-4" class="slot-preview" style="display:none;" />
+              <button type="button" class="slot-delete" id="delete-4" style="display:none;">×</button>
+            </div>
+          </div>
         </div>
-        <div id="route-screenshots-preview" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem;"></div>
       </div>
 
       <div id="timeline-day1" class="day-section"></div>
