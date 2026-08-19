@@ -322,16 +322,26 @@ const App = {
       if (shin && fli) {
         const shinT = formatHoursStr(shin.time);
         const fliT = formatHoursStr(fli.time);
-        if (shin.time <= 300 && fli.time <= 300) {
-          conclusionText = comparison.recommended === 'shinkansen' 
-            ? `🚄 飛行機（約${fliT}）より時間はかかりますが、乗り換え等の疲労の少なさから【新幹線】推奨`
-            : `✈️ 新幹線（約${shinT}）より所要時間が短いため【飛行機】推奨`;
-        } else if (shin.time <= 300) {
-          conclusionText = `🚄 飛行機は5時間を超える（約${fliT}）ため、疲労の少ない【新幹線】推奨`;
-        } else if (fli.time <= 300) {
-          conclusionText = `✈️ 新幹線は5時間を超える（約${shinT}）ため、【飛行機】推奨`;
+        
+        let reason = '';
+        if (comparison.recommended === 'shinkansen') {
+            if (shin.time <= fli.time) {
+                reason = `🚄 所要時間も短く、乗り換え等の疲労も少ないため【新幹線】推奨`;
+            } else {
+                reason = `🚄 飛行機（約${fliT}）より少し時間はかかりますが、乗り換え等の疲労の少なさから【新幹線】推奨`;
+            }
         } else {
-          conclusionText = `⚠️ 新幹線は約${shinT}、飛行機は約${fliT}かかるため、片道5時間超えのルートです`;
+            reason = `✈️ 新幹線（約${shinT}）より所要時間が短いため【飛行機】推奨`;
+        }
+
+        if (shin.time > 300 && fli.time > 300) {
+            conclusionText = `⚠️ どちらも5時間を超えますが、比較するなら<br>${reason}。<br><span style="font-size: 0.9em; color: #d32f2f;">※片道5時間超えのため出発地または目的地の変更をご検討ください</span>`;
+        } else if (shin.time > 300) {
+            conclusionText = `✈️ 新幹線は5時間を超える（約${shinT}）ため、【飛行機】推奨`;
+        } else if (fli.time > 300) {
+            conclusionText = `🚄 飛行機は5時間を超える（約${fliT}）ため、疲労の少ない【新幹線】推奨`;
+        } else {
+            conclusionText = reason;
         }
       } else {
          conclusionText = comparison.recommended === 'shinkansen' ? '🚄 【新幹線】推奨' : '✈️ 【飛行機】推奨';

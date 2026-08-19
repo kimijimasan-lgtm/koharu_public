@@ -1353,7 +1353,9 @@ function compareTransportRoutes(stationName, destName, departTimeStr = '10:00') 
 
   let recommended = 'flight';
   if (shinkansen && flight) {
-    if (shinkansen.time <= 300 || shinkansen.time < flight.time) {
+    // 新幹線は乗り換えや待ち時間が圧倒的に少ないため、
+    // 所要時間が同じくらい（飛行機＋45分以内）であれば新幹線を推奨とする
+    if (shinkansen.time <= flight.time + 45) {
       recommended = 'shinkansen';
     }
   } else if (shinkansen) {
