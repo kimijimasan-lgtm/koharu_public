@@ -19,6 +19,7 @@ const App = {
     confirmedPlan: null,
     // 実ダイヤから選ばれた便のパターン名（'朝便' 等）。実ダイヤ未整備の区間では null のまま
     trainChoice: { outbound: null, inbound: null },
+    customTimes: {}, // e.g. { day1Start: "08:58", day1End: "14:21" }
     // findScheduleOptions() の結果キャッシュ。送信ボタンの活性判定に使う
     scheduleOptions: { outbound: null, inbound: null },
   },
@@ -1854,6 +1855,7 @@ const App = {
       inputs: { ...this.state.inputs },
       trainChoice: { ...this.state.trainChoice },
       hotelId: this.state.selectedHotel ? this.state.selectedHotel.id : null,
+      customTimes: this.state.customTimes || {},
     };
     const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
     // location.origin を動的に使うことで、localtunnel等の一時URLでも本番ドメインでもそのまま機能する
@@ -1926,6 +1928,9 @@ const App = {
       const destKey = this.resolveDestination(this.state.inputs.destination);
       const dest = DESTINATIONS[destKey];
       const hotel = dest.hotels.find((h) => h.id === payload.hotelId);
+      if (payload.customTimes) {
+        this.state.customTimes = payload.customTimes;
+      }
       if (hotel && this.isHotelAvailable(hotel, this.state.inputs.departureDate)) {
         this.state.selectedHotel = hotel;
         this.generateItinerary(hotel);
@@ -2088,19 +2093,16 @@ document.addEventListener('DOMContentLoaded', () => App.init());
         if(currentOcrDay && App.currentPlan) {
           const planKey = 'day' + currentOcrDay;
           const plan = App.currentPlan[planKey];
-          if(plan && plan.length > 0) {
-            plan[0].time = startTime;
-            plan[plan.length - 1].time = endTime;
+          if(plan && plan.events && plan.events.length > 0) {
+            plan.events[0].time = startTime;
+            plan.events[plan.events.length - 1].time = endTime;
+            // Save to state for QR export
+            if(!App.state.customTimes) App.state.customTimes = {};
+            App.state.customTimes[planKey + 'Start'] = startTime;
+            App.state.customTimes[planKey + 'End'] = endTime;
             // Update the UI
-            const timelineEl = document.getElementById('timeline-' + planKey);
-            if(timelineEl) {
-              timelineEl.innerHTML = App.timelineHtml(plan, planKey, currentOcrDay);
-            }
-            // If already on confirmed page, update there too
-            const confirmedEl = document.getElementById('confirmed-' + planKey);
-            if(confirmedEl) {
-              confirmedEl.innerHTML = App.timelineHtml(plan, planKey, currentOcrDay);
-            }
+            App.renderTimeline('timeline-' + planKey, plan);
+            App.renderTimeline('confirmed-' + planKey, plan);
           }
         }
         document.getElementById('ocr-modal').style.display = 'none';
