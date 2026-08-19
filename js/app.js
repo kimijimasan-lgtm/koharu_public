@@ -578,13 +578,13 @@ const App = {
           
           // ホテルのタイプに応じた画像を割り当て
           if (hotel.type.includes('旅館')) {
-            hotel.image = 'japanese_ryokan_exterior_1786936235983.jpg';
+            hotel.image = 'https://images.unsplash.com/photo-1578368817942-0d17066da9bc?auto=format&fit=crop&q=80&w=800';
           } else if (hotel.type.includes('ラグジュアリー') || hotel.type.includes('リゾート')) {
-            hotel.image = 'luxury_resort_hotel_exterior_1786936651694.jpg';
+            hotel.image = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800';
           } else if (hotel.type.includes('デザイナーズ')) {
-            hotel.image = 'designer_boutique_hotel_exterior_1786936674207.jpg';
+            hotel.image = 'https://images.unsplash.com/photo-1551882547-ff40c0d13c81?auto=format&fit=crop&q=80&w=800';
           } else {
-            hotel.image = 'modern_city_hotel_exterior_1786936631848.jpg';
+            hotel.image = 'https://images.unsplash.com/photo-1542314831-c6a420325142?auto=format&fit=crop&q=80&w=800';
           }
           
           // 一覧UI側の画像も更新（フェードイン効果つき）
@@ -1556,6 +1556,14 @@ const App = {
         <div class="confirmed-section">
           <h3>予約リンク</h3>
           <div class="reservation-links">
+            <div class="reservation-link-item">
+              <div class="reservation-link-label">🏨 宿泊予約</div>
+              <p class="reservation-link-desc">${hotel.name} のご予約はこちら（外部サイト）</p>
+              <a href="https://travel.rakuten.co.jp/HOTEL/keyword/keyword.html?keyword=${encodeURIComponent(hotel.name)}" target="_blank" rel="noopener" class="btn btn-reservation" style="background-color: #bf0000; color: white; border-color: #a00000;">
+                宿泊サイトで予約する
+              </a>
+            </div>
+            
             <div class="reservation-link-item">
               <div class="reservation-link-label">🚄 新幹線を予約する</div>
               <p class="reservation-link-desc">${dest.shinkansen}の指定席予約はえきねっとから行えます</p>
