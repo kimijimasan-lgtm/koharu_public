@@ -6,6 +6,19 @@
   <title>こはる 北海道編 — 疲れない旅プランナー</title>
   <link rel="stylesheet" href="css/style.css?v=3">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+
+  <style>
+    .ocr-modal-backdrop {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); z-index: 2000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ocr-modal-content {
+      background: white; padding: 20px; border-radius: 12px;
+      width: 90%; max-width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+  </style>
+  
 </head>
 <body>
 
@@ -359,5 +372,28 @@
   <script src="js/vendor/qrcode.js" defer></script>
   <script src="js/data.js?v=3"></script>
   <script src="js/app.js?v=3"></script>
+
+  <!-- OCR Modal -->
+  <div id="ocr-modal" class="ocr-modal-backdrop" style="display:none;">
+    <div class="ocr-modal-content">
+      <h3 style="margin-top:0; color:var(--color-primary); margin-bottom:10px;">🕒 時刻の読み取り結果</h3>
+      <p style="font-size:0.9rem; color:#555; margin-bottom:20px;">画像から出発・到着時刻を推定しました。行程表に反映しますか？<br>（手動で修正も可能です）</p>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <label style="font-weight:bold; color:#333;">出発時刻</label>
+        <input type="time" id="ocr-start-time" style="padding:8px; border:1px solid #ccc; border-radius:4px; font-size:1.1rem;">
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <label style="font-weight:bold; color:#333;">到着時刻</label>
+        <input type="time" id="ocr-end-time" style="padding:8px; border:1px solid #ccc; border-radius:4px; font-size:1.1rem;">
+      </div>
+      
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" id="ocr-cancel" class="btn btn-ghost" style="padding:8px 16px;">キャンセル</button>
+        <button type="button" id="ocr-apply" class="btn btn-primary" style="padding:8px 16px;">反映する</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

@@ -2042,6 +2042,9 @@ document.addEventListener('DOMContentLoaded', () => App.init());
       preview.style.display = 'block';
       content.style.display = 'none';
       deleteBtn.style.display = 'block';
+      
+      // Trigger OCR
+      processOcr(index, e.target.result);
     };
     reader.readAsDataURL(file);
   };
@@ -2061,3 +2064,109 @@ document.addEventListener('DOMContentLoaded', () => App.init());
 
   // Initialize after a short delay to ensure DOM is ready
   setTimeout(initScreenshotSlots, 100);
+
+
+  let currentOcrDay = null;
+
+  const showOcrModal = (dayIndex, startTime, endTime) => {
+    currentOcrDay = dayIndex;
+    document.getElementById('ocr-start-time').value = startTime;
+    document.getElementById('ocr-end-time').value = endTime;
+    document.getElementById('ocr-modal').style.display = 'flex';
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const applyBtn = document.getElementById('ocr-apply');
+    const cancelBtn = document.getElementById('ocr-cancel');
+    if(applyBtn && cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        document.getElementById('ocr-modal').style.display = 'none';
+      });
+      applyBtn.addEventListener('click', () => {
+        const startTime = document.getElementById('ocr-start-time').value;
+        const endTime = document.getElementById('ocr-end-time').value;
+        if(currentOcrDay && App.currentPlan) {
+          const planKey = 'day' + currentOcrDay;
+          const plan = App.currentPlan[planKey];
+          if(plan && plan.length > 0) {
+            plan[0].time = startTime;
+            plan[plan.length - 1].time = endTime;
+            // Update the UI
+            const timelineEl = document.getElementById('timeline-' + planKey);
+            if(timelineEl) {
+              timelineEl.innerHTML = App.timelineHtml(plan, planKey, currentOcrDay);
+            }
+            // If already on confirmed page, update there too
+            const confirmedEl = document.getElementById('confirmed-' + planKey);
+            if(confirmedEl) {
+              confirmedEl.innerHTML = App.timelineHtml(plan, planKey, currentOcrDay);
+            }
+          }
+        }
+        document.getElementById('ocr-modal').style.display = 'none';
+      });
+    }
+  });
+
+  const processOcr = async (index, imageUrl) => {
+    // Slot 1 -> Day 1 (Outbound), Slot 3 -> Day 3 (Return)
+    if (index !== 1 && index !== 3) return;
+    
+    const dayNum = index === 1 ? 1 : 3;
+    const contentEl = document.getElementById(`slot-content-${index}`);
+    const originalHtml = contentEl.innerHTML;
+    
+    try {
+      contentEl.innerHTML = `<span class="slot-icon" style="animation: spin 2s linear infinite;">⏳</span><br><span class="slot-text">読取中...</span>`;
+      contentEl.style.display = 'block';
+      const previewEl = document.getElementById(`preview-${index}`);
+      previewEl.style.opacity = '0.3';
+      
+      if (typeof Tesseract === 'undefined') {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const result = await Tesseract.recognize(imageUrl, 'eng');
+      const text = result.data.text;
+      
+      const matches = text.match(/\b([0-1]?[0-9]|2[0-3]):([0-5][0-9])\b/g);
+      if (matches && matches.length >= 2) {
+        let times = matches.map(t => {
+          const [h, m] = t.split(':').map(Number);
+          return h * 60 + m;
+        });
+        
+        // Remove times that are likely the phone status bar (e.g. exactly same time appearing multiple times, or very high/low compared to rest)
+        // For simplicity, just take min and max
+        times.sort((a, b) => a - b);
+        
+        const formatTime = (mins) => {
+          const h = Math.floor(mins / 60).toString().padStart(2, '0');
+          const m = (mins % 60).toString().padStart(2, '0');
+          return `${h}:${m}`;
+        };
+
+        const startTime = formatTime(times[0]);
+        const endTime = formatTime(times[times.length - 1]);
+        
+        showOcrModal(dayNum, startTime, endTime);
+      }
+    } catch (e) {
+      console.error('OCR Error', e);
+    } finally {
+      contentEl.innerHTML = originalHtml;
+      contentEl.style.display = 'none';
+      const previewEl = document.getElementById(`preview-${index}`);
+      if(previewEl) previewEl.style.opacity = '1';
+    }
+  };
+
+  const style = document.createElement('style');
+  style.innerHTML = '@keyframes spin { 100% { transform: rotate(360deg); } }';
+  document.head.appendChild(style);
