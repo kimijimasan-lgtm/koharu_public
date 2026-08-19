@@ -1564,24 +1564,48 @@ const App = {
     const hotelFeaturesHtml = hotel.features ? hotel.features.map(f => `<span class="feature-tag">${f}</span>`).join('') : '';
     // Fetch any uploaded screenshots from the itinerary step
     const screenshotPreview = document.getElementById('route-screenshots-preview');
-    let screenshotsHtml = '';
+    let page1ScreenshotsHtml = '';
+    let page2ScreenshotsHtml = '';
+    let hasPage1Screenshots = false;
+    let hasPage2Screenshots = false;
+
     if (screenshotPreview && screenshotPreview.children.length > 0) {
-      // Clone the images without the delete buttons
-      const imgElements = Array.from(screenshotPreview.querySelectorAll('img')).map(img => 
+      const allImages = Array.from(screenshotPreview.querySelectorAll('img')).map(img => 
         `<img src="${img.src}" style="max-width:100%; max-height:400px; object-fit:contain; border-radius:8px; border:1px solid #ddd;" />`
-      ).join('');
+      );
       
-      screenshotsHtml = `
-        <!-- Left Column: Screenshots -->
-        <div style="flex: 0 0 320px;">
-          <div class="print-screenshots-container" style="page-break-inside: avoid;">
-            <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📌 実際の乗換案内ルート（添付）</h3>
-            <div style="display: flex; flex-direction: column; gap: 15px;">
-              ${imgElements}
+      const page1Images = allImages.slice(0, 2).join('');
+      const page2Images = allImages.slice(2, 4).join('');
+      
+      if (page1Images) {
+        hasPage1Screenshots = true;
+        page1ScreenshotsHtml = `
+          <!-- Left Column: Screenshots Page 1 -->
+          <div style="flex: 0 0 320px;">
+            <div class="print-screenshots-container" style="page-break-inside: avoid;">
+              <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📌 実際の乗換ルート（1〜2枚目）</h3>
+              <div style="display: flex; flex-direction: column; gap: 15px;">
+                ${page1Images}
+              </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      }
+      
+      if (page2Images) {
+        hasPage2Screenshots = true;
+        page2ScreenshotsHtml = `
+          <!-- Left Column: Screenshots Page 2 -->
+          <div style="flex: 0 0 320px;">
+            <div class="print-screenshots-container" style="page-break-inside: avoid;">
+              <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📌 実際の乗換ルート（3〜4枚目）</h3>
+              <div style="display: flex; flex-direction: column; gap: 15px;">
+                ${page2Images}
+              </div>
+            </div>
+          </div>
+        `;
+      }
     }
 
     const hotelInfoHtml = `
@@ -1611,10 +1635,10 @@ const App = {
         </div>
       </div>
 
-      <div class="print-only print-page-1" style="${screenshotsHtml ? 'display:flex; gap: 2rem;' : ''}">
-        ${screenshotsHtml}
+      <div class="print-only print-page-1" style="${hasPage1Screenshots ? 'display:flex; gap: 2rem;' : ''}">
+        ${page1ScreenshotsHtml}
         <!-- Right Column: Itinerary Details -->
-        <div style="${screenshotsHtml ? 'flex: 1;' : ''}">
+        <div style="${hasPage1Screenshots ? 'flex: 1;' : ''}">
           <div class="print-header" style="text-align:center; margin-bottom:1rem;">
           <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">『こはる』旅の条件</h2>
           <p style="color:#555;">${dest.area}・片道５時間以内で到着。<br>２泊３日の疲れない旅を設計します。</p>
@@ -1626,9 +1650,12 @@ const App = {
         </div> <!-- End Right Column -->
       </div> <!-- End 2 Column Layout -->
 
-      <div class="print-only print-page-2">
-        <div style="margin-top:1rem;">
-          <h3 style="margin-bottom:0.5rem; font-size:1.3rem;">料金概算</h3>
+      <div class="print-only print-page-2" style="${hasPage2Screenshots ? 'display:flex; gap: 2rem;' : ''}">
+        ${page2ScreenshotsHtml}
+        <!-- Right Column: Cost and Checklist -->
+        <div style="${hasPage2Screenshots ? 'flex: 1;' : ''}">
+          <div style="margin-top:1rem;">
+            <h3 style="margin-bottom:0.5rem; font-size:1.3rem;">料金概算</h3>
           <div class="cost-summary-final" style="border: 1px solid #ddd; padding: 1.5rem; border-radius: 8px; font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
             <div class="cost-row"><span>新幹線（往復2名${totalCost.shinkansenEstimated ? '・概算' : ''}）</span><span>¥${totalCost.shinkansen.toLocaleString()}</span></div>
             <div class="cost-row"><span>宿泊（2泊2名）</span><span>¥${totalCost.accommodation.toLocaleString()}</span></div>
@@ -1643,8 +1670,9 @@ const App = {
             <li><label><input type="checkbox"> ${hotel.name}（2泊）</label></li>
             ${this.getReservationItems(day1, day2, day3).map((item) => `<li><label><input type="checkbox"> ${item}</label></li>`).join('')}
           </ul>
-        </div>
-      </div>
+          </div>
+        </div> <!-- End Right Column -->
+      </div> <!-- End 2 Column Layout for Page 2 -->
 
       <div class="print-hidden">
         <div class="confirmed-section">
