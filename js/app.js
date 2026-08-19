@@ -45,6 +45,60 @@ const App = {
     });
 
     this.bindQrModalEvents();
+    
+    // Screenshot upload handling
+    const screenshotInput = document.getElementById('route-screenshot-upload');
+    if (screenshotInput) {
+      screenshotInput.addEventListener('change', (e) => {
+        const previewContainer = document.getElementById('route-screenshots-preview');
+        const files = Array.from(e.target.files);
+        
+        files.forEach(file => {
+          if (!file.type.startsWith('image/')) return;
+          
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const imgEl = document.createElement('img');
+            imgEl.src = e.target.result;
+            imgEl.style.maxWidth = '100%';
+            imgEl.style.maxHeight = '500px'; // Restrict height for reasonable printing
+            imgEl.style.objectFit = 'contain';
+            imgEl.style.borderRadius = '8px';
+            imgEl.style.border = '1px solid #ddd';
+            imgEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '×';
+            deleteBtn.style.position = 'absolute';
+            deleteBtn.style.top = '-8px';
+            deleteBtn.style.right = '-8px';
+            deleteBtn.style.background = '#ff4444';
+            deleteBtn.style.color = 'white';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.borderRadius = '50%';
+            deleteBtn.style.width = '24px';
+            deleteBtn.style.height = '24px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.fontSize = '14px';
+            deleteBtn.style.lineHeight = '1';
+            deleteBtn.classList.add('no-print');
+            deleteBtn.onclick = () => wrapper.remove();
+            
+            wrapper.appendChild(imgEl);
+            wrapper.appendChild(deleteBtn);
+            previewContainer.appendChild(wrapper);
+          };
+          reader.readAsDataURL(file);
+        });
+        
+        // Reset input so the same file can be selected again if needed
+        screenshotInput.value = '';
+      });
+    }
 
     document.getElementById('btn-back-hotels').addEventListener('click', () => this.showStep('input'));
     document.getElementById('btn-back-itinerary').addEventListener('click', () => this.showStep('hotels'));
@@ -1454,7 +1508,8 @@ const App = {
 
   renderTimeline(containerId, day) {
     const container = document.getElementById(containerId);
-    container.innerHTML = `<h3 class="day-label">${day.label}${day.dateLabel ? `<span class="day-date">${day.dateLabel}</span>` : ''}</h3>`;
+    container.innerHTML = `
+      ${screenshotsHtml}<h3 class="day-label">${day.label}${day.dateLabel ? `<span class="day-date">${day.dateLabel}</span>` : ''}</h3>`;
 
     const timeline = document.createElement('div');
     timeline.className = 'timeline';
@@ -1507,6 +1562,25 @@ const App = {
     // Construct the hotel info html for print
     const hotelImageHtml = hotel.image ? `<div class="hotel-image" style="text-align:center;"><img src="${hotel.image}" alt="${hotel.name} 外観" style="max-height:220px; object-fit:cover;"></div>` : '';
     const hotelFeaturesHtml = hotel.features ? hotel.features.map(f => `<span class="feature-tag">${f}</span>`).join('') : '';
+    // Fetch any uploaded screenshots from the itinerary step
+    const screenshotPreview = document.getElementById('route-screenshots-preview');
+    let screenshotsHtml = '';
+    if (screenshotPreview && screenshotPreview.children.length > 0) {
+      // Clone the images without the delete buttons
+      const imgElements = Array.from(screenshotPreview.querySelectorAll('img')).map(img => 
+        `<img src="${img.src}" style="max-width:100%; max-height:400px; object-fit:contain; border-radius:8px; border:1px solid #ddd;" />`
+      ).join('');
+      
+      screenshotsHtml = `
+        <div class="print-screenshots-container print-only" style="margin-top: 2rem; margin-bottom: 2rem; page-break-inside: avoid;">
+          <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📌 実際の乗換案内ルート（添付）</h3>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-start;">
+            ${imgElements}
+          </div>
+        </div>
+      `;
+    }
+
     const hotelInfoHtml = `
       <div class="hotel-card" style="box-shadow:none; border: 1px solid #ddd; padding: 1rem; margin-bottom: 0;">
         <div class="hotel-card-header"><h3>${hotel.name}</h3></div>
