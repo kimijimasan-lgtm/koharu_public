@@ -249,7 +249,15 @@ const App = {
             return false;
         }
         if (recommendedRoute && recommendedRoute.time > 300) {
-            alert('ご指定の出発駅からだと片道5時間（300分）を超えてしまうため、「疲れない旅」の基準を満たしません。\n出発地または目的地を変更してください。');
+            const formatHours = (mins) => {
+                const h = Math.floor(mins / 60);
+                const m = mins % 60;
+                return m === 0 ? h + '時間' : h + '時間' + m + '分';
+            };
+            const sTime = routeInfo.shinkansen ? '新幹線は約' + formatHours(routeInfo.shinkansen.time) : '';
+            const fTime = routeInfo.flight ? '飛行機は約' + formatHours(routeInfo.flight.time) : '';
+            const joinT = sTime && fTime ? '、' : '';
+            alert('ご指定のルートは ' + sTime + joinT + fTime + ' かかるため、片道5時間（300分）を超えてしまいます。\n「疲れない旅」の基準を満たさないため、出発地または目的地を変更してください。');
             return false;
         }
     }
