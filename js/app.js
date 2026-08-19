@@ -1509,7 +1509,7 @@ const App = {
   renderTimeline(containerId, day) {
     const container = document.getElementById(containerId);
     container.innerHTML = `
-      ${screenshotsHtml}<h3 class="day-label">${day.label}${day.dateLabel ? `<span class="day-date">${day.dateLabel}</span>` : ''}</h3>`;
+      <h3 class="day-label">${day.label}${day.dateLabel ? `<span class="day-date">${day.dateLabel}</span>` : ''}</h3>`;
 
     const timeline = document.createElement('div');
     timeline.className = 'timeline';
@@ -1598,6 +1598,14 @@ const App = {
     `;
 
     container.innerHTML = `
+      <div class="print-only print-page-1" style="display:flex; gap: 2rem; margin-bottom: 2rem;">
+        <!-- Left Column: Screenshots -->
+        <div style="flex: 0 0 320px;">
+          ${screenshotsHtml.replace('display: flex; gap: 10px; flex-wrap: wrap;', 'display: flex; flex-direction: column; gap: 15px;')}
+        </div>
+        <!-- Right Column: Itinerary Header & Details -->
+        <div style="flex: 1;">
+      
       <div class="confirmed-header-block">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
@@ -1617,7 +1625,8 @@ const App = {
         ${routeInfoHtml}
         
         ${hotelInfoHtml}
-      </div>
+        </div> <!-- End Right Column -->
+      </div> <!-- End 2 Column Layout -->
 
       <div class="print-only print-page-2">
         <div style="margin-top:1rem;">
