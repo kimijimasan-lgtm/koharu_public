@@ -1562,15 +1562,17 @@ const App = {
     // Construct the hotel info html for print
     const hotelImageHtml = hotel.image ? `<div class="hotel-image" style="text-align:center;"><img src="${hotel.image}" alt="${hotel.name} 外観" style="max-height:220px; object-fit:cover;"></div>` : '';
     const hotelFeaturesHtml = hotel.features ? hotel.features.map(f => `<span class="feature-tag">${f}</span>`).join('') : '';
-    // Fetch any uploaded screenshots from the itinerary step
-    const screenshotPreview = document.getElementById('route-screenshots-preview');
+    // Fetch uploaded screenshots from the 4 slots
     let allScreenshotsLayoutHtml = '';
+    let allImages = [];
+    for(let i=1; i<=4; i++) {
+      const preview = document.getElementById(`preview-${i}`);
+      if(preview && preview.style.display !== 'none' && preview.src) {
+        allImages.push(`<img src="${preview.src}" style="max-width:100%; max-height:400px; object-fit:contain; border-radius:8px; border:1px solid #ddd;" />`);
+      }
+    }
 
-    if (screenshotPreview && screenshotPreview.children.length > 0) {
-      const allImages = Array.from(screenshotPreview.querySelectorAll('img')).map(img => 
-        `<img src="${img.src}" style="max-width:100%; max-height:400px; object-fit:contain; border-radius:8px; border:1px solid #ddd;" />`
-      );
-      
+    if (allImages.length > 0) {
       const col1Images = allImages.slice(0, 2).join('');
       const col2Images = allImages.slice(2, 4).join('');
       
@@ -1963,3 +1965,99 @@ const App = {
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+
+  // Screenshot slots logic
+  const initScreenshotSlots = () => {
+    for(let i=1; i<=4; i++) {
+      const container = document.getElementById(`slot-container-${i}`);
+      const input = document.getElementById(`upload-${i}`);
+      const deleteBtn = document.getElementById(`delete-${i}`);
+      if(!container) continue;
+
+      // Click to upload
+      container.addEventListener('click', (e) => {
+        if(e.target === deleteBtn) return;
+        input.click();
+      });
+
+      // Handle file selection
+      input.addEventListener('change', (e) => {
+        if(e.target.files && e.target.files[0]) {
+          setSlotImage(i, e.target.files[0]);
+        }
+      });
+
+      // Handle delete
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        clearSlotImage(i);
+      });
+      
+      // Handle paste on the container
+      container.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const items = e.clipboardData.items;
+        for (let j = 0; j < items.length; j++) {
+          if (items[j].type.indexOf('image') !== -1) {
+            const file = items[j].getAsFile();
+            setSlotImage(i, file);
+            break;
+          }
+        }
+      });
+    }
+
+    // Global paste handler to fill the first empty slot
+    document.addEventListener('paste', (e) => {
+      // Ignore if a specific slot is focused to avoid double pasting
+      if(document.activeElement && document.activeElement.classList.contains('screenshot-slot')) return;
+      
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let j = 0; j < items.length; j++) {
+        if (items[j].type.indexOf('image') !== -1) {
+          const file = items[j].getAsFile();
+          // Find first empty slot
+          for(let i=1; i<=4; i++) {
+            const preview = document.getElementById(`preview-${i}`);
+            if(preview && preview.style.display === 'none') {
+              setSlotImage(i, file);
+              e.preventDefault();
+              return;
+            }
+          }
+        }
+      }
+    });
+  };
+
+  const setSlotImage = (index, file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const preview = document.getElementById(`preview-${index}`);
+      const content = document.getElementById(`slot-content-${index}`);
+      const deleteBtn = document.getElementById(`delete-${index}`);
+      
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      content.style.display = 'none';
+      deleteBtn.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearSlotImage = (index) => {
+    const preview = document.getElementById(`preview-${index}`);
+    const content = document.getElementById(`slot-content-${index}`);
+    const deleteBtn = document.getElementById(`delete-${index}`);
+    const input = document.getElementById(`upload-${index}`);
+    
+    preview.src = '';
+    preview.style.display = 'none';
+    content.style.display = 'block';
+    deleteBtn.style.display = 'none';
+    input.value = ''; // Reset input
+  };
+
+  // Initialize after a short delay to ensure DOM is ready
+  setTimeout(initScreenshotSlots, 100);
