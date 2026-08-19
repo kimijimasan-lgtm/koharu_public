@@ -1572,10 +1572,13 @@ const App = {
       ).join('');
       
       screenshotsHtml = `
-        <div class="print-screenshots-container print-only" style="margin-top: 2rem; margin-bottom: 2rem; page-break-inside: avoid;">
-          <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📌 実際の乗換案内ルート（添付）</h3>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-start;">
-            ${imgElements}
+        <!-- Left Column: Screenshots -->
+        <div style="flex: 0 0 320px;">
+          <div class="print-screenshots-container" style="page-break-inside: avoid;">
+            <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📌 実際の乗換案内ルート（添付）</h3>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+              ${imgElements}
+            </div>
           </div>
         </div>
       `;
@@ -1598,14 +1601,6 @@ const App = {
     `;
 
     container.innerHTML = `
-      <div class="print-only print-page-1" style="display:flex; gap: 2rem; margin-bottom: 2rem;">
-        <!-- Left Column: Screenshots -->
-        <div style="flex: 0 0 320px;">
-          ${screenshotsHtml.replace('display: flex; gap: 10px; flex-wrap: wrap;', 'display: flex; flex-direction: column; gap: 15px;')}
-        </div>
-        <!-- Right Column: Itinerary Header & Details -->
-        <div style="flex: 1;">
-      
       <div class="confirmed-header-block">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
@@ -1616,8 +1611,11 @@ const App = {
         </div>
       </div>
 
-      <div class="print-only print-page-1">
-        <div class="print-header" style="text-align:center; margin-bottom:1rem;">
+      <div class="print-only print-page-1" style="${screenshotsHtml ? 'display:flex; gap: 2rem;' : ''}">
+        ${screenshotsHtml}
+        <!-- Right Column: Itinerary Details -->
+        <div style="${screenshotsHtml ? 'flex: 1;' : ''}">
+          <div class="print-header" style="text-align:center; margin-bottom:1rem;">
           <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">『こはる』旅の条件</h2>
           <p style="color:#555;">${dest.area}・片道５時間以内で到着。<br>２泊３日の疲れない旅を設計します。</p>
         </div>
