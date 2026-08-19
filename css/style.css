@@ -1753,3 +1753,9 @@ body {
   font-size: 14px;
   line-height: 1;
 }
+
+.slot-content {
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
