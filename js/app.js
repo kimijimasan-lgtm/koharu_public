@@ -1568,7 +1568,7 @@ const App = {
     for(let i=1; i<=4; i++) {
       const preview = document.getElementById(`preview-${i}`);
       if(preview && preview.style.display !== 'none' && preview.src) {
-        allImages.push(`<img src="${preview.src}" style="max-width:100%; max-height:400px; object-fit:contain; border-radius:8px; border:1px solid #ddd;" />`);
+        allImages.push(`<img src="${preview.src}" style="border-radius:8px; border:1px solid #ddd;" />`);
       }
     }
 
@@ -1577,17 +1577,17 @@ const App = {
       const col2Images = allImages.slice(2, 4).join('');
       
       allScreenshotsLayoutHtml = `
-        <div class="print-screenshots-grid" style="display:flex; gap:2rem; margin-top:2rem; padding-top:2rem; border-top:1px dashed #ccc;">
-          <div style="flex:1;">
+        <div class="print-screenshots-grid" style="display:flex; gap:2rem; border-top:1px dashed #ccc;">
+          <div style="flex:1;" class="print-screenshots-col">
             ${col1Images ? `
-              <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📌 実際の乗換ルート（1・2枚目）</h3>
-              <div style="display: flex; flex-direction: column; gap: 15px;">${col1Images}</div>
+              <h3 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem; flex: 0 0 auto;">📌 実際の乗換ルート（1・2枚目）</h3>
+              ${col1Images}
             ` : ''}
           </div>
-          <div style="flex:1;">
+          <div style="flex:1;" class="print-screenshots-col">
             ${col2Images ? `
-              <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">📌 実際の乗換ルート（3・4枚目）</h3>
-              <div style="display: flex; flex-direction: column; gap: 15px;">${col2Images}</div>
+              <h3 class="section-title" style="font-size: 1rem; margin-bottom: 0.5rem; flex: 0 0 auto;">📌 実際の乗換ルート（3・4枚目）</h3>
+              ${col2Images}
             ` : ''}
           </div>
         </div>
