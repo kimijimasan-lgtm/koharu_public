@@ -1852,12 +1852,12 @@ const App = {
     const modal = document.getElementById('howto-modal');
     
     if (btnOpen) btnOpen.addEventListener('click', () => {
-      modal.classList.add('is-open');
+      modal.style.display = 'flex';
       modal.setAttribute('aria-hidden', 'false');
     });
     
     const closeModal = () => {
-      modal.classList.remove('is-open');
+      modal.style.display = 'none';
       modal.setAttribute('aria-hidden', 'true');
     };
     
