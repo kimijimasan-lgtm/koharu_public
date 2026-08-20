@@ -402,5 +402,55 @@
     </div>
   </div>
 
+
+  <!-- ======================== -->
+  <!-- Howto Modal              -->
+  <!-- ======================== -->
+  <div id="howto-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="howto-modal-backdrop"></div>
+    <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
+      <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+        <span>📖</span> このアプリの使い方
+      </h2>
+      
+      <div style="font-size: 0.95rem; line-height: 1.6; color: #333;">
+        <div style="background: #fff5f5; border-left: 4px solid #ff6b6b; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
+          <h3 style="font-size: 1rem; color: #ff6b6b; margin-bottom: 8px; margin-top: 0;">1. 本アプリは「他の乗換アプリ」とセットで使います</h3>
+          <p style="margin: 0;">このアプリが計算する時間は「疲れないルート」を選ぶための概算（プロトタイプ版）です。</p>
+          <p style="margin: 8px 0 0 0;">旅程を決めた後、必ず使い慣れた<strong>無料の乗換アプリ（Yahoo!乗換など）で正確な時間を検索し、そのスクショ画像を貼り付けて</strong>しおりを完成させてください。（画像を貼ると自動で時間が修正されます！）</p>
+        </div>
+
+        <h3 style="font-size: 1.05rem; color: var(--color-primary); margin: 20px 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px;">2. 印刷のしかた（2つの方法）</h3>
+        
+        <div style="margin-bottom: 15px;">
+          <h4 style="margin: 0 0 5px 0; color: #444;">📱 スマホから直接印刷する</h4>
+          <p style="margin: 0; font-size: 0.9rem; color: #666;">
+            <strong>メリット：</strong> スマホで画像を貼ってそのまま印刷できるので一番簡単です。<br>
+            <strong>デメリット：</strong> AirPrint対応プリンターなど、スマホから直接印刷できる環境が必要です。
+          </p>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <h4 style="margin: 0 0 5px 0; color: #444;">💻 PCから印刷する</h4>
+          <p style="margin: 0; font-size: 0.9rem; color: #666;">
+            <strong>メリット：</strong> PCからならどんなプリンターでも確実に印刷できます。<br>
+            <strong>デメリット：</strong> 本アプリはデータを保存しないため、画像をPCに送る手間がかかります。
+          </p>
+          <div style="background: #eef2f9; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.85rem;">
+            <strong>💡 PC印刷のコツ（おすすめ手順）</strong><br>
+            ① スマホで「PCで開く(QR)」を使い、PC側にルート情報を送る。<br>
+            ② <strong>スマホで撮った乗換スクショ画像は、PC・スマホ連動メモ（Appleメモ、LINE Keep、Google Keep等）に入れてPCへ送る。</strong><br>
+            ③ PCでメモアプリを開き、画像をコピーしてこのアプリにペースト（Ctrl+V）して印刷！
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button type="button" class="btn btn-primary" id="howto-modal-close" style="width: 100%;">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+
 </body>
 </html>
