@@ -674,6 +674,20 @@ const App = {
     return true;
   },
 
+  
+  isHotelAvailable(hotel, departureDateStr) {
+    if (!hotel.closedPeriod || !departureDateStr) return true;
+
+    const tripStart = departureDateStr;
+    const tripEndDate = new Date(`${departureDateStr}T00:00:00`);
+    tripEndDate.setDate(tripEndDate.getDate() + 2);
+    const tripEnd = `${tripEndDate.getFullYear()}-${String(tripEndDate.getMonth() + 1).padStart(2, '0')}-${String(tripEndDate.getDate()).padStart(2, '0')}`;
+
+    const { start: closedStart, end: closedEnd } = hotel.closedPeriod;
+    const overlaps = tripStart <= closedEnd && closedStart <= tripEnd;
+    return !overlaps;
+  },
+
   routeKey(stationName, dest) {
     const normalized = stationName.replace(/駅$/, '');
     const destName = dest.station === '小田原駅' ? '小田原' : dest.name;
