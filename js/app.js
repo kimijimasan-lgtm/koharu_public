@@ -1611,7 +1611,6 @@ const App = {
   },
 
   renderConfirmed(dest, hotel, day1, day2, day3, koharuScore, totalCost, departureStation) {
-    this.updatePrintScreenshotsLayout();
     const container = document.getElementById('confirmed-content');
     
     // Copy the route info html from the destination info container
@@ -1620,7 +1619,139 @@ const App = {
     // Construct the hotel info html for print
     const hotelImageHtml = hotel.image ? `<div class="hotel-image" style="text-align:center;"><img src="${hotel.image}" alt="${hotel.name} 外観" style="max-height:220px; object-fit:cover;"></div>` : '';
     const hotelFeaturesHtml = hotel.features ? hotel.features.map(f => `<span class="feature-tag">${f}</span>`).join('') : '';
+    this.updatePrintScreenshotsLayout();
+    container.innerHTML = `
+      <h3 class="day-label">${day.label}${day.dateLabel ? `<span class="day-date">${day.dateLabel}</span>` : ''}</h3>`;
+
+    const timeline = document.createElement('div');
+    timeline.className = 'timeline';
+
+    day.events.forEach((event) => {
+      const item = document.createElement('div');
+      item.className = `timeline-item type-${event.type}`;
+
+      if (event.type === 'transfer') {
+        const costHtml = event.cost ? `<span class="transfer-cost">（${event.cost}）</span>` : '';
+        item.innerHTML = `
+          <div class="timeline-time">${event.duration || ''}</div>
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <span class="transfer-icon">${event.icon}</span>
+            <span class="transfer-label">${event.label}${costHtml}</span>
+            ${this.sourceBadge(event)}
+          </div>
+        `;
+      } else {
+        const titleHtml = event.mapsUrl
+          ? `<a href="${event.mapsUrl}" target="_blank" rel="noopener" class="map-link">${event.title}<span class="map-icon">📍</span></a>`
+          : event.title;
+        const tabelogHtml = event.tabelogUrl
+          ? `<a href="${event.tabelogUrl}" target="_blank" rel="noopener" class="tabelog-link">食べログで予約する</a>`
+          : '';
+        item.innerHTML = `
+          <div class="timeline-time">${event.time}</div>
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">${titleHtml}${this.sourceBadge(event)}</div>
+            ${event.detail ? `<div class="timeline-detail">${event.detail}</div>` : ''}
+            ${event.note ? `<div class="cost-note">${event.note}</div>` : ''}
+            ${tabelogHtml}
+          </div>
+        `;
+      }
+      timeline.appendChild(item);
+    });
+
+    container.appendChild(timeline);
+  },
+
+  renderConfirmed(dest, hotel, day1, day2, day3, koharuScore, totalCost, departureStation) {
+    const container = document.getElementById('confirmed-content');
     
+    // Copy the route info html from the destination info container
+    const routeInfoHtml = document.getElementById('destination-info') ? document.getElementById('destination-info').innerHTML : '';
+    
+    // Construct the hotel info html for print
+    const hotelImageHtml = hotel.image ? `<div class="hotel-image" style="text-align:center;"><img src="${hotel.image}" alt="${hotel.name} 外観" style="max-height:220px; object-fit:cover;"></div>` : '';
+    const hotelFeaturesHtml = hotel.features ? hotel.features.map(f => `<span class="feature-tag">${f}</span>`).join('') : '';
+    // Fetch uploaded screenshots from the 4 slots
+    let allScreenshotsLayoutHtml = '';
+    let allImages = [];
+    for(let i=1; i<=4; i++) {
+      const preview = document.getElementById(`preview-${i}`);
+      if(preview && preview.style.display !== 'none' && preview.src) {
+        allImages.push(`<img src="${preview.src}" style="border-radius:8px; border:1px solid #ddd; width:100%; flex:1; min-height:0; object-fit:contain; margin-bottom:10px;" />`);
+      }
+    }
+
+    if (allImages.length > 0) {
+      const col1Images = allImages.slice(0, 2).join('');
+      const col2Images = allImages.slice(2, 4).join('');
+      
+      allScreenshotsLayoutHtml = `
+        <div class="print-only print-page-screenshots" style="page-break-before: always; height: 260mm; display: flex; flex-direction: column; padding-top: 2rem;">
+          <div style="text-align:center; margin-bottom:1rem;">
+            <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">📱 実際の乗換ルート（スクショ）</h2>
+            <p style="color:#555;">無料乗換アプリでの検索結果（ダイヤ詳細）</p>
+          </div>
+          
+          <div class="print-screenshots-grid" style="display:flex; gap:2rem; flex: 1; min-height: 0;">
+            <div style="flex:1; display:flex; flex-direction:column; min-height: 0;">
+              ${col1Images ? `
+                <h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem; flex: 0 0 auto;">📌 往路など（1・2枚目）</h3>
+                ${col1Images}
+              ` : ''}
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; min-height: 0;">
+              ${col2Images ? `
+                <h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem; flex: 0 0 auto;">📌 復路など（3・4枚目）</h3>
+                ${col2Images}
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const hotelInfoHtml = `
+      <div class="hotel-card" style="box-shadow:none; border: 1px solid #ddd; padding: 1rem; margin-bottom: 0;">
+        <div class="hotel-card-header"><h3>${hotel.name}</h3></div>
+        ${hotelImageHtml}
+        <div class="hotel-card-body" style="padding-top: 1rem;">
+          <div class="hotel-features">${hotelFeaturesHtml}</div>
+          <div class="hotel-details" style="display:flex; flex-wrap:wrap; gap:1rem; margin-top:0.5rem;">
+            <div class="hotel-detail-item"><span>🚕 ${dest.cityStation || dest.station}からタクシー約${hotel.taxiFromCityStation}分</span></div>
+            <div class="hotel-detail-item"><span>📍 ${hotel.area}</span></div>
+            <div class="hotel-detail-item"><span>💴 ¥${hotel.pricePerNight.toLocaleString()}/泊（税込目安）</span></div>
+            <div class="hotel-detail-item"><span>🍽️ ${hotel.dinnerIncluded ? '夕食付' : '食事なし'}・${hotel.breakfastIncluded ? '朝食付' : '朝食なし'}</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = `
+      <div class="confirmed-header-block">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <h2>${dest.name}への二泊三日</h2>
+            <p class="confirmed-subtitle">${hotel.name}（${hotel.area}）連泊</p>
+          </div>
+          
+        </div>
+      </div>
+
+      <div class="print-only print-page-1">
+          <div class="print-header" style="text-align:center; margin-bottom:1rem;">
+          <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">『こはる』旅の条件</h2>
+          <p style="color:#555;">${dest.area}・片道５時間以内で到着。<br>２泊３日の疲れない旅を設計します。</p>
+        </div>
+        
+        ${routeInfoHtml}
+        
+        ${hotelInfoHtml}
+      </div>
+      
+      
 
       <div class="print-only print-page-2" style="page-break-before: always;">
           <div style="margin-top:1rem;">
