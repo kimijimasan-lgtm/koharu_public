@@ -46,6 +46,7 @@ const App = {
     });
 
     this.bindQrModalEvents();
+    this.bindHowtoModalEvents();
     
     // Screenshot upload handling
     const screenshotInput = document.getElementById('route-screenshot-upload');
@@ -1841,6 +1842,27 @@ const App = {
     } else if (this.state.currentStep === 'confirmed') {
       this.showStep('itinerary');
     }
+  },
+
+  
+  bindHowtoModalEvents() {
+    const btnOpen = document.getElementById('btn-howto-open');
+    const btnClose = document.getElementById('howto-modal-close');
+    const backdrop = document.getElementById('howto-modal-backdrop');
+    const modal = document.getElementById('howto-modal');
+    
+    if (btnOpen) btnOpen.addEventListener('click', () => {
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+    });
+    
+    const closeModal = () => {
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+    };
+    
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (backdrop) backdrop.addEventListener('click', closeModal);
   },
 
   bindQrModalEvents() {
