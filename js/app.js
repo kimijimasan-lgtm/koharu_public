@@ -2316,9 +2316,15 @@ document.addEventListener('DOMContentLoaded', () => App.init());
           const planKey = 'day' + currentOcrDay;
           const plan = App.currentPlan[planKey];
           if(plan && plan.events && plan.events.length > 0) {
-            plan.events[0].time = startTime;
-            plan.events[plan.events.length - 1].time = endTime;
-            // Save to state for QR export
+              const verifiedEvents = plan.events.filter(e => e.timeSource === 'verified' && e.type === 'transport');
+              if (verifiedEvents.length >= 2) {
+                verifiedEvents[0].time = startTime;
+                verifiedEvents[verifiedEvents.length - 1].time = endTime;
+              } else {
+                plan.events[0].time = startTime;
+                plan.events[plan.events.length - 1].time = endTime;
+              }
+              // Save to state for QR export
             if(!App.state.customTimes) App.state.customTimes = {};
             App.state.customTimes[planKey + 'Start'] = startTime;
             App.state.customTimes[planKey + 'End'] = endTime;
