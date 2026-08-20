@@ -35,7 +35,6 @@ const App = {
   },
 
   bindEvents() {
-    this.bindSwipeEvents();
     document.getElementById('form-input').addEventListener('submit', (e) => {
       e.preventDefault();
       this.collectInputs();
