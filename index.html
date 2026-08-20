@@ -33,10 +33,14 @@
       </div>
 
       
-      <div style="text-align: center; margin-bottom: 20px; background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc;">
-        <p style="margin-top: 0; margin-bottom: 10px; font-weight: bold; color: #d9534f; font-size: 0.95rem;">【重要】本アプリは他の乗換案内アプリと併用する前提のプロトタイプです</p>
-        <button type="button" id="btn-howto-open" style="background: #d9534f; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 6px rgba(217, 83, 79, 0.2); display: inline-flex; align-items: center; gap: 8px;">
-          <span>📖</span> このアプリの使い方と印刷手順（必読）
+      <div style="margin-bottom: 20px;">
+        <button type="button" id="btn-howto-open" style="width: 100%; background: #fff5f5; color: #d9534f; border: 2px solid #d9534f; padding: 12px 15px; border-radius: 8px; cursor: pointer; text-align: left; box-shadow: 0 4px 6px rgba(217, 83, 79, 0.1);">
+          <span style="font-weight: bold; font-size: 0.95rem; line-height: 1.4; display: block; margin-bottom: 4px;">
+            【重要】本アプリは他の乗換案内アプリと併用する前提のプロトタイプです
+          </span>
+          <span style="font-weight: bold; font-size: 1rem; color: #c9302c; display: block;">
+            👉 📖 このアプリの使い方と印刷手順（必読）
+          </span>
         </button>
       </div>
 
@@ -414,9 +418,9 @@
   <!-- ======================== -->
   <!-- Howto Modal              -->
   <!-- ======================== -->
-  <div id="howto-modal" class="modal" aria-hidden="true">
-    <div class="modal-backdrop" id="howto-modal-backdrop"></div>
-    <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
+  <div id="howto-modal" class="modal" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 3000; align-items: center; justify-content: center;">
+    <div class="modal-backdrop" id="howto-modal-backdrop" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6);"></div>
+    <div class="modal-content" style="position: relative; background: white; padding: 25px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
       <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
         <span>📖</span> このアプリの使い方
       </h2>
