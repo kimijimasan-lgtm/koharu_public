@@ -8,22 +8,11 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
 
   <style>
-    .ocr-modal-backdrop {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5); z-index: 2000;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .ocr-modal-content {
-      background: white; padding: 20px; border-radius: 12px;
-      width: 90%; max-width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    }
-  </style>
-  
-
-  <style>
     @media print {
-      .print-page-1, .print-page-2 { display: none !important; }
       body { background: white; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
     }
   </style>
 </head>
@@ -187,122 +176,45 @@
   <!-- Step: Hotels             -->
   <!-- ======================== -->
   <div id="step-hotels" class="step">
-    <div class="container">
-      <div class="page-header">
-        <h1>宿の候補</h1>
-        <p><span id="hotels-area-name"></span>エリアのおすすめ宿</p>
-      </div>
+      <div class="container">
+        <div class="page-header">
+          <h1>移動手段のご提案 ＆ 宿の候補</h1>
+        </div>
+        
+        <div id="transport-recommendation" style="background:#eef2f9; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+          <!-- Populated by JS -->
+        </div>
 
-      <p style="font-size:0.8rem; color:var(--color-text-muted); text-align:center; margin-bottom:1.5rem;">
-        気になる宿を選ぶと、その宿を起点にした3日間の行程を試算します
-      </p>
-
-      <div id="hotel-list" class="hotel-list"></div>
-
-      <div class="form-actions" style="margin-top:1.5rem;">
-        <button type="button" id="btn-back-hotels" class="btn btn-ghost">← 条件を変更</button>
+        <p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; color: var(--color-primary);">🏨 <span id="hotels-area-name"></span>エリアのおすすめ宿</p>
+        <div id="hotels-list" class="hotels-grid"></div>
+        <div class="itinerary-actions">
+          <button type="button" id="btn-back-hotels" class="btn btn-ghost">← 条件を変更する</button>
+        </div>
       </div>
     </div>
-  </div>
-
-  <!-- ======================== -->
-  <!-- Step: Itinerary          -->
-  <!-- ======================== -->
-  <div id="step-itinerary" class="step">
-    <div class="container">
-      <div class="page-header">
-        <h1>行程シミュレーション</h1>
-        <p>この宿を選んだ場合の3日間</p>
-      </div>
-
-      <div class="itinerary-header">
-        <div id="itinerary-hotel-image-container"></div>
-        <div class="itinerary-hotel-info" id="itinerary-hotel-info"></div>
-      </div>
-
-      <div id="busy-period-notice"></div>
-
-      <div class="source-legend">
-        <span class="source-legend-item"><span class="src-badge src-verified">確定</span>公式時刻表・公式運賃に基づく実データ</span>
-        <span class="source-legend-item"><span class="src-badge src-estimated">概算</span>距離や平均速度からの推定値</span>
-      </div>
-
-            <!-- Screenshot Upload Section -->
-      
-
-      <div id="timeline-day1" class="day-section"></div>
-      <div id="timeline-day2" class="day-section"></div>
-      <div id="timeline-day3" class="day-section"></div>
-
-      <div class="cost-summary">
-        <h3 class="section-title">料金概算（二人分）</h3>
-        <div class="cost-row">
-          <span id="cost-shinkansen-label">新幹線（往復・指定席）</span>
-          <span id="cost-shinkansen">-</span>
+    
+    <!-- ======================== -->
+    <div id="step-yahoo-data" class="step">
+      <div class="container">
+        <div class="page-header">
+          <h1>ヤフー乗換データの連携</h1>
+          <p>あなた専用の「滞在スケジュール」を完成させます</p>
         </div>
-        <div id="cost-shinkansen-note" class="cost-note"></div>
-        <div class="cost-row" id="cost-city-connection-row" hidden>
-          <span id="cost-city-connection-label">連絡列車（往復・2名）</span>
-          <span id="cost-city-connection">-</span>
+        
+        <div style="background:#fff5f5; border-left:4px solid #d9534f; padding:15px; margin-bottom:20px; border-radius: 4px;">
+          <h3 style="margin-top:0; color:#d9534f; font-size:1.05rem;">📌 前の画面でご提案した移動手段（新幹線や飛行機など）を使って、無料の乗換アプリでルートを検索してください。</h3>
         </div>
-        <div class="cost-row">
-          <span>宿泊（2泊）</span>
-          <span id="cost-accommodation">-</span>
-        </div>
-        <div class="cost-row">
-          <span>タクシー</span>
-          <span id="cost-taxi">-</span>
-        </div>
-        <div id="cost-taxi-note" class="cost-note"></div>
-        <div class="cost-row">
-          <span>飲食</span>
-          <span id="cost-food">-</span>
-        </div>
-        <div class="cost-row cost-total-row">
-          <span>合計（概算）</span>
-          <span id="cost-total">-</span>
-        </div>
-      </div>
 
-      <div class="itinerary-actions">
-        <button type="button" id="btn-back-itinerary" class="btn btn-ghost">← 他の宿を見る</button>
-        <button type="button" id="btn-confirm" class="btn btn-primary">この行程で決定する</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================== -->
-  <!-- Step: Confirmed          -->
-  <!-- ======================== -->
-  <div id="step-confirmed" class="step">
-    <div class="container">
-
-      <div class="confirmed-actions top-actions no-print" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; text-align: center;">
-        <button type="button" class="btn btn-primary" onclick="window.print()" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">🖨️ 印刷する</button>
-        <button type="button" id="btn-back-to-input" class="btn btn-secondary" style="font-size: 1rem; padding: 10px; user-select: none;">🔙 前のページに戻る（入力内容をやり直す）</button>
-      </div>
-      
-      <div class="no-print">
-        <div style="margin-bottom: 20px;">
-        <button type="button" id="btn-howto-open" style="width: 100%; background: #fff5f5; color: #d9534f; border: 2px solid #d9534f; padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; box-shadow: 0 4px 6px rgba(217, 83, 79, 0.1); font-weight: bold; font-size: 0.95rem; line-height: 1.5;">
-          【重要】本アプリは他の乗換案内アプリと併用する前提のプロトタイプです 👉 📖 このアプリの使い方と印刷手順（必読）
-        </button>
-      </div>
-      </div>
-      
-      <div class="no-print">
         <div class="user-upload-section" style="background-color: var(--color-bg-sub); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem;">
-          <h3 class="section-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--color-primary);">📌 実際の乗換ルートを添付（しおり印刷用）</h3>
+          <h3 class="section-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--color-primary);">📷 実際の乗換ルートを添付（しおり印刷用）</h3>
           <p class="text-secondary" style="margin-bottom: 1rem; font-size: 0.9rem; line-height: 1.5;">
-            本アプリの交通時間は「疲れない旅」を提案するための<strong>プロトタイプ概算（目安）</strong>です。<br>
-            印刷用に、ヤフー乗換アプリ等で検索した「行き」と「帰り」の往復ルートのスクショをアップロードできます。<br>
-            <span style="font-size: 0.85rem; color: #666;">（※印刷時は、このスクショ（実際の正確な往復ルート）のみが印刷されます）</span>
+            検索した「行き」と「帰り」の往復ルートのスクショをアップロードしてください。<br>
+            <span style="font-size: 0.85rem; color: #666;">（※印刷時は、ここで添付した正確な往復ルートが印刷されます）</span>
           </p>
           <div class="upload-container no-print">
             <p style="font-size: 0.85rem; color: #555; margin-bottom: 1rem; text-align: center;">※画像枠をタップして写真を選択してください</p>
             
             <div class="screenshot-slots" id="screenshot-slots-container" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-  
               <div class="screenshot-slot" id="slot-container-1" tabindex="0" style="flex: 1; min-width: 150px; max-width: 250px;">
                 <input type="file" id="upload-1" accept="image/*" style="display:none;" />
                 <div class="slot-content" id="slot-content-1">
@@ -324,32 +236,63 @@
                 <img id="preview-3" class="slot-preview" style="display:none;" />
                 <button type="button" class="slot-delete" id="delete-3" style="display:none;">✕</button>
               </div>
-
             </div>
           </div>
         </div>
-      </div>
-      </div>
+        
+        <div class="arrival-departure-input" style="background:white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+          <h3 style="margin-top:0; font-size: 1.1rem; color: var(--color-primary); border-bottom: 2px solid #eef2f9; padding-bottom: 10px;">⏰ 乗換アプリで調べた「函館駅」の到着/出発時間を教えてください</h3>
+          <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">※この時間をもとに、函館での正確な滞在スケジュールを自動生成します。</p>
+          
+          <div style="display:flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+            <div style="flex:1; min-width: 200px;">
+              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">行き：函館駅への到着時刻</label>
+              <input type="time" id="hakodate-arrival-time" value="14:00" style="width:100%; padding: 12px; font-size:1.4rem; border-radius: 8px; border:2px solid #ccc; text-align:center;">
+            </div>
+            <div style="flex:1; min-width: 200px;">
+              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">帰り：函館駅からの出発時刻</label>
+              <input type="time" id="hakodate-departure-time" value="13:00" style="width:100%; padding: 12px; font-size:1.4rem; border-radius: 8px; border:2px solid #ccc; text-align:center;">
+            </div>
+          </div>
+        </div>
 
-      <div id="confirmed-content"></div>
-
-      <div class="source-legend">
-        <span class="source-legend-item"><span class="src-badge src-verified">確定</span>公式時刻表・公式運賃に基づく実データ</span>
-        <span class="source-legend-item"><span class="src-badge src-estimated">概算</span>距離や平均速度からの推定値</span>
-      </div>
-
-      <div id="confirmed-day1" class="day-section"></div>
-      <div id="confirmed-day2" class="day-section"></div>
-      <div id="confirmed-day3" class="day-section"></div>
-
-      <div class="confirmed-actions">
-        <button type="button" id="btn-new-trip" class="btn btn-secondary">新しい旅を計画する</button>
+        <div class="itinerary-actions" style="margin-top: 30px;">
+          <button type="button" id="btn-back-yahoo" class="btn btn-ghost">← 宿を選び直す</button>
+          <button type="button" id="btn-generate-final" class="btn btn-primary" style="font-size: 1.3rem; padding: 15px 30px; box-shadow: 0 4px 15px rgba(255,107,107,0.3);">✨ これで「しおり」を完成させる</button>
+        </div>
       </div>
     </div>
-  </div>
 
+    <!-- ======================== -->
+    <!-- Step: Confirmed          -->
+    <!-- ======================== -->
+    <div id="step-confirmed" class="step">
+      <div class="container">
   
-  <!-- ======================== -->
+        <div class="confirmed-actions top-actions no-print" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; text-align: center;">
+          <button type="button" class="btn btn-primary" onclick="window.print()" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">🖨️ 印刷する</button>
+          <button type="button" id="btn-back-to-yahoo-from-confirmed" class="btn btn-secondary" style="font-size: 1rem; padding: 10px; user-select: none;">🔙 前のページに戻る（画像を貼り直す）</button>
+        </div>
+        
+        <div class="no-print" style="margin-bottom: 20px;">
+          <button type="button" id="btn-howto-open" style="width: 100%; background: #fff5f5; color: #d9534f; border: 2px solid #d9534f; padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; box-shadow: 0 4px 6px rgba(217, 83, 79, 0.1); font-weight: bold; font-size: 0.95rem; line-height: 1.5;">
+            👉 📖 このアプリの使い方と印刷手順を読む
+          </button>
+        </div>
+  
+        <div id="confirmed-content">
+          <!-- Final Itinerary HTML will be injected here by JS -->
+        </div>
+  
+        <div id="dynamic-print-screenshots"></div>
+  
+        <div class="confirmed-actions no-print" style="margin-top: 30px;">
+          <button type="button" id="btn-new-trip" class="btn btn-secondary">新しい旅を計画する</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ======================== -->
   <!-- Home: トップへ戻る -->
   <!-- ======================== -->
   <button type="button" class="home-fab" aria-label="トップページへ戻る" onclick="window.location.href = window.location.pathname;" title="トップページへ戻る">
