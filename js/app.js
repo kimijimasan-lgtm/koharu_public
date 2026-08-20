@@ -598,7 +598,7 @@ const App = {
     }
     const dest = DESTINATIONS[destKey];
 
-    const container = document.getElementById('hotel-list');
+    const container = document.getElementById('hotels-list');
     container.innerHTML = '';
 
     document.getElementById('hotels-area-name').textContent = dest.name;
