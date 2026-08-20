@@ -19,6 +19,13 @@
     }
   </style>
   
+
+  <style>
+    @media print {
+      .print-page-1, .print-page-2 { display: none !important; }
+      body { background: white; }
+    }
+  </style>
 </head>
 <body>
 
@@ -285,58 +292,39 @@
       
       <div class="no-print">
         <div class="user-upload-section" style="background-color: var(--color-bg-sub); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem;">
-        <h3 class="section-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--color-primary);">📌 実際の乗換ルートを添付（しおり印刷用）</h3>
-        <p class="text-secondary" style="margin-bottom: 1rem; font-size: 0.9rem; line-height: 1.5;">
-          本アプリの交通時間は「疲れない旅」を提案するための<strong>プロトタイプ概算（目安）</strong>です。<br>
-          実際の正確なダイヤは乗換アプリ等で検索し、そのスクショを<strong>最大４枚まで</strong>アップロードできます。<br>
-          <span style="font-size: 0.85rem; color: #666;">（印刷時、1と2は左側に、3と4は右側に並んで配置されます）</span>
-        </p>
-        <div class="upload-container no-print">
-          <p style="font-size: 0.85rem; color: #555; margin-bottom: 0.5rem;">※枠をタップして写真を選択するか、ペーストボタンを押してください</p>
-          
-          <div style="text-align: center; margin-bottom: 15px;">
-            <button type="button" id="btn-global-paste" style="background: #eef2f9; color: var(--color-primary); border: 2px solid var(--color-primary); padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-              📋 コピーした画像をペースト
-            </button>
-            <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">※画像枠をタップして「写真ライブラリ」から選ぶこともできます</p>
-          </div>
-          <div class="screenshot-slots" id="screenshot-slots-container">
+          <h3 class="section-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--color-primary);">📌 実際の乗換ルートを添付（しおり印刷用）</h3>
+          <p class="text-secondary" style="margin-bottom: 1rem; font-size: 0.9rem; line-height: 1.5;">
+            本アプリの交通時間は「疲れない旅」を提案するための<strong>プロトタイプ概算（目安）</strong>です。<br>
+            印刷用に、ヤフー乗換アプリ等で検索した「行き」と「帰り」の往復ルートのスクショをアップロードできます。<br>
+            <span style="font-size: 0.85rem; color: #666;">（※印刷時は、このスクショ（実際の正確な往復ルート）のみが印刷されます）</span>
+          </p>
+          <div class="upload-container no-print">
+            <p style="font-size: 0.85rem; color: #555; margin-bottom: 1rem; text-align: center;">※画像枠をタップして写真を選択してください</p>
+            
+            <div class="screenshot-slots" id="screenshot-slots-container" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+  
+              <div class="screenshot-slot" id="slot-container-1" tabindex="0" style="flex: 1; min-width: 150px; max-width: 250px;">
+                <input type="file" id="upload-1" accept="image/*" style="display:none;" />
+                <div class="slot-content" id="slot-content-1">
+                  <span class="slot-icon">🖼️</span><br>
+                  <span class="slot-text" style="font-size:1.1rem; font-weight:bold;">行き</span><br>
+                  <span style="font-size:0.8rem;">タップして選択</span>
+                </div>
+                <img id="preview-1" class="slot-preview" style="display:none;" />
+                <button type="button" class="slot-delete" id="delete-1" style="display:none;">✕</button>
+              </div>
 
-            <div class="screenshot-slot" id="slot-container-1" tabindex="0" >
-              <input type="file" id="upload-1" accept="image/*" style="display:none;" />
-              <div class="slot-content" id="slot-content-1">
-                <span class="slot-icon">📋</span><br>
-                <span class="slot-text">画像1<br>ペースト<br>または選択</span>
+              <div class="screenshot-slot" id="slot-container-3" tabindex="0" style="flex: 1; min-width: 150px; max-width: 250px;">
+                <input type="file" id="upload-3" accept="image/*" style="display:none;" />
+                <div class="slot-content" id="slot-content-3">
+                  <span class="slot-icon">🖼️</span><br>
+                  <span class="slot-text" style="font-size:1.1rem; font-weight:bold;">帰り</span><br>
+                  <span style="font-size:0.8rem;">タップして選択</span>
+                </div>
+                <img id="preview-3" class="slot-preview" style="display:none;" />
+                <button type="button" class="slot-delete" id="delete-3" style="display:none;">✕</button>
               </div>
-              <img id="preview-1" class="slot-preview" style="display:none;" />
-              <button type="button" class="slot-delete" id="delete-1" style="display:none;">×</button>
-            </div>
-            <div class="screenshot-slot" id="slot-container-2" tabindex="0" >
-              <input type="file" id="upload-2" accept="image/*" style="display:none;" />
-              <div class="slot-content" id="slot-content-2">
-                <span class="slot-icon">📋</span><br>
-                <span class="slot-text">画像2<br>ペースト<br>または選択</span>
-              </div>
-              <img id="preview-2" class="slot-preview" style="display:none;" />
-              <button type="button" class="slot-delete" id="delete-2" style="display:none;">×</button>
-            </div>
-            <div class="screenshot-slot" id="slot-container-3" tabindex="0" >
-              <input type="file" id="upload-3" accept="image/*" style="display:none;" />
-              <div class="slot-content" id="slot-content-3">
-                <span class="slot-icon">📋</span><br>
-                <span class="slot-text">画像3<br>ペースト<br>または選択</span>
-              </div>
-              <img id="preview-3" class="slot-preview" style="display:none;" />
-              <button type="button" class="slot-delete" id="delete-3" style="display:none;">×</button>
-            </div>
-            <div class="screenshot-slot" id="slot-container-4" tabindex="0" >
-              <input type="file" id="upload-4" accept="image/*" style="display:none;" />
-              <div class="slot-content" id="slot-content-4">
-                <span class="slot-icon">📋</span><br>
-                <span class="slot-text">画像4<br>ペースト<br>または選択</span>
-              </div>
-              <img id="preview-4" class="slot-preview" style="display:none;" />
-              <button type="button" class="slot-delete" id="delete-4" style="display:none;">×</button>
+
             </div>
           </div>
         </div>

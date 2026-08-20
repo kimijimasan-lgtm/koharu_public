@@ -1566,44 +1566,32 @@ const App = {
 
   
   updatePrintScreenshotsLayout() {
-    let allImages = [];
-    for(let i=1; i<=4; i++) {
-      const preview = document.getElementById(`preview-${i}`);
-      if(preview && preview.style.display !== 'none' && preview.src) {
-        allImages.push(`<img src="${preview.src}" style="border-radius:8px; border:1px solid #ddd; width:100%; flex:1; min-height:0; object-fit:contain; margin-bottom:10px;" />`);
-      }
-    }
+    const preview1 = document.getElementById('preview-1');
+    const preview3 = document.getElementById('preview-3');
+    
+    let img1 = (preview1 && preview1.style.display !== 'none' && preview1.src) ? `<img src="${preview1.src}" style="border-radius:8px; border:1px solid #ddd; width:100%; flex:1; min-height:0; object-fit:contain; margin-bottom:10px;" />` : '';
+    let img3 = (preview3 && preview3.style.display !== 'none' && preview3.src) ? `<img src="${preview3.src}" style="border-radius:8px; border:1px solid #ddd; width:100%; flex:1; min-height:0; object-fit:contain; margin-bottom:10px;" />` : '';
 
     const container = document.getElementById('dynamic-print-screenshots');
     if (!container) return;
 
-    if (allImages.length === 0) {
+    if (!img1 && !img3) {
       container.innerHTML = '';
       return;
     }
 
-    const col1Images = allImages.slice(0, 2).join('');
-    const col2Images = allImages.slice(2, 4).join('');
-    
     container.innerHTML = `
-      <div class="print-only print-page-screenshots" style="page-break-before: always; height: 260mm; display: flex; flex-direction: column; padding-top: 2rem;">
-        <div style="text-align:center; margin-bottom:1rem;">
-          <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">🌸 実際の乗換ルート（スクショ）</h2>
-          <p style="color:#555;">乗換アプリでの検索結果（ダイヤ詳細）</p>
+      <div class="print-only print-page-screenshots" style="display: flex; flex-direction: column; height: 100vh; padding: 2rem;">
+        <div style="text-align:center; margin-bottom:1rem; flex: 0 0 auto;">
+          <h2 style="color:var(--color-primary); font-size:1.8rem; margin-bottom:0.5rem;">🌸 実際の乗換ルート</h2>
         </div>
         
         <div class="print-screenshots-grid" style="display:flex; gap:2rem; flex: 1; min-height: 0;">
           <div style="flex:1; display:flex; flex-direction:column; min-height: 0;">
-            ${col1Images ? `
-              <h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem; flex: 0 0 auto;">🌸 行き（1・2枚目）</h3>
-              ${col1Images}
-            ` : ''}
+            ${img1 ? `<h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem; flex: 0 0 auto; text-align:center;">行き</h3>${img1}` : ''}
           </div>
           <div style="flex:1; display:flex; flex-direction:column; min-height: 0;">
-            ${col2Images ? `
-              <h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem; flex: 0 0 auto;">🌸 帰り（3・4枚目）</h3>
-              ${col2Images}
-            ` : ''}
+            ${img3 ? `<h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem; flex: 0 0 auto; text-align:center;">帰り</h3>${img3}` : ''}
           </div>
         </div>
       </div>
@@ -1677,7 +1665,8 @@ const App = {
     // Fetch uploaded screenshots from the 4 slots
     let allScreenshotsLayoutHtml = '';
     let allImages = [];
-    for(let i=1; i<=4; i++) {
+    const slotsToInit = [1, 3];
+      for(let i of slotsToInit) {
       const preview = document.getElementById(`preview-${i}`);
       if(preview && preview.style.display !== 'none' && preview.src) {
         allImages.push(`<img src="${preview.src}" style="border-radius:8px; border:1px solid #ddd; width:100%; flex:1; min-height:0; object-fit:contain; margin-bottom:10px;" />`);
@@ -2139,124 +2128,11 @@ document.addEventListener('DOMContentLoaded', () => App.init());
         clearSlotImage(i);
       });
       
-      // Handle paste on the container
-      // Prevent typing text into contenteditable
-      container.addEventListener('keydown', (e) => {
-        // Allow Tab, Ctrl+V, Cmd+V
-        if (e.key === 'Tab' || (e.key === 'v' && (e.ctrlKey || e.metaKey))) {
-          return;
-        }
-        e.preventDefault();
-      });
-
-      container.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
-        let fileToPaste = null;
-        
-        if (clipboardData.files && clipboardData.files.length > 0) {
-          for (let j = 0; j < clipboardData.files.length; j++) {
-            if (clipboardData.files[j].type.startsWith('image/')) {
-              fileToPaste = clipboardData.files[j];
-              break;
-            }
-          }
-        } else if (clipboardData.items) {
-          for (let j = 0; j < clipboardData.items.length; j++) {
-            if (clipboardData.items[j].type.startsWith('image/')) {
-              fileToPaste = clipboardData.items[j].getAsFile();
-              break;
-            }
-          }
-        }
-        
-        if (fileToPaste) {
-          setSlotImage(i, fileToPaste);
-        }
-      });
-    }
-
-    // Global paste handler to fill the first empty slot
-    document.addEventListener('paste', (e) => {
-      // Ignore if a specific slot is focused to avoid double pasting
-      if(document.activeElement && document.activeElement.classList.contains('screenshot-slot')) return;
-      
-      const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
-      let fileToPaste = null;
-      
-      if (clipboardData.files && clipboardData.files.length > 0) {
-        for (let j = 0; j < clipboardData.files.length; j++) {
-          if (clipboardData.files[j].type.startsWith('image/')) {
-            fileToPaste = clipboardData.files[j];
-            break;
-          }
-        }
-      } else if (clipboardData.items) {
-        for (let j = 0; j < clipboardData.items.length; j++) {
-          if (clipboardData.items[j].type.startsWith('image/')) {
-            fileToPaste = clipboardData.items[j].getAsFile();
-            break;
-          }
-        }
       }
-      
-      if (fileToPaste) {
-        // Find first empty slot
-        for(let i=1; i<=4; i++) {
-          const preview = document.getElementById(`preview-${i}`);
-          if(preview && preview.style.display === 'none') {
-            setSlotImage(i, fileToPaste);
-            e.preventDefault();
-            return;
-          }
-        }
-      }
-    });
-    const globalPasteBtn = document.getElementById('btn-global-paste');
-    if (globalPasteBtn) {
-      globalPasteBtn.addEventListener('click', async () => {
-        try {
-          if (!navigator.clipboard || !navigator.clipboard.read) {
-            alert('お使いのブラウザはペーストボタンに対応していません。枠をタップして「写真を選択」するか、PCの場合は直接 Ctrl+V を押してください。');
-            return;
-          }
-          const clipboardItems = await navigator.clipboard.read();
-          let fileToPaste = null;
-          for (const item of clipboardItems) {
-            const imageTypes = item.types.filter(type => type.startsWith('image/'));
-            if (imageTypes.length > 0) {
-              const blob = await item.getType(imageTypes[0]);
-              fileToPaste = new File([blob], "pasted-image.png", { type: blob.type });
-              break;
-            }
-          }
-          if (fileToPaste) {
-            // Find first empty slot
-            let slotFound = false;
-            for(let i=1; i<=4; i++) {
-              const preview = document.getElementById(`preview-${i}`);
-              if(preview && preview.style.display === 'none') {
-                setSlotImage(i, fileToPaste);
-                slotFound = true;
-                break;
-              }
-            }
-            if (!slotFound) {
-              alert('すべての枠が埋まっています。');
-            }
-          } else {
-            alert('クリップボードに画像が見つかりませんでした。');
-          }
-        } catch (err) {
-          console.error(err);
-          alert('画像の読み取りに失敗しました。クリップボードのアクセス許可を確認してください。');
-        }
-      });
-    }
 
-  };
+    };
 
-  const setSlotImage = (index, file) => {
+    const setSlotImage = (index, file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const preview = document.getElementById(`preview-${index}`);
