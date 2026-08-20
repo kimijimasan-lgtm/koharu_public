@@ -107,7 +107,8 @@ const App = {
     document.getElementById('btn-back-to-yahoo-from-confirmed').addEventListener('click', () => this.showStep('yahoo-data'));
     document.getElementById('btn-generate-final').addEventListener('click', () => this.generateFinalItinerary());
     const btnBack = document.getElementById('btn-back-to-input');
-    if (btnBack) {);
+    if (btnBack) {
+      btnBack.addEventListener('click', () => this.showStep('input'));
     }
 
     document.getElementById('btn-new-trip').addEventListener('click', () => {
@@ -972,10 +973,6 @@ const App = {
         }
 
         this.showStep('yahoo-data');
-        return true;
-      }
-    }
-
         return true;
       }
     }
