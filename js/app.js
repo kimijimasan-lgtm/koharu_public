@@ -862,6 +862,31 @@ const App = {
   },
 
 
+  
+  bindHowtoModalEvents() {
+    const btnOpen = document.getElementById('btn-howto-open');
+    const btnClose = document.getElementById('howto-modal-close');
+    const backdrop = document.getElementById('howto-modal-backdrop');
+    const modal = document.getElementById('howto-modal');
+    
+    if (btnOpen) btnOpen.addEventListener('click', () => {
+      if(modal) {
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+      }
+    });
+    
+    const closeModal = () => {
+      if(modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+      }
+    };
+    
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (backdrop) backdrop.addEventListener('click', closeModal);
+  },
+
   bindQrModalEvents() {
     document.getElementById('btn-qr-open').addEventListener('click', () => this.openQrModal());
     document.getElementById('qr-modal-close').addEventListener('click', () => this.closeQrModal());
