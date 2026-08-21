@@ -688,6 +688,19 @@ const App = {
     return !overlaps;
   },
 
+  
+  timeToMin(timeStr) {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  },
+
+  minToTime(min) {
+    const h = Math.floor(min / 60);
+    const m = Math.round(min % 60);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  },
+
   routeKey(stationName, dest) {
     const normalized = stationName.replace(/駅$/, '');
     const destName = dest.station === '小田原駅' ? '小田原' : dest.name;
@@ -787,9 +800,9 @@ const App = {
     const day2Events = [];
     day2Events.push({ time: '08:00', title: hotel.breakfastIncluded ? 'ホテルで朝食' : '周辺カフェで朝食', type: 'food', icon: '🥐' });
     day2Events.push({ time: '10:00', title: 'ホテルを出発', type: 'transport', icon: '🏨' });
-    day2Events.push({ time: '10:30', title: dest.sightseeing[0]?.name || '観光スポットA', type: 'sightseeing', icon: '📸' });
+    day2Events.push({ time: '10:30', title: dest.spots[0]?.name || '観光スポットA', type: 'sightseeing', icon: '📸' });
     day2Events.push({ time: '12:30', title: '周辺で昼食', type: 'food', icon: '🍜' });
-    day2Events.push({ time: '14:30', title: dest.sightseeing[1]?.name || '観光スポットB', type: 'sightseeing', icon: '🏯' });
+    day2Events.push({ time: '14:30', title: dest.spots[1]?.name || '観光スポットB', type: 'sightseeing', icon: '🏯' });
     day2Events.push({ time: '17:00', title: 'ホテルへ帰還', type: 'hotel', icon: '🏨' });
 
     // Build Day 3 Timeline
