@@ -760,6 +760,61 @@ const App = {
     container.innerHTML = html;
   },
 
+  
+  // Map link helper
+  getGoogleMapsUrl(query) {
+    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
+  },
+
+  enrichEventsWithLinks(events, hotel, dest) {
+    events.forEach(event => {
+      if (event.type === 'sightseeing' || event.type === 'spot') {
+        event.mapsUrl = this.getGoogleMapsUrl(dest.name + ' ' + event.title);
+      } else if (event.type === 'hotel') {
+        event.mapsUrl = this.getGoogleMapsUrl(event.title.replace(' 到着', '').replace('へ帰還', '').replace(' チェックアウト', ''));
+      } else if (event.type === 'food') {
+        const name = event.title.replace(/^夕食：/, '').replace(/^昼食：/, '').replace(/^周辺レストランで/, '').replace(/^周辺カフェで/, '').replace(/^ホテルで/, '');
+        event.mapsUrl = this.getGoogleMapsUrl(dest.name + ' ' + name);
+      }
+    });
+  },
+
+  renderTimeline(events) {
+    let html = '<div class="timeline">';
+    events.forEach(e => {
+      let titleHtml = e.title;
+      if (e.mapsUrl) {
+        titleHtml = `<a href="${e.mapsUrl}" target="_blank" rel="noopener" class="map-link">${e.title}<span class="map-icon">📍</span></a>`;
+      }
+      
+      if (e.type === 'transfer') {
+        html += `
+          <div class="timeline-item type-transfer">
+            <div class="timeline-time">${e.duration ? e.duration + '分' : ''}</div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <span class="transfer-icon">${e.icon}</span>
+              <span class="transfer-label">${e.title}</span>
+            </div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="timeline-item type-${e.type}">
+            <div class="timeline-time">${e.time || ''}</div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">${titleHtml}</div>
+              ${e.detail ? `<div class="timeline-detail">${e.detail}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+    });
+    html += '</div>';
+    return html;
+  },
+
   generateFinalItinerary() {
     const hotel = this.state.selectedHotel;
     if (!hotel) {
@@ -782,10 +837,15 @@ const App = {
     
     let currentMin = arrMin;
     const day1Events = [];
+    
+    // Prepend home departure based on uploaded images
+    day1Events.push({ time: '', title: '自宅・出発地を出発', type: 'transport', icon: '🏠' });
+    day1Events.push({ type: 'transfer', title: '行きのルート（添付画像参照）', icon: '🚄', duration: null });
+    
     day1Events.push({ time: this.minToTime(currentMin), title: `${dest.cityStation || dest.station} 到着`, type: 'transport', icon: '🚉' });
     
     currentMin += 15; // wait for taxi/bus
-    day1Events.push({ time: this.minToTime(currentMin), title: `タクシー等で移動 (${hotel.taxiFromCityStation})`, type: 'transfer', icon: '🚕', duration: hotel.taxiFromCityStation });
+    day1Events.push({ time: this.minToTime(currentMin), title: `タクシー等で移動 (${hotel.taxiFromCityStation}分)`, type: 'transfer', icon: '🚕', duration: hotel.taxiFromCityStation });
     
     currentMin += parseInt(hotel.taxiFromCityStation) || 15;
     day1Events.push({ time: this.minToTime(currentMin), title: hotel.name + ' 到着', type: 'hotel', icon: '🏨' });
@@ -811,43 +871,34 @@ const App = {
     
     const day3Events = [];
     day3Events.push({ time: '08:30', title: hotel.breakfastIncluded ? 'ホテルで朝食' : '周辺で朝食', type: 'food', icon: '🥐' });
-    day3Events.push({ time: '10:00', title: 'チェックアウト・出発', type: 'transport', icon: '🏨' });
-    day3Events.push({ time: '10:30', title: 'お土産購入・市場散策など', type: 'shopping', icon: '🛍️' });
+    day3Events.push({ time: '10:00', title: 'ホテルをチェックアウト', type: 'hotel', icon: '🏨' });
+    day3Events.push({ time: '10:30', title: 'お土産購入・市場散策など', type: 'sightseeing', icon: '🛍️' });
     
     const stationArrMin = depMin - 30; // arrive 30 mins before departure
-    day3Events.push({ time: this.minToTime(stationArrMin - parseInt(hotel.taxiFromCityStation || 15)), title: `${dest.cityStation || dest.station}へ移動 (${hotel.taxiFromCityStation})`, type: 'transfer', icon: '🚕', duration: hotel.taxiFromCityStation });
+    day3Events.push({ time: this.minToTime(stationArrMin - parseInt(hotel.taxiFromCityStation || 15)), title: `${dest.cityStation || dest.station}へ移動 (${hotel.taxiFromCityStation}分)`, type: 'transfer', icon: '🚕', duration: hotel.taxiFromCityStation });
     day3Events.push({ time: this.minToTime(stationArrMin), title: `${dest.cityStation || dest.station} 到着（お土産・休憩）`, type: 'transport', icon: '🚉' });
     day3Events.push({ time: this.minToTime(depMin), title: `${dest.cityStation || dest.station} 出発`, type: 'transport', icon: '🚄' });
+    
+    day3Events.push({ type: 'transfer', title: '帰りのルート（添付画像参照）', icon: '🚄', duration: null });
+    day3Events.push({ time: '', title: '自宅・出発地に帰着', type: 'transport', icon: '🏠' });
+
+    this.enrichEventsWithLinks(day1Events, hotel, dest);
+    this.enrichEventsWithLinks(day2Events, hotel, dest);
+    this.enrichEventsWithLinks(day3Events, hotel, dest);
 
     // Render logic
     const container = document.getElementById('confirmed-content');
     
-    // Build Timeline HTML strings
-    const renderTimeline = (events) => {
-      return events.map(e => `
-        <div class="timeline-event ${e.type === 'transfer' ? 'timeline-transfer' : ''}">
-          ${e.type !== 'transfer' ? `<div class="timeline-time">${e.time}</div>` : '<div class="timeline-time"></div>'}
-          <div class="timeline-node">
-            ${e.type === 'transfer' ? '<div class="transfer-line"></div>' : `<div class="node-dot">${e.icon}</div>`}
-          </div>
-          <div class="timeline-content">
-            <div class="timeline-title">${e.title}</div>
-            ${e.duration ? `<div class="timeline-desc">${e.duration}</div>` : ''}
-          </div>
-        </div>
-      `).join('');
-    };
-
     container.innerHTML = `
       <div class="print-page-1" style="margin-bottom: 30px;">
         <div class="itinerary-header" style="text-align:center; padding: 20px; background:var(--color-bg-sub); border-radius:12px; margin-bottom: 20px;">
-          <h1 style="color:var(--color-primary); font-size: 1.8rem; margin:0;">${dest.name}への滞在しおり</h1>
+          <h1 style="color:var(--color-primary); font-size: 1.8rem; margin:0;">${dest.name}滞在 特化型しおり</h1>
           <p style="color:#555; margin-top:5px;">ご宿泊：<strong>${hotel.name}</strong></p>
         </div>
 
         <div style="display:flex; gap: 20px; flex-wrap:wrap; margin-bottom: 30px;">
           <div style="flex:1; min-width:300px; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🏨 宿泊先情報</h3>
+            <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🏨 宿泊情報</h3>
             <p><strong>${hotel.name}</strong></p>
             <p style="font-size:0.9rem; color:#666;">📍 ${hotel.area}</p>
             <p style="font-size:0.9rem; color:#666;">${hotel.features.join(' / ')}</p>
@@ -855,7 +906,7 @@ const App = {
           <div style="flex:1; min-width:300px; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
             <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🎒 持ち物チェックリスト</h3>
             <ul style="list-style:none; padding:0; margin:0; font-size:0.9rem; line-height:1.8;">
-              <li><input type="checkbox"> 着替え（2泊分）</li>
+              <li><input type="checkbox"> 着替え（2泊3日分）</li>
               <li><input type="checkbox"> スマホ充電器・モバイルバッテリー</li>
               <li><input type="checkbox"> 常備薬・洗面用具</li>
               <li><input type="checkbox"> 健康保険証・身分証</li>
@@ -864,21 +915,21 @@ const App = {
           </div>
         </div>
 
-        <h3 class="section-title">🕒 現地滞在スケジュール</h3>
+        <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
         
-        <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 函館へ到着</h4>
+        <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 ${dest.name}へ到着</h4>
         <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-          ${renderTimeline(day1Events)}
+          ${this.renderTimeline(day1Events)}
         </div>
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【2日目】 終日フリー・観光</h4>
         <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-          ${renderTimeline(day2Events)}
+          ${this.renderTimeline(day2Events)}
         </div>
 
-        <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【3日目】 函館を出発</h4>
+        <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【3日目】 ${dest.name}を出発</h4>
         <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-          ${renderTimeline(day3Events)}
+          ${this.renderTimeline(day3Events)}
         </div>
       </div>
     `;
@@ -888,8 +939,6 @@ const App = {
     window.scrollTo(0,0);
   },
 
-
-  
   bindHowtoModalEvents() {
     const btnOpen = document.getElementById('btn-howto-open');
     const btnClose = document.getElementById('howto-modal-close');
