@@ -730,38 +730,6 @@ const App = {
 
   
   
-  updatePrintScreenshotsLayout() {
-    const container = document.getElementById('dynamic-print-screenshots');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const img1 = document.getElementById('preview-1');
-    const img3 = document.getElementById('preview-3');
-
-    let html = '<div class="print-page-screenshots" style="page-break-before: always; width: 100%;">';
-    html += '<h2 style="text-align:center; color:#333; margin-bottom: 20px;">ヤフー乗換ルート（時刻表）</h2>';
-    html += '<div class="print-screenshots-grid" style="display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%;">';
-
-    const addImg = (imgEl, label) => {
-      if (imgEl && imgEl.style.display !== 'none' && imgEl.src) {
-        html += `
-          <div style="width: 100%; max-width: 800px; text-align: center; margin-bottom: 20px;">
-            <h3 style="margin-bottom: 10px; color:#555; border-bottom: 2px solid #ccc; display:inline-block; padding-bottom:5px;">${label}</h3>
-            <img src="${imgEl.src}" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-          </div>
-        `;
-      }
-    };
-
-    addImg(img1, '行き（到着ルート）');
-    addImg(img3, '帰り（出発ルート）');
-
-    html += '</div></div>';
-    container.innerHTML = html;
-  },
-
-  
-  // Map link helper
   getGoogleMapsUrl(query) {
     return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
   },
@@ -795,6 +763,7 @@ const App = {
             <div class="timeline-content">
               <span class="transfer-icon">${e.icon}</span>
               <span class="transfer-label">${e.title}</span>
+              ${e.detail ? `<div class="timeline-detail" style="margin-top: 5px;">${e.detail}</div>` : ''}
             </div>
           </div>
         `;
@@ -805,7 +774,7 @@ const App = {
             <div class="timeline-dot"></div>
             <div class="timeline-content">
               <div class="timeline-title">${titleHtml}</div>
-              ${e.detail ? `<div class="timeline-detail">${e.detail}</div>` : ''}
+              ${e.detail ? `<div class="timeline-detail" style="margin-top: 5px;">${e.detail}</div>` : ''}
             </div>
           </div>
         `;
@@ -813,6 +782,13 @@ const App = {
     });
     html += '</div>';
     return html;
+  },
+
+  updatePrintScreenshotsLayout() {
+    const container = document.getElementById('dynamic-print-screenshots');
+    if (container) {
+      container.innerHTML = '';
+    }
   },
 
   generateFinalItinerary() {
@@ -831,6 +807,19 @@ const App = {
     const arrInput = document.getElementById('hakodate-arrival-time').value || '14:00';
     const depInput = document.getElementById('hakodate-departure-time').value || '13:00';
     
+    // Get images
+    const img1El = document.getElementById('preview-1');
+    const img3El = document.getElementById('preview-3');
+    const img1Src = (img1El && img1El.style.display !== 'none' && img1El.src) ? img1El.src : null;
+    const img3Src = (img3El && img3El.style.display !== 'none' && img3El.src) ? img3El.src : null;
+    
+    const wrapImage = (src) => {
+      if (!src) return '';
+      return `<div style="width: 100%; overflow: hidden; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; background: #fff;">
+        <img src="${src}" style="width: 120%; max-width: none; margin-left: -10%; display: block;">
+      </div>`;
+    };
+
     // Build Day 1 Timeline (Local Hakodate)
     const arrParts = arrInput.split(':').map(Number);
     const arrMin = arrParts[0] * 60 + arrParts[1];
@@ -840,7 +829,7 @@ const App = {
     
     // Prepend home departure based on uploaded images
     day1Events.push({ time: '', title: '自宅・出発地を出発', type: 'transport', icon: '🏠' });
-    day1Events.push({ type: 'transfer', title: '行きのルート（添付画像参照）', icon: '🚄', duration: null });
+    day1Events.push({ type: 'transfer', title: '行きのルート（添付画像参照）', icon: '🚄', duration: null, detail: wrapImage(img1Src) });
     
     day1Events.push({ time: this.minToTime(currentMin), title: `${dest.cityStation || dest.station} 到着`, type: 'transport', icon: '🚉' });
     
@@ -879,7 +868,7 @@ const App = {
     day3Events.push({ time: this.minToTime(stationArrMin), title: `${dest.cityStation || dest.station} 到着（お土産・休憩）`, type: 'transport', icon: '🚉' });
     day3Events.push({ time: this.minToTime(depMin), title: `${dest.cityStation || dest.station} 出発`, type: 'transport', icon: '🚄' });
     
-    day3Events.push({ type: 'transfer', title: '帰りのルート（添付画像参照）', icon: '🚄', duration: null });
+    day3Events.push({ type: 'transfer', title: '帰りのルート（添付画像参照）', icon: '🚄', duration: null, detail: wrapImage(img3Src) });
     day3Events.push({ time: '', title: '自宅・出発地に帰着', type: 'transport', icon: '🏠' });
 
     this.enrichEventsWithLinks(day1Events, hotel, dest);
