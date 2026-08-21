@@ -861,6 +861,77 @@ const App = {
     return result;
   },
 
+  
+  autoCropBlackMargins(dataUrl) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        let minX = canvas.width, maxX = 0;
+        let minY = canvas.height, maxY = 0;
+        
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            const i = (y * canvas.width + x) * 4;
+            const r = data[i], g = data[i+1], b = data[i+2];
+            // threshold for black (allow dark gray noise)
+            if (r > 20 || g > 20 || b > 20) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        
+        if (minX <= maxX && minY <= maxY) {
+          if (minX > 0 || maxX < canvas.width - 1 || minY > 0 || maxY < canvas.height - 1) {
+             const cropW = maxX - minX + 1;
+             const cropH = maxY - minY + 1;
+             const cropCanvas = document.createElement('canvas');
+             cropCanvas.width = cropW;
+             cropCanvas.height = cropH;
+             const cropCtx = cropCanvas.getContext('2d');
+             cropCtx.drawImage(img, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+             resolve(cropCanvas.toDataURL('image/png'));
+             return;
+          }
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  },
+
+  getDinnerReservationLinks(day1, day2, day3) {
+    const dinners = [];
+    [day1, day2, day3].forEach((day, i) => {
+      day.forEach(e => {
+        if (e.mapsUrl && (e.title.includes('夕食') || e.title.includes('昼食')) && !e.title.includes('ホテル')) {
+          const name = e.title.replace(/^夕食：/, '').replace(/^昼食：/, '');
+          if (!dinners.find(d => d.name === name)) {
+            dinners.push({ name, url: e.tabelogUrl || e.mapsUrl, day: `${i + 1}日目` });
+          }
+        }
+      });
+    });
+    if (dinners.length === 0) return '';
+    return dinners.map(d => `
+      <div class="reservation-link-item" style="background:#fff; border:1px solid #ddd; padding:10px; border-radius:8px; display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+        <div class="reservation-link-label" style="font-weight:bold;">🍽️ ${d.name} <span style="font-size:0.8em; color:#666;">(${d.day})</span></div>
+        <a href="${d.url}" target="_blank" rel="noopener" class="btn btn-reservation btn-tabelog" style="background:#e67e22; color:#fff; text-decoration:none; padding:5px 15px; border-radius:4px; font-size:0.9em;">食べログ等で予約・確認する</a>
+      </div>
+    `).join('');
+  },
+
   getGoogleMapsUrl(query) {
     return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
   },
@@ -874,6 +945,12 @@ const App = {
       } else if (event.type === 'food') {
         const name = event.title.replace(/^夕食：/, '').replace(/^昼食：/, '').replace(/^周辺レストランで/, '').replace(/^周辺カフェで/, '').replace(/^ホテルで/, '');
         event.mapsUrl = this.getGoogleMapsUrl(dest.name + ' ' + name);
+        const r = [...(dest.restaurants?.dinner || []), ...(dest.restaurants?.lunch || []), ...(dest.restaurants?.snack || [])].find(d => name.includes(d.name));
+        if (typeof getTabelogSearchUrl !== 'undefined') {
+          event.tabelogUrl = getTabelogSearchUrl(name, dest.name);
+        } else if (r && r.tabelogUrl) {
+          event.tabelogUrl = r.tabelogUrl;
+        }
       }
     });
   },
@@ -922,7 +999,7 @@ const App = {
     }
   },
 
-  generateFinalItinerary() {
+  async generateFinalItinerary() {
     const hotel = this.state.selectedHotel;
     if (!hotel) {
       alert('宿が選択されていません。');
@@ -941,13 +1018,17 @@ const App = {
     // Get images
     const img1El = document.getElementById('preview-1');
     const img3El = document.getElementById('preview-3');
-    const img1Src = (img1El && img1El.style.display !== 'none' && img1El.src) ? img1El.src : null;
-    const img3Src = (img3El && img3El.style.display !== 'none' && img3El.src) ? img3El.src : null;
+
+    let img1Src = (img1El && img1El.style.display !== 'none' && img1El.src) ? img1El.src : null;
+    let img3Src = (img3El && img3El.style.display !== 'none' && img3El.src) ? img3El.src : null;
+    
+    img1Src = img1Src ? await this.autoCropBlackMargins(img1Src) : null;
+    img3Src = img3Src ? await this.autoCropBlackMargins(img3Src) : null;
     
     const wrapImage = (src) => {
       if (!src) return '';
-      return `<div style="width: 100%; overflow: hidden; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; background: #fff;">
-        <img src="${src}" style="width: 120%; max-width: none; margin-left: -10%; display: block;">
+      return `<div style="width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; background: #fff;">
+        <img src="${src}" style="width: 100%; max-height: 800px; object-fit: contain; display: block; border-radius: 8px;">
       </div>`;
     };
 
@@ -971,14 +1052,20 @@ const App = {
     day1Events.push({ time: this.minToTime(currentMin), title: 'ホテル周辺を散策', type: 'sightseeing', icon: '🚶' });
     
     currentMin += 120;
-    day1Events.push({ time: this.minToTime(currentMin), title: hotel.dinnerIncluded ? 'ホテルで夕食' : '周辺レストランで夕食', type: 'food', icon: '🍽️' });
+    if (hotel.dinnerIncluded) {
+      day1Events.push({ time: this.minToTime(currentMin), title: 'ホテルで夕食', type: 'food', icon: '🍽️' });
+    } else {
+      const dinner = dest.restaurants?.dinner?.[0];
+      day1Events.push({ time: this.minToTime(currentMin), title: dinner ? `夕食：${dinner.name}` : '周辺レストランで夕食', type: 'food', icon: '🍽️', detail: dinner ? dinner.description : '' });
+    };
 
     // Build Day 2 Timeline
     let day2Events = [];
     day2Events.push({ time: '08:00', title: hotel.breakfastIncluded ? 'ホテルで朝食' : '周辺カフェで朝食', type: 'food', icon: '🥐' });
     day2Events.push({ time: '10:00', title: 'ホテルを出発', type: 'transport', icon: '🏨' });
     day2Events.push({ time: '10:30', title: dest.spots[0]?.name || '観光スポットA', type: 'sightseeing', icon: '📸' });
-    day2Events.push({ time: '12:30', title: '周辺で昼食', type: 'food', icon: '🍜' });
+    const lunch = dest.restaurants?.lunch?.[0];
+    day2Events.push({ time: '12:30', title: lunch ? `昼食：${lunch.name}` : '周辺で昼食', type: 'food', icon: '🍜', detail: lunch ? lunch.description : '' });
     day2Events.push({ time: '14:30', title: dest.spots[1]?.name || '観光スポットB', type: 'sightseeing', icon: '🏯' });
     day2Events.push({ time: '17:00', title: 'ホテルへ帰還', type: 'hotel', icon: '🏨' });
 
@@ -1007,6 +1094,14 @@ const App = {
     this.enrichEventsWithLinks(day3Events, hotel, dest);
 
     // Render logic
+    const reservationHtml = this.getDinnerReservationLinks(day1Events, day2Events, day3Events);
+    const reservationSection = reservationHtml ? `
+        <div style="width:100%; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
+          <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:#d35400;">📞 予約・確認が必要なレストラン</h3>
+          ${reservationHtml}
+        </div>
+    ` : '';
+    
     const container = document.getElementById('confirmed-content');
     
     container.innerHTML = `
@@ -1035,6 +1130,7 @@ const App = {
           </div>
         </div>
 
+        ${reservationSection}
         <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
         
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 ${dest.name}へ到着</h4>
