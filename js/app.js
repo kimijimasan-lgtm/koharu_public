@@ -730,6 +730,137 @@ const App = {
 
   
   
+  estimateTaxiFare(destName, minutes) {
+    if (typeof getTaxiFareData !== 'undefined') {
+      const taxiFareData = getTaxiFareData(destName);
+      if (taxiFareData) {
+        const estimatedKm = minutes * 0.5;
+        const extraM = Math.max(0, (estimatedKm - taxiFareData.initial_fare.distance_km) * 1000);
+        return (
+          taxiFareData.initial_fare.yen +
+          Math.ceil(extraM / taxiFareData.additional_fare.distance_m) * taxiFareData.additional_fare.yen
+        );
+      }
+    }
+    return minutes * 500;
+  },
+
+  makeTransfer(icon, title, duration, cost) {
+    return { type: 'transfer', icon, title, duration: duration, cost: cost };
+  },
+  
+  lookupAreaTaxi(area, dest) {
+    if (area === '__station__') return 0;
+    const spot = dest.spots && dest.spots.find(s => s.area === area);
+    return spot ? spot.taxiFromCityStation : null;
+  },
+
+  inferEventLocation(event, hotel, dest) {
+    if (event.type === 'transfer') return null;
+    const hotelLoc = { venue: hotel.name, area: hotel.area, taxiFromCityStation: hotel.taxiFromCityStation };
+    if (event.type === 'transport') {
+      const stationName = dest.cityStation || dest.station;
+      return { venue: stationName, area: '__station__', taxiFromCityStation: 0 };
+    }
+    if (event.type === 'hotel') return hotelLoc;
+    if (event.type === 'food') {
+      const name = event.title;
+      if (name.includes('ホテルで')) return hotelLoc;
+      
+      const r = [...(dest.restaurants?.dinner || []), ...(dest.restaurants?.lunch || []), ...(dest.restaurants?.snack || [])].find(d => name.includes(d.name));
+      const area = r ? r.area : '__unknown__';
+      return { venue: name, area, taxiFromCityStation: this.lookupAreaTaxi(area, dest) };
+    }
+    if (event.type === 'sightseeing' || event.type === 'spot') {
+      const s = dest.spots && dest.spots.find(sp => sp.name === event.title);
+      return { venue: event.title, area: s ? s.area : '__unknown__', taxiFromCityStation: s ? s.taxiFromCityStation : null };
+    }
+    return { venue: '__unknown__', area: '__unknown__', taxiFromCityStation: null };
+  },
+
+  estimateMovement(fromLoc, toLoc, hotel, dest) {
+    if (fromLoc.area === toLoc.area && fromLoc.area !== '__unknown__' && fromLoc.area !== '__station__') {
+      return this.makeTransfer('🚶', '徒歩で移動', '約5分', null);
+    }
+    const fromTaxi = fromLoc.taxiFromCityStation;
+    const toTaxi = toLoc.taxiFromCityStation;
+    if (fromTaxi != null && toTaxi != null) {
+      const diff = Math.abs(fromTaxi - toTaxi);
+      const est = Math.max(10, diff + 5);
+      return this.makeTransfer('🚕', 'タクシー等で移動', `約${est}分`, `¥${this.estimateTaxiFare(dest.name, est).toLocaleString()}`);
+    }
+    if (fromTaxi != null || toTaxi != null) {
+      const est = fromTaxi != null ? fromTaxi : toTaxi;
+      return this.makeTransfer('🚕', 'タクシー等で移動', `約${est}分`, `¥${this.estimateTaxiFare(dest.name, est).toLocaleString()}`);
+    }
+    return this.makeTransfer('🔄', '移動', '', null);
+  },
+
+  fillMovementGaps(events, hotel, dest) {
+    const result = [];
+    for (let i = 0; i < events.length; i++) {
+      result.push(events[i]);
+      const current = events[i];
+      const next = events[i + 1];
+      
+      if (!next || current.type === 'transfer' || next.type === 'transfer') continue;
+      
+      const currentLoc = this.inferEventLocation(current, hotel, dest);
+      const nextLoc = this.inferEventLocation(next, hotel, dest);
+      if (!currentLoc || !nextLoc) continue;
+
+      if (currentLoc.venue === nextLoc.venue && currentLoc.venue !== '__unknown__') {
+        if (current.time && next.time) {
+          const gapMin = this.timeToMin(next.time) - this.timeToMin(current.time);
+          let eventDur = current.duration || 0;
+          if (!eventDur) {
+            switch (current.type) {
+              case 'food': eventDur = 60; break;
+              case 'hotel': eventDur = 15; break;
+              case 'sightseeing': eventDur = 60; break;
+            }
+          }
+          const freeTime = gapMin - eventDur;
+          if (freeTime >= 15) {
+            const rounded = Math.round(freeTime / 5) * 5;
+            let locLabel;
+            if (currentLoc.venue === hotel.name) locLabel = '宿';
+            else if (currentLoc.area === '__station__') locLabel = currentLoc.venue;
+            else locLabel = currentLoc.area;
+            result.push({
+              type: 'transfer', icon: '⏳',
+              title: `${locLabel}周辺で自由時間`,
+              duration: `約${rounded}分`,
+            });
+          }
+        }
+        continue;
+      }
+      
+      // Calculate stay duration based on next event time
+      const transfer = this.estimateMovement(currentLoc, nextLoc, hotel, dest);
+      
+      if (current.time && next.time) {
+        const gapMin = this.timeToMin(next.time) - this.timeToMin(current.time);
+        let eventDur = 0;
+        if (current.type === 'food') eventDur = 60;
+        else if (current.type === 'sightseeing') eventDur = 90;
+        else if (current.type === 'hotel') eventDur = 15;
+        
+        let freeTime = gapMin - eventDur - parseInt((transfer.duration || '').replace(/[^0-9]/g, '') || 0);
+        if (freeTime >= 15 && current.type !== 'transport') {
+            const rounded = Math.round(freeTime / 5) * 5;
+            current.detail = (current.detail ? current.detail + ' / ' : '') + `滞在：約${eventDur + rounded}分`;
+        } else if (current.type !== 'transport') {
+            current.detail = (current.detail ? current.detail + ' / ' : '') + `滞在：約${eventDur}分`;
+        }
+      }
+
+      result.push(transfer);
+    }
+    return result;
+  },
+
   getGoogleMapsUrl(query) {
     return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
   },
@@ -762,7 +893,7 @@ const App = {
             <div class="timeline-dot"></div>
             <div class="timeline-content">
               <span class="transfer-icon">${e.icon}</span>
-              <span class="transfer-label">${e.title}</span>
+              <span class="transfer-label">${e.title}</span>\n              ${e.cost ? ` <span class="transfer-cost" style="margin-left: 10px; color: #e67e22; font-weight: bold; font-size: 0.85em;">${e.cost}</span>` : ""}
               ${e.detail ? `<div class="timeline-detail" style="margin-top: 5px;">${e.detail}</div>` : ''}
             </div>
           </div>
@@ -825,7 +956,7 @@ const App = {
     const arrMin = arrParts[0] * 60 + arrParts[1];
     
     let currentMin = arrMin;
-    const day1Events = [];
+    let day1Events = [];
     
     // Prepend home departure based on uploaded images
     day1Events.push({ time: '', title: '自宅・出発地を出発', type: 'transport', icon: '🏠' });
@@ -833,10 +964,7 @@ const App = {
     
     day1Events.push({ time: this.minToTime(currentMin), title: `${dest.cityStation || dest.station} 到着`, type: 'transport', icon: '🚉' });
     
-    currentMin += 15; // wait for taxi/bus
-    day1Events.push({ time: this.minToTime(currentMin), title: `タクシー等で移動 (${hotel.taxiFromCityStation}分)`, type: 'transfer', icon: '🚕', duration: hotel.taxiFromCityStation });
-    
-    currentMin += parseInt(hotel.taxiFromCityStation) || 15;
+    currentMin += 15 + (parseInt(hotel.taxiFromCityStation) || 15);
     day1Events.push({ time: this.minToTime(currentMin), title: hotel.name + ' 到着', type: 'hotel', icon: '🏨' });
     
     currentMin += 60; // rest
@@ -846,7 +974,7 @@ const App = {
     day1Events.push({ time: this.minToTime(currentMin), title: hotel.dinnerIncluded ? 'ホテルで夕食' : '周辺レストランで夕食', type: 'food', icon: '🍽️' });
 
     // Build Day 2 Timeline
-    const day2Events = [];
+    let day2Events = [];
     day2Events.push({ time: '08:00', title: hotel.breakfastIncluded ? 'ホテルで朝食' : '周辺カフェで朝食', type: 'food', icon: '🥐' });
     day2Events.push({ time: '10:00', title: 'ホテルを出発', type: 'transport', icon: '🏨' });
     day2Events.push({ time: '10:30', title: dest.spots[0]?.name || '観光スポットA', type: 'sightseeing', icon: '📸' });
@@ -858,18 +986,21 @@ const App = {
     const depParts = depInput.split(':').map(Number);
     let depMin = depParts[0] * 60 + depParts[1];
     
-    const day3Events = [];
+    let day3Events = [];
     day3Events.push({ time: '08:30', title: hotel.breakfastIncluded ? 'ホテルで朝食' : '周辺で朝食', type: 'food', icon: '🥐' });
     day3Events.push({ time: '10:00', title: 'ホテルをチェックアウト', type: 'hotel', icon: '🏨' });
     day3Events.push({ time: '10:30', title: 'お土産購入・市場散策など', type: 'sightseeing', icon: '🛍️' });
     
     const stationArrMin = depMin - 30; // arrive 30 mins before departure
-    day3Events.push({ time: this.minToTime(stationArrMin - parseInt(hotel.taxiFromCityStation || 15)), title: `${dest.cityStation || dest.station}へ移動 (${hotel.taxiFromCityStation}分)`, type: 'transfer', icon: '🚕', duration: hotel.taxiFromCityStation });
     day3Events.push({ time: this.minToTime(stationArrMin), title: `${dest.cityStation || dest.station} 到着（お土産・休憩）`, type: 'transport', icon: '🚉' });
     day3Events.push({ time: this.minToTime(depMin), title: `${dest.cityStation || dest.station} 出発`, type: 'transport', icon: '🚄' });
     
     day3Events.push({ type: 'transfer', title: '帰りのルート（添付画像参照）', icon: '🚄', duration: null, detail: wrapImage(img3Src) });
     day3Events.push({ time: '', title: '自宅・出発地に帰着', type: 'transport', icon: '🏠' });
+
+    day1Events = this.fillMovementGaps(day1Events, hotel, dest);
+    day2Events = this.fillMovementGaps(day2Events, hotel, dest);
+    day3Events = this.fillMovementGaps(day3Events, hotel, dest);
 
     this.enrichEventsWithLinks(day1Events, hotel, dest);
     this.enrichEventsWithLinks(day2Events, hotel, dest);
