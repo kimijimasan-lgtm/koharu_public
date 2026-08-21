@@ -1099,7 +1099,8 @@ const App = {
     day1Events.push({ time: this.minToTime(currentMin), title: hotel.name + ' 到着', type: 'hotel', icon: '🏨' });
     
     currentMin += 60; // rest
-    day1Events.push({ time: this.minToTime(currentMin), title: 'ホテル周辺を散策', type: 'sightseeing', icon: '🚶' });
+    const d1Spot = dest.spots[2] || dest.spots[0];
+      day1Events.push({ time: this.minToTime(currentMin), title: d1Spot ? d1Spot.name : '周辺を散策', type: 'sightseeing', icon: '🚶' });
     
     currentMin += 120;
     if (hotel.dinnerIncluded) {
@@ -1136,7 +1137,8 @@ const App = {
     let day3Events = [];
     day3Events.push({ time: '08:30', title: hotel.breakfastIncluded ? 'ホテルで朝食' : '周辺で朝食', type: 'food', icon: '🥐' });
     day3Events.push({ time: '10:00', title: 'ホテルをチェックアウト', type: 'hotel', icon: '🏨' });
-    day3Events.push({ time: '10:30', title: 'お土産購入・市場散策など', type: 'sightseeing', icon: '🛍️' });
+    const d3Spot = dest.spots[3] || dest.spots[1];
+      day3Events.push({ time: '10:30', title: d3Spot ? d3Spot.name : 'お土産購入・市場散策など', type: 'sightseeing', icon: '🛍️' });
     
     const stationArrMin = depMin - 30; // arrive 30 mins before departure
     day3Events.push({ time: this.minToTime(stationArrMin), title: `${dest.cityStation || dest.station} 到着（お土産・休憩）`, type: 'transport', icon: '🚉' });
@@ -1225,24 +1227,24 @@ const App = {
         <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
         
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 ${dest.name}へ到着</h4>
-        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; break-inside: avoid; page-break-inside: avoid;">
+        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
           <div style="flex: 1; min-width: 300px;">
             ${this.renderTimeline(day1Events)}
           </div>
-          ${img1Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 行きの乗換経路</h5><img src="${img1Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
+          ${img1Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto; break-inside: avoid; page-break-inside: avoid;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 行きの乗換経路</h5><img src="${img1Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
         </div>
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【2日目】 終日フリー・観光</h4>
-        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); break-inside: avoid; page-break-inside: avoid;">
+        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
           ${this.renderTimeline(day2Events)}
         </div>
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【3日目】 ${dest.name}を出発</h4>
-        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; break-inside: avoid; page-break-inside: avoid;">
+        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
           <div style="flex: 1; min-width: 300px;">
             ${this.renderTimeline(day3Events)}
           </div>
-          ${img3Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
+          ${img3Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto; break-inside: avoid; page-break-inside: avoid;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
         </div>
       </div>
       ${costHtml}
