@@ -921,7 +921,7 @@ const App = {
     });
   },
 
-  getDinnerReservationLinks(day1, day2, day3) {
+  getDinnerReservationLinks(day1, day2, day3, dest) {
     const dinners = [];
     [day1, day2, day3].forEach((day, i) => {
       day.forEach(e => {
@@ -936,7 +936,7 @@ const App = {
           
           names.forEach(name => {
              if (!dinners.find(d => d.name === name)) {
-               const url = e.tabelogUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('函館 ' + name)}`;
+               const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + name)}`;
                dinners.push({ name, url, day: `${i + 1}日目` });
              }
           });
@@ -996,10 +996,9 @@ const App = {
         const name = event.title.replace(/^夕食：/, '').replace(/^昼食：/, '').replace(/^周辺レストランで/, '').replace(/^周辺カフェで/, '').replace(/^ホテルで/, '');
         event.mapsUrl = this.getGoogleMapsUrl(dest.name + ' ' + name);
         const r = [...(dest.restaurants?.dinner || []), ...(dest.restaurants?.lunch || []), ...(dest.restaurants?.snack || [])].find(d => name.includes(d.name));
-        if (typeof getTabelogSearchUrl !== 'undefined') {
-          event.tabelogUrl = getTabelogSearchUrl(name, dest.name);
-        } else if (r && r.tabelogUrl) {
-          event.tabelogUrl = r.tabelogUrl;
+        if (r && r.tabelogUrl) {
+          // If we had a direct tabelogUrl in data, we could use it, but for now we rely on Maps for robustness.
+          // event.tabelogUrl = r.tabelogUrl;
         }
       }
     });
@@ -1156,7 +1155,7 @@ const App = {
     this.enrichEventsWithLinks(day3Events, hotel, dest);
 
     // Render logic
-    const reservationHtml = this.getDinnerReservationLinks(day1Events, day2Events, day3Events);
+    const reservationHtml = this.getDinnerReservationLinks(day1Events, day2Events, day3Events, dest);
     const reservationSection = reservationHtml ? `
         <div style="width:100%; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
           <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:#d35400;">📞 予約・確認が必要なレストラン</h3>
