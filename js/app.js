@@ -848,11 +848,21 @@ const App = {
         else if (current.type === 'hotel') eventDur = 15;
         
         let freeTime = gapMin - eventDur - parseInt((transfer.duration || '').replace(/[^0-9]/g, '') || 0);
-        if (freeTime >= 15 && current.type !== 'transport') {
+        
+        if (current.type !== 'transport') {
+            current.detail = (current.detail ? current.detail + '<br>' : '') + `<span style="color:#666; font-size: 0.9em;">滞在の目安：約${eventDur}分</span>`;
+        }
+        
+        if (freeTime >= 30) {
             const rounded = Math.round(freeTime / 5) * 5;
-            current.detail = (current.detail ? current.detail + ' / ' : '') + `滞在：約${eventDur + rounded}分`;
-        } else if (current.type !== 'transport') {
-            current.detail = (current.detail ? current.detail + ' / ' : '') + `滞在：約${eventDur}分`;
+            let locLabel = currentLoc.venue;
+            if (currentLoc.venue === hotel.name) locLabel = '宿';
+            else if (currentLoc.area === '__station__') locLabel = currentLoc.venue;
+            result.push({
+              type: 'transfer', icon: '⏳',
+              title: `${locLabel}周辺で自由時間・散策`,
+              duration: `約${rounded}分`,
+            });
         }
       }
 
@@ -915,11 +925,21 @@ const App = {
     const dinners = [];
     [day1, day2, day3].forEach((day, i) => {
       day.forEach(e => {
-        if (e.mapsUrl && (e.title.includes('夕食') || e.title.includes('昼食')) && !e.title.includes('ホテル')) {
-          const name = e.title.replace(/^夕食：/, '').replace(/^昼食：/, '');
-          if (!dinners.find(d => d.name === name)) {
-            dinners.push({ name, url: e.tabelogUrl || e.mapsUrl, day: `${i + 1}日目` });
+        if (e.type === 'food' && !e.title.includes('ホテル')) {
+          let names = [];
+          if (e.title.includes('候補①')) {
+             const parts = e.title.replace(/^夕食：/, '').split(' / ');
+             parts.forEach(p => names.push(p.replace(/候補[①②]\s*/, '')));
+          } else {
+             names.push(e.title.replace(/^夕食：/, '').replace(/^昼食：/, ''));
           }
+          
+          names.forEach(name => {
+             if (!dinners.find(d => d.name === name)) {
+               const url = e.tabelogUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('函館 ' + name)}`;
+               dinners.push({ name, url, day: `${i + 1}日目` });
+             }
+          });
         }
       });
     });
@@ -927,9 +947,39 @@ const App = {
     return dinners.map(d => `
       <div class="reservation-link-item" style="background:#fff; border:1px solid #ddd; padding:10px; border-radius:8px; display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
         <div class="reservation-link-label" style="font-weight:bold;">🍽️ ${d.name} <span style="font-size:0.8em; color:#666;">(${d.day})</span></div>
-        <a href="${d.url}" target="_blank" rel="noopener" class="btn btn-reservation btn-tabelog" style="background:#e67e22; color:#fff; text-decoration:none; padding:5px 15px; border-radius:4px; font-size:0.9em;">食べログ等で予約・確認する</a>
+        <a href="${d.url}" target="_blank" rel="noopener" class="btn btn-reservation btn-tabelog" style="background:#e67e22; color:#fff; text-decoration:none; padding:5px 15px; border-radius:4px; font-size:0.9em;">店舗情報を確認・予約する</a>
       </div>
     `).join('');
+  },
+
+
+  calculateTotalCost(hotel, day1Events, day2Events, day3Events) {
+     let shinkansen = 60000; // rough estimate for 2 people round trip from Tokyo
+     let accommodation = hotel.pricePerNight * 2 * 2; // 2 people, 2 nights
+     
+     let taxi = 0;
+     [day1Events, day2Events, day3Events].forEach(day => {
+        day.forEach(e => {
+           if (e.cost && e.cost.includes('¥')) {
+              taxi += parseInt(e.cost.replace(/[^0-9]/g, ''));
+           }
+        });
+     });
+     
+     let food = 0;
+     [day1Events, day2Events, day3Events].forEach(day => {
+        day.forEach(e => {
+           if (e.type === 'food') {
+              if (e.title.includes('夕食') && !e.title.includes('ホテル')) food += 15000;
+              else if (e.title.includes('昼食')) food += 4000;
+              else if (e.title.includes('朝食') && !e.title.includes('ホテル')) food += 3000;
+              else if (e.title.includes('候補')) food += 15000;
+           }
+        });
+     });
+     
+     const total = shinkansen + accommodation + taxi + food;
+     return { shinkansen, accommodation, taxi, food, total };
   },
 
   getGoogleMapsUrl(query) {
@@ -966,7 +1016,7 @@ const App = {
       if (e.type === 'transfer') {
         html += `
           <div class="timeline-item type-transfer">
-            <div class="timeline-time">${e.duration ? e.duration + '分' : ''}</div>
+            <div class="timeline-time">${e.duration ? e.duration : ''}</div>
             <div class="timeline-dot"></div>
             <div class="timeline-content">
               <span class="transfer-icon">${e.icon}</span>
@@ -1055,8 +1105,18 @@ const App = {
     if (hotel.dinnerIncluded) {
       day1Events.push({ time: this.minToTime(currentMin), title: 'ホテルで夕食', type: 'food', icon: '🍽️' });
     } else {
-      const dinner = dest.restaurants?.dinner?.[0];
-      day1Events.push({ time: this.minToTime(currentMin), title: dinner ? `夕食：${dinner.name}` : '周辺レストランで夕食', type: 'food', icon: '🍽️', detail: dinner ? dinner.description : '' });
+      const d1 = dest.restaurants?.dinner?.[0];
+      const d2 = dest.restaurants?.dinner?.[1];
+      let title = '周辺レストランで夕食';
+      let detail = '';
+      if (d1 && d2) {
+         title = `夕食：候補① ${d1.name} / 候補② ${d2.name}`;
+         detail = `①${d1.genre} (予算:約${d1.budget}円) <br>②${d2.genre} (予算:約${d2.budget}円)`;
+      } else if (d1) {
+         title = `夕食：${d1.name}`;
+         detail = `${d1.genre} (予算:約${d1.budget}円)`;
+      }
+      day1Events.push({ time: this.minToTime(currentMin), title: title, type: 'food', icon: '🍽️', detail: detail });
     };
 
     // Build Day 2 Timeline
@@ -1102,6 +1162,37 @@ const App = {
         </div>
     ` : '';
     
+    
+    const costs = this.calculateTotalCost(hotel, day1Events, day2Events, day3Events);
+    const costHtml = `
+      <div style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
+        <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:#27ae60;">💰 2名様 旅行代金（概算）</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem;">
+          <tr style="border-bottom: 1px dashed #ccc;">
+             <td style="padding: 10px 0;">🚅 新幹線・交通費 (東京方面目安)</td>
+             <td style="text-align: right; padding: 10px 0;">¥${costs.shinkansen.toLocaleString()}</td>
+          </tr>
+          <tr style="border-bottom: 1px dashed #ccc;">
+             <td style="padding: 10px 0;">🏨 宿泊代 (${hotel.name} / 2泊)</td>
+             <td style="text-align: right; padding: 10px 0;">¥${costs.accommodation.toLocaleString()}</td>
+          </tr>
+          <tr style="border-bottom: 1px dashed #ccc;">
+             <td style="padding: 10px 0;">🚕 現地タクシー代 (2泊3日分)</td>
+             <td style="text-align: right; padding: 10px 0;">¥${costs.taxi.toLocaleString()}</td>
+          </tr>
+          <tr style="border-bottom: 2px solid #333;">
+             <td style="padding: 10px 0;">🍽️ 飲食代 (昼食・夕食目安)</td>
+             <td style="text-align: right; padding: 10px 0;">¥${costs.food.toLocaleString()}</td>
+          </tr>
+          <tr style="font-weight: bold; font-size: 1.3rem; color: #d35400;">
+             <td style="padding: 15px 0;">合計</td>
+             <td style="text-align: right; padding: 15px 0;">¥${costs.total.toLocaleString()}</td>
+          </tr>
+        </table>
+        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">※交通費は出発地や時期によって変動します。タクシー代と飲食代はスケジュールに基づく概算です。</p>
+      </div>
+    `;
+
     const container = document.getElementById('confirmed-content');
     
     container.innerHTML = `
@@ -1148,6 +1239,7 @@ const App = {
           ${this.renderTimeline(day3Events)}
         </div>
       </div>
+      ${costHtml}
     `;
 
     this.updatePrintScreenshotsLayout();
