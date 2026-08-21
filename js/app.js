@@ -1091,7 +1091,7 @@ const App = {
     
     // Prepend home departure based on uploaded images
     day1Events.push({ time: '', title: '自宅・出発地を出発', type: 'transport', icon: '🏠' });
-    day1Events.push({ type: 'transfer', title: '行きのルート（添付画像参照）', icon: '🚄', duration: null, detail: wrapImage(img1Src) });
+    day1Events.push({ type: 'transfer', title: '行きのルート（右の経路図を参照）', icon: '🚄', duration: null });
     
     day1Events.push({ time: this.minToTime(currentMin), title: `${dest.cityStation || dest.station} 到着`, type: 'transport', icon: '🚉' });
     
@@ -1142,7 +1142,7 @@ const App = {
     day3Events.push({ time: this.minToTime(stationArrMin), title: `${dest.cityStation || dest.station} 到着（お土産・休憩）`, type: 'transport', icon: '🚉' });
     day3Events.push({ time: this.minToTime(depMin), title: `${dest.cityStation || dest.station} 出発`, type: 'transport', icon: '🚄' });
     
-    day3Events.push({ type: 'transfer', title: '帰りのルート（添付画像参照）', icon: '🚄', duration: null, detail: wrapImage(img3Src) });
+    day3Events.push({ type: 'transfer', title: '帰りのルート（右の経路図を参照）', icon: '🚄', duration: null });
     day3Events.push({ time: '', title: '自宅・出発地に帰着', type: 'transport', icon: '🏠' });
 
     day1Events = this.fillMovementGaps(day1Events, hotel, dest);
@@ -1225,8 +1225,11 @@ const App = {
         <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
         
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 ${dest.name}へ到着</h4>
-        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-          ${this.renderTimeline(day1Events)}
+        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
+          <div style="flex: 1; min-width: 300px;">
+            ${this.renderTimeline(day1Events)}
+          </div>
+          ${img1Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 行きの乗換経路</h5><img src="${img1Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
         </div>
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【2日目】 終日フリー・観光</h4>
@@ -1235,8 +1238,11 @@ const App = {
         </div>
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【3日目】 ${dest.name}を出発</h4>
-        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-          ${this.renderTimeline(day3Events)}
+        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
+          <div style="flex: 1; min-width: 300px;">
+            ${this.renderTimeline(day3Events)}
+          </div>
+          ${img3Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
         </div>
       </div>
       ${costHtml}
