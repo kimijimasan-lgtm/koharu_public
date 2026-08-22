@@ -1205,11 +1205,29 @@ const App = {
 
         <div style="display:flex; gap: 20px; flex-wrap:wrap; margin-bottom: 30px;">
           <div style="flex:1; min-width:300px; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🏨 宿泊情報</h3>
-            <p><strong>${hotel.name}</strong></p>
-            <p style="font-size:0.9rem; color:#666;">📍 ${hotel.area}</p>
-            <p style="font-size:0.9rem; color:#666;">${hotel.features.join(' / ')}</p>
-          </div>
+  <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color: var(--color-primary);">🌟 ${dest.name} 厳選スポット＆グルメ</h3>
+  <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px; line-height: 1.5;">滞在型の旅行だからこそじっくり楽しめる、${dest.name}の魅力を凝縮したリストです。行程の空き時間にぜひ訪れてみてください。</p>
+  
+  <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #444;">📸 必見の観光スポット</h4>
+  <ul style="margin: 0 0 15px 0; padding-left: 20px; line-height: 1.6; font-size: 0.9rem;">
+    ${dest.spots.slice(0, 3).map(s => {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + s.name)}`;
+      return `<li><a href="${url}" target="_blank" style="color: #2980b9; text-decoration: none; font-weight: bold;">${s.name}</a> <span style="font-size:0.85em; color:#666;">(滞在目安: ${s.duration}分)</span></li>`;
+    }).join('')}
+  </ul>
+
+  <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #444;">🍽️ おすすめ絶品グルメ</h4>
+  <ul style="margin: 0; padding-left: 20px; line-height: 1.6; font-size: 0.9rem;">
+    ${(dest.restaurants?.dinner || []).slice(0, 2).map(r => {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + r.name)}`;
+      return `<li><a href="${url}" target="_blank" style="color: #e67e22; text-decoration: none; font-weight: bold;">${r.name}</a> <span style="font-size:0.85em; color:#666;">(${r.genre} / 予算${r.budget}円)</span></li>`;
+    }).join('')}
+    ${(dest.restaurants?.snack || []).slice(0, 1).map(r => {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + r.name)}`;
+      return `<li><a href="${url}" target="_blank" style="color: #e67e22; text-decoration: none; font-weight: bold;">${r.name}</a> <span style="font-size:0.85em; color:#666;">(${r.genre} / 予算${r.budget}円)</span></li>`;
+    }).join('')}
+  </ul>
+</div>
           <div style="flex:1; min-width:300px; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
             <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🎒 持ち物チェックリスト</h3>
             <ul style="list-style:none; padding:0; margin:0; font-size:0.9rem; line-height:1.8;">
