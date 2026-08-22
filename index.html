@@ -80,10 +80,18 @@
         </div>
         <div id="destination-info" style="margin-bottom: 1.5rem;"></div>
 
-        <div class="form-group">
-          <label class="form-label" for="departure-date">出発日</label>
-          <p class="form-sublabel">未定の場合は空欄のままで構いません</p>
-          <input type="date" id="departure-date" class="form-input">
+        <div class="form-group" style="display: flex; gap: 1rem; align-items: stretch; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 200px; max-width: 300px;">
+            <label class="form-label" for="departure-date">出発日</label>
+            <p class="form-sublabel">未定の場合は空欄のままで構いません</p>
+            <input type="date" id="departure-date" class="form-input">
+          </div>
+          <div style="flex: 2; min-width: 300px; display: flex; align-items: center; background: #fff8e1; border-left: 4px solid #f39c12; padding: 12px; border-radius: 4px;">
+            <p style="font-size: 0.85rem; color: #666; margin: 0; line-height: 1.5;">
+              <strong>※ここの日程・時刻はダミーで構いません。</strong><br>
+              新幹線と飛行機を比較するための「概算用」の数字です。実際の旅程・時刻は、次のページ以降で確定します。
+            </p>
+          </div>
         </div>
         <div class="time-group" style="display: flex; gap: 1rem;">
           <div class="form-group half-width" style="flex: 1;">
