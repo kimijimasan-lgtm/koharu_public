@@ -611,13 +611,22 @@ const App = {
     if (transportRec) {
       // Very basic logic for demo: if from Hokkaido, maybe JR/Car. Else Flight.
       const dep = this.state.inputs.departure || '';
-      const isShinkansen = dep.includes('青森') || dep.includes('岩手') || dep.includes('宮城') || dep.includes('秋田');
+      const stationName = this.getSelectedStationName();
+      const destId = this.state.inputs.destination;
+      const selectedDest = window.DESTINATIONS ? window.DESTINATIONS[destId] : null;
+      let isShinkansen = false;
+      if (stationName && selectedDest && window.compareTransport) {
+        const comparison = window.compareTransport(stationName, selectedDest);
+        isShinkansen = comparison.recommended === 'shinkansen';
+      } else {
+        isShinkansen = dep.includes('青森') || dep.includes('岩手') || dep.includes('宮城') || dep.includes('秋田');
+      }
       const mode = isShinkansen ? '新幹線' : '飛行機';
       const reason = isShinkansen ? '乗り換えが少なく座ったまま移動できるため疲れにくいです。' : '移動時間が圧倒的に短いため疲れにくいです。';
       
       transportRec.innerHTML = `
         <h2 style="font-size:1.2rem; margin-top:0; color:var(--color-primary);">${isShinkansen ? '🚅' : '✈️'} あなたへのオススメ移動手段：${mode}</h2>
-        <p style="margin:5px 0 0 0; color:#333;">出発地（${dep}周辺）から函館へのアクセスは、${reason}</p>
+        <p style="margin:5px 0 0 0; color:#333;">出発地（${dep}周辺）から${selectedDest ? selectedDest.name : "目的地"}へのアクセスは、${reason}</p>
       `;
     }
 
