@@ -110,6 +110,9 @@ const App = {
       btnBack.addEventListener('click', () => this.showStep('input'));
     }
 
+    document.getElementById('btn-top').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
     document.getElementById('btn-new-trip').addEventListener('click', () => {
       this.resetState();
       this.showStep('input');
