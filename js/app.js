@@ -1203,42 +1203,35 @@ const App = {
           <p style="color:#555; margin-top:5px;">ご宿泊：<strong>${hotel.name}</strong></p>
         </div>
 
-        <div style="display:flex; gap: 20px; flex-wrap:wrap; margin-bottom: 30px;">
-          <div style="flex:1; min-width:300px; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-  <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color: var(--color-primary);">🌟 ${dest.name} 厳選スポット＆グルメ</h3>
-  <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px; line-height: 1.5;">滞在型の旅行だからこそじっくり楽しめる、${dest.name}の魅力を凝縮したリストです。行程の空き時間にぜひ訪れてみてください。</p>
-  
-  <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #444;">📸 必見の観光スポット</h4>
-  <ul style="margin: 0 0 15px 0; padding-left: 20px; line-height: 1.6; font-size: 0.9rem;">
-    ${dest.spots.slice(0, 3).map(s => {
-      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + s.name)}`;
-      return `<li><a href="${url}" target="_blank" style="color: #2980b9; text-decoration: none; font-weight: bold;">${s.name}</a> <span style="font-size:0.85em; color:#666;">(滞在目安: ${s.duration}分)</span></li>`;
-    }).join('')}
-  </ul>
-
-  <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #444;">🍽️ おすすめ絶品グルメ</h4>
-  <ul style="margin: 0; padding-left: 20px; line-height: 1.6; font-size: 0.9rem;">
-    ${(dest.restaurants?.dinner || []).slice(0, 2).map(r => {
-      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + r.name)}`;
-      return `<li><a href="${url}" target="_blank" style="color: #e67e22; text-decoration: none; font-weight: bold;">${r.name}</a> <span style="font-size:0.85em; color:#666;">(${r.genre} / 予算${r.budget}円)</span></li>`;
-    }).join('')}
-    ${(dest.restaurants?.snack || []).slice(0, 1).map(r => {
-      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + r.name)}`;
-      return `<li><a href="${url}" target="_blank" style="color: #e67e22; text-decoration: none; font-weight: bold;">${r.name}</a> <span style="font-size:0.85em; color:#666;">(${r.genre} / 予算${r.budget}円)</span></li>`;
-    }).join('')}
-  </ul>
-</div>
-          <div style="flex:1; min-width:300px; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🎒 持ち物チェックリスト</h3>
-            <ul style="list-style:none; padding:0; margin:0; font-size:0.9rem; line-height:1.8;">
-              <li><input type="checkbox"> 着替え（2泊3日分）</li>
-              <li><input type="checkbox"> スマホ充電器・モバイルバッテリー</li>
-              <li><input type="checkbox"> 常備薬・洗面用具</li>
-              <li><input type="checkbox"> 健康保険証・身分証</li>
-              <li><input type="checkbox"> 現金・クレジットカード</li>
-            </ul>
-          </div>
-        </div>
+        <div style="background:white; padding: 25px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
+    <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color: var(--color-primary);">🌟 ${dest.name} 厳選スポット＆グルメ</h3>
+    <p style="font-size: 0.95rem; color: #666; margin-bottom: 20px; line-height: 1.5;">滞在型の旅行だからこそじっくり楽しめる、${dest.name}の魅力を凝縮した全リストです。行程の空き時間にぜひ訪れてみてください。</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+      <div>
+        <h4 style="margin: 0 0 10px 0; font-size: 1.05rem; color: #444; border-left: 4px solid #2980b9; padding-left: 10px;">📸 必見の観光スポット</h4>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.8; font-size: 0.95rem;">
+          ${dest.spots.map(s => {
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + s.name)}`;
+            return `<li><a href="${url}" target="_blank" style="color: #2980b9; text-decoration: none; font-weight: bold;">${s.name}</a> <span style="font-size:0.85em; color:#666;">(滞在目安: ${s.duration}分)</span></li>`;
+          }).join('')}
+        </ul>
+      </div>
+      <div>
+        <h4 style="margin: 0 0 10px 0; font-size: 1.05rem; color: #444; border-left: 4px solid #e67e22; padding-left: 10px;">🍽️ おすすめ絶品グルメ</h4>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.8; font-size: 0.95rem;">
+          ${[
+            ...(dest.restaurants?.dinner || []),
+            ...(dest.restaurants?.lunch || []),
+            ...(dest.restaurants?.snack || [])
+          ].map(r => {
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dest.name + ' ' + r.name)}`;
+            return `<li><a href="${url}" target="_blank" style="color: #e67e22; text-decoration: none; font-weight: bold;">${r.name}</a> <span style="font-size:0.85em; color:#666;">(${r.genre} / ${r.budget}円)</span></li>`;
+          }).join('')}
+        </ul>
+      </div>
+    </div>
+  </div>
 
         ${reservationSection}
         <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
@@ -1262,6 +1255,21 @@ const App = {
             ${this.renderTimeline(day3Events)}
           </div>
           ${img3Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto; break-inside: avoid; page-break-inside: avoid;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
+        </div>
+      <div style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px; break-inside: avoid; page-break-inside: avoid;">
+          <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🎒 持ち物チェックリスト</h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+            <ul style="list-style:none; padding:0; margin:0; font-size:1rem; line-height:2; flex:1; min-width:250px;">
+              <li><label style="cursor:pointer;"><input type="checkbox" style="transform: scale(1.2); margin-right: 8px;"> 着替え（2泊3日分）</label></li>
+              <li><label style="cursor:pointer;"><input type="checkbox" style="transform: scale(1.2); margin-right: 8px;"> スマホ充電器・モバイルバッテリー</label></li>
+              <li><label style="cursor:pointer;"><input type="checkbox" style="transform: scale(1.2); margin-right: 8px;"> 常備薬・洗面用具</label></li>
+            </ul>
+            <ul style="list-style:none; padding:0; margin:0; font-size:1rem; line-height:2; flex:1; min-width:250px;">
+              <li><label style="cursor:pointer;"><input type="checkbox" style="transform: scale(1.2); margin-right: 8px;"> 健康保険証・身分証</label></li>
+              <li><label style="cursor:pointer;"><input type="checkbox" style="transform: scale(1.2); margin-right: 8px;"> 現金・クレジットカード</label></li>
+              <li><label style="cursor:pointer;"><input type="checkbox" style="transform: scale(1.2); margin-right: 8px;"> 航空券・新幹線チケット等</label></li>
+            </ul>
+          </div>
         </div>
       </div>
       ${costHtml}
