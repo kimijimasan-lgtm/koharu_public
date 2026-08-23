@@ -127,7 +127,7 @@ const DESTINATIONS = {
         id: 'hk1',
         name: '割烹旅館 若松',
         type: '温泉旅館',
-        image: 'https://www.wakamatsuryokan.com/files/img/mainimage01.jpg',
+        image: 'img/hotels/wakamatsu_02.jpg',
         features: ['創業1922年の老舗', '露天風呂付客室', '部屋食対応'],
         // 楽天トラベル/じゃらん掲載のアクセス「JR函館駅からタクシー約15分」より
         taxiFromCityStation: 15,
@@ -141,7 +141,7 @@ const DESTINATIONS = {
         id: 'hk2',
         name: 'ラビスタ函館ベイ',
         type: 'リゾートホテル',
-        image: 'https://img.dormy-hotels.com/resort/hotels/la_hakodate/files/images/home/thumb.jpg',
+        image: 'img/hotels/lavista.jpg',
         features: ['最上階展望大浴場', '朝食の海鮮丼が名物', 'ベイエリア徒歩圏'],
         // 共立リゾート公式アクセス「JR函館駅から徒歩約15分」＝約1.2km。車なら約5分
         taxiFromCityStation: 5,
@@ -155,7 +155,7 @@ const DESTINATIONS = {
         id: 'hk3',
         name: '望楼NOGUCHI函館',
         type: 'デザイナーズ旅館',
-        image: 'https://www.bourou-hakodate.com/noguchi-cms/wp-content/themes/vanilla/img/common/bestre.jpg',
+        image: 'img/hotels/bourou.jpg',
         features: ['全室展望風呂付', 'モダン和空間', '鉄板焼ダイニング'],
         // じゃらん/ぐうたび北海道掲載のアクセス「JR函館駅から車で約15分」より
         taxiFromCityStation: 15,
@@ -236,10 +236,10 @@ const DESTINATIONS = {
     travelTimeFromTokyo: 210,
     highlights: ['大通公園', 'すすきの', '札幌時計台', '円山動物園'],
     hotels: [
-      { id: 'sp1', name: 'JRタワーホテル日航札幌', type: 'ラグジュアリーホテル', image: 'https://www.jrhotels.co.jp/tower/img/slides/01.jpg',
+      { id: 'sp1', name: 'JRタワーホテル日航札幌', type: 'ラグジュアリーホテル', image: 'img/hotels/jrtower.jpg',
         features: ['JR札幌駅直結', '高層階パノラマビュー', 'スパ完備'],
         taxiFromCityStation: 40, area: '札幌駅前', pricePerNight: 35000, dinnerIncluded: false, breakfastIncluded: true },
-      { id: 'sp2', name: '定山渓温泉 章月グランドホテル', type: '温泉旅館', image: 'https://www.shogetsugrand.com/common/image/header_banner1.jpg',
+      { id: 'sp2', name: '定山渓温泉 章月グランドホテル', type: '温泉旅館', image: 'img/hotels/shogetsu.jpg',
         features: ['露天風呂', '渓谷の絶景', '北海道食材の懐石'],
         taxiFromCityStation: 80, area: '定山渓温泉', pricePerNight: 28000, dinnerIncluded: true, breakfastIncluded: true },
     ],
@@ -277,7 +277,7 @@ const DESTINATIONS = {
     travelTimeFromTokyo: 220,
     highlights: ['旭山動物園', '美瑛の丘', '富良野ラベンダー', '層雲峡'],
     hotels: [
-      { id: 'ak1', name: 'OMO7旭川 by 星野リゾート', type: 'デザイナーズホテル', image: 'https://hoshinoresorts.com/images/omo7asahikawa/hero/01.jpg',
+      { id: 'ak1', name: 'OMO7旭川 by 星野リゾート', type: 'デザイナーズホテル', image: 'img/hotels/omo7.jpg',
         features: ['旭川駅徒歩圏', '地域体験プログラム', '北海道食材ビュッフェ'],
         taxiFromCityStation: 5, area: '旭川駅前', pricePerNight: 22000, dinnerIncluded: false, breakfastIncluded: true },
       { id: 'ak2', name: 'ラビスタ層雲峡', type: 'リゾートホテル', image: 'https://img.dormy-hotels.com/resort/hotels/daisetsuzan/files/images/home/thumb.jpg',
@@ -351,7 +351,7 @@ const DESTINATIONS = {
     travelTimeFromTokyo: 210,
     highlights: ['釧路湿原', 'タンチョウ', '和商市場', '釧路フィッシャーマンズワーフ'],
     hotels: [
-      { id: 'ku1', name: 'ANA クラウンプラザホテル釧路', type: 'シティホテル', image: 'https://www.anacpkushiro.com/app/wp-content/themes/ana/assets/images/common/header_accommoation1.jpg',
+      { id: 'ku1', name: 'ANA クラウンプラザホテル釧路', type: 'シティホテル', image: 'img/hotels/kushiroana.jpg',
         features: ['釧路川沿い', '大浴場あり', '和食・洋食レストラン'],
         taxiFromCityStation: 10, area: '釧路駅前', pricePerNight: 18000, dinnerIncluded: false, breakfastIncluded: true },
     ],
