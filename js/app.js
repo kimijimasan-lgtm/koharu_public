@@ -630,26 +630,30 @@ const App = {
       `;
     }
 
-    dest.hotels.forEach((hotel) => {
-      if (!this.isHotelAvailable(hotel, this.state.inputs.departureDate)) {
-        console.log(`[休館期間のため除外] ${hotel.name}（休館: ${hotel.closedPeriod.start}〜${hotel.closedPeriod.end}）`);
-        return;
-      }
+    // Sort hotels by price descending (高い順)
+    const availableHotels = (dest.hotels || [])
+      .filter((hotel) => this.isHotelAvailable(hotel, this.state.inputs.departureDate))
+      .sort((a, b) => (b.pricePerNight || 0) - (a.pricePerNight || 0));
 
+    availableHotels.forEach((hotel) => {
       const card = document.createElement('div');
       card.className = 'hotel-card';
-      const imageHtml = hotel.image
-        ? `<div class="hotel-image"><img src="${hotel.image}" alt="${hotel.name} 外観" loading="lazy"></div>`
-        : `<div class="hotel-image hotel-image-placeholder"><span class="placeholder-icon">📷</span><span class="placeholder-text">写真準備中</span></div>`;
 
       card.innerHTML = `
         <div class="hotel-card-header">
-          <h3><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.name + ' ' + dest.name)}" target="_blank" rel="noopener" class="hotel-map-link">${hotel.name}</a></h3>
+          <div class="hotel-title-group">
+            <h3><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.name + ' ' + dest.name)}" target="_blank" rel="noopener" class="hotel-map-link">${hotel.name}</a></h3>
+            <span class="hotel-type">${hotel.type || '宿泊施設'}</span>
+          </div>
+          <div class="hotel-price-badge">
+            <span class="hotel-price-label">宿泊目安</span>
+            <span class="hotel-price-val">¥${(hotel.pricePerNight || 0).toLocaleString()}</span>
+            <span class="hotel-price-unit">/泊</span>
+          </div>
         </div>
-        ${imageHtml}
         <div class="hotel-card-body">
           <div class="hotel-features">
-            ${hotel.features.map((f) => `<span class="feature-tag">${f}</span>`).join('')}
+            ${(hotel.features || []).map((f) => `<span class="feature-tag">${f}</span>`).join('')}
           </div>
           <div class="hotel-details">
             <div class="hotel-detail-item">
@@ -661,25 +665,25 @@ const App = {
               <span>${hotel.area}</span>
             </div>
             <div class="hotel-detail-item">
-              <span class="detail-icon">💴</span>
-              <span>¥${hotel.pricePerNight.toLocaleString()}/泊（税込目安）</span>
+              <span class="detail-icon">🍽️</span>
+              <span>${hotel.dinnerIncluded ? '夕食付' : '夕食なし'}・${hotel.breakfastIncluded ? '朝食付' : '朝食なし'}</span>
             </div>
             <div class="hotel-detail-item">
-              <span class="detail-icon">🍽️</span>
-              <span>${hotel.dinnerIncluded ? '夕食付' : '食事なし'}・${hotel.breakfastIncluded ? '朝食付' : '朝食なし'}</span>
+              <span class="detail-icon">🗺️</span>
+              <span><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.name + ' ' + dest.name)}" target="_blank" rel="noopener" style="color:var(--color-primary);text-decoration:underline;">Googleマップで位置を見る</a></span>
             </div>
           </div>
           <button class="btn btn-secondary btn-simulate" data-hotel-id="${hotel.id}">
-              この宿で決定して次へ
-            </button>
+            この宿で決定して次へ
+          </button>
         </div>
       `;
 
       card.querySelector('.btn-simulate').addEventListener('click', async () => {
-          this.state.selectedHotel = hotel;
-          this.showStep('yahoo-data');
-          window.scrollTo(0,0);
-        });
+        this.state.selectedHotel = hotel;
+        this.showStep('yahoo-data');
+        window.scrollTo(0, 0);
+      });
 
       container.appendChild(card);
     });
