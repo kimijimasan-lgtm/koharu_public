@@ -333,6 +333,8 @@ const App = {
     if (stationName && dest.name) {
       const departTimeStr = document.getElementById('departure-time').value || '10:00';
       const comparison = compareTransportRoutes(stationName, dest.name, departTimeStr);
+      // Save recommended transport mode for reuse in hotel step
+      this.state.recommendedTransport = comparison.recommended;
       
       const formatTime = (mins) => {
         const h = Math.floor(mins / 60);
@@ -609,18 +611,11 @@ const App = {
     // Add Recommendation
     const transportRec = document.getElementById('transport-recommendation');
     if (transportRec) {
-      // Very basic logic for demo: if from Hokkaido, maybe JR/Car. Else Flight.
       const dep = this.state.inputs.departure || '';
-      const stationName = this.getSelectedStationName();
       const destId = this.state.inputs.destination;
       const selectedDest = window.DESTINATIONS ? window.DESTINATIONS[destId] : null;
-      let isShinkansen = false;
-      if (stationName && selectedDest && window.compareTransport) {
-        const comparison = window.compareTransport(stationName, selectedDest);
-        isShinkansen = comparison.recommended === 'shinkansen';
-      } else {
-        isShinkansen = dep.includes('青森') || dep.includes('岩手') || dep.includes('宮城') || dep.includes('秋田');
-      }
+      // Use the recommendation already computed and saved in updateDestinationInfo
+      const isShinkansen = this.state.recommendedTransport === 'shinkansen';
       const mode = isShinkansen ? '新幹線' : '飛行機';
       const reason = isShinkansen ? '乗り換えが少なく座ったまま移動できるため疲れにくいです。' : '移動時間が圧倒的に短いため疲れにくいです。';
       
