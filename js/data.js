@@ -386,9 +386,9 @@ const DESTINATIONS = {
     travelTimeFromTokyo: 225,
     highlights: ['流氷（冬）', '網走監獄', 'オホーツク流氷館', '知床（世界遺産）'],
     hotels: [
-      { id: 'ab1', name: '天都の丘 網走観光ホテル', type: 'リゾートホテル', image: 'img/hotels/abashiri.jpg',
-        features: ['オホーツク海パノラマ', '温泉大浴場', '北海道食材の夕食'],
-        taxiFromCityStation: 5, area: '網走市街', pricePerNight: 16000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ab1', name: '網走湖畔温泉 ホテル網走湖荘', type: '温泉旅館', image: 'img/hotels/abashiri.jpg',
+        features: ['網走湖畔の絶景', '天然温泉大浴場・露天風呂', 'オホーツクの海鮮会席'],
+        taxiFromCityStation: 10, area: '網走湖畔', pricePerNight: 18000, dinnerIncluded: true, breakfastIncluded: true },
     ],
     restaurants: {
       lunch: [
