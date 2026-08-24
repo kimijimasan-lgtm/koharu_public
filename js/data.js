@@ -127,7 +127,7 @@ const DESTINATIONS = {
         id: 'hk1',
         name: '割烹旅館 若松',
         type: '温泉旅館',
-        image: 'img/hotels/wakamatsu_02.jpg',
+        image: 'img/hotels/wakamatsu.jpg',
         features: ['創業1922年の老舗', '露天風呂付客室', '部屋食対応'],
         // 楽天トラベル/じゃらん掲載のアクセス「JR函館駅からタクシー約15分」より
         taxiFromCityStation: 15,
@@ -280,7 +280,7 @@ const DESTINATIONS = {
       { id: 'ak1', name: 'OMO7旭川 by 星野リゾート', type: 'デザイナーズホテル', image: 'img/hotels/omo7.jpg',
         features: ['旭川駅徒歩圏', '地域体験プログラム', '北海道食材ビュッフェ'],
         taxiFromCityStation: 5, area: '旭川駅前', pricePerNight: 22000, dinnerIncluded: false, breakfastIncluded: true },
-      { id: 'ak2', name: 'ラビスタ層雲峡', type: 'リゾートホテル', image: 'https://img.dormy-hotels.com/resort/hotels/daisetsuzan/files/images/home/thumb.jpg',
+      { id: 'ak2', name: 'ラビスタ層雲峡', type: 'リゾートホテル', image: 'img/hotels/daisetsuzan.jpg',
         features: ['峡谷の絶景露天風呂', '温泉大浴場', '北海道懐石'],
         taxiFromCityStation: 90, area: '層雲峡', pricePerNight: 32000, dinnerIncluded: true, breakfastIncluded: true },
     ],
@@ -316,7 +316,7 @@ const DESTINATIONS = {
     travelTimeFromTokyo: 200,
     highlights: ['十勝牧場', '幸福駅', '六花亭本店', '帯広競馬場（ばんえい競馬）'],
     hotels: [
-      { id: 'ob1', name: 'ふく井ホテル', type: 'シティホテル', image: 'https://images.unsplash.com/photo-1542314831-c53cd4b85d05?auto=format&fit=crop&w=800&q=80',
+      { id: 'ob1', name: 'ふく井ホテル', type: 'シティホテル', image: 'img/hotels/fukui.jpg',
         features: ['帯広駅徒歩1分', '天然温泉大浴場', '十勝食材の朝食'],
         taxiFromCityStation: 30, area: '帯広駅前', pricePerNight: 14000, dinnerIncluded: false, breakfastIncluded: true },
     ],
@@ -386,7 +386,7 @@ const DESTINATIONS = {
     travelTimeFromTokyo: 225,
     highlights: ['流氷（冬）', '網走監獄', 'オホーツク流氷館', '知床（世界遺産）'],
     hotels: [
-      { id: 'ab1', name: '天都の丘 網走観光ホテル', type: 'リゾートホテル', image: 'https://images.unsplash.com/photo-1522798514-97ceb8c4f1c8?auto=format&fit=crop&w=800&q=80',
+      { id: 'ab1', name: '天都の丘 網走観光ホテル', type: 'リゾートホテル', image: 'img/hotels/abashiri.jpg',
         features: ['オホーツク海パノラマ', '温泉大浴場', '北海道食材の夕食'],
         taxiFromCityStation: 5, area: '網走市街', pricePerNight: 16000, dinnerIncluded: true, breakfastIncluded: true },
     ],
@@ -421,7 +421,7 @@ const DESTINATIONS = {
     travelTimeFromTokyo: 270,
     highlights: ['宗谷岬（日本最北端）', 'ノシャップ岬', '利尻島・礼文島', 'サロベツ原野'],
     hotels: [
-      { id: 'wk1', name: 'ドーミーイン稚内', type: 'ビジネスホテル', image: 'https://img.dormy-hotels.com/dormyinn/hotels/wakkanai/files/images/home/thumb.jpg',
+      { id: 'wk1', name: 'ドーミーイン稚内', type: 'ビジネスホテル', image: 'img/hotels/wakkanai.jpg',
         features: ['天然温泉大浴場', '稚内駅徒歩2分', '朝食バイキング'],
         taxiFromCityStation: 5, area: '稚内駅前', pricePerNight: 12000, dinnerIncluded: false, breakfastIncluded: true },
     ],
