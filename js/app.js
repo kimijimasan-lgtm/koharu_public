@@ -1153,19 +1153,45 @@ const App = {
     
     if (luggage === 'A') {
       day3Events.push({ time: '09:30', title: 'ホテルをチェックアウト（荷物を預ける）', type: 'hotel', icon: '🏨' });
-      day3Events.push({ time: '10:00', title: d3Spot ? d3Spot.name : '宿周辺の観光地を散策', type: 'sightseeing', icon: '🚶' });
-      day3Events.push({ time: '11:30', title: 'お土産購入・市場散策', type: 'sightseeing', icon: '🛍️' });
-      day3Events.push({ time: this.minToTime(stationArrMin - 40), title: 'ホテルに戻り荷物をピックアップ', type: 'hotel', icon: '🧳' });
+      const startMin = 600; // 10:00
+      const pickupMin = Math.max(585, stationArrMin - 40); // 少なくとも09:45
+      const avail = pickupMin - startMin;
+
+      if (avail > 100) {
+        day3Events.push({ time: this.minToTime(startMin), title: d3Spot ? d3Spot.name : '宿周辺の観光地を散策', type: 'sightseeing', icon: '🚶' });
+        day3Events.push({ time: this.minToTime(startMin + Math.floor(avail / 2)), title: 'お土産購入・市場散策', type: 'sightseeing', icon: '🛍️' });
+      } else if (avail > 40) {
+        day3Events.push({ time: this.minToTime(startMin), title: '宿周辺でお土産購入・散策', type: 'sightseeing', icon: '🛍️' });
+      }
+      day3Events.push({ time: this.minToTime(pickupMin), title: 'ホテルに戻り荷物をピックアップ', type: 'hotel', icon: '🧳' });
+
     } else if (luggage === 'B') {
       day3Events.push({ time: '09:30', title: 'ホテルをチェックアウト', type: 'hotel', icon: '🏨' });
-      day3Events.push({ time: '10:00', title: `${dest.cityStation || dest.station}のコインロッカーに荷物を預ける`, type: 'transport', icon: '🛅' });
-      day3Events.push({ time: '10:30', title: d3Spot ? d3Spot.name : '駅周辺の観光地を散策', type: 'sightseeing', icon: '📸' });
-      day3Events.push({ time: '12:00', title: '駅周辺でお土産購入', type: 'sightseeing', icon: '🛍️' });
-      day3Events.push({ time: this.minToTime(stationArrMin - 15), title: 'コインロッカーから荷物をピックアップ', type: 'transport', icon: '🧳' });
+      const lockerMin = Math.min(600, stationArrMin - 30); // 10:00 or earlier
+      day3Events.push({ time: this.minToTime(lockerMin), title: `${dest.cityStation || dest.station}のコインロッカーに荷物を預ける`, type: 'transport', icon: '🛅' });
+      
+      const pickupMin = Math.max(lockerMin + 15, stationArrMin - 15);
+      const avail = pickupMin - (lockerMin + 30);
+
+      if (avail > 100) {
+        day3Events.push({ time: this.minToTime(lockerMin + 30), title: d3Spot ? d3Spot.name : '駅周辺の観光地を散策', type: 'sightseeing', icon: '📸' });
+        day3Events.push({ time: this.minToTime(lockerMin + 30 + Math.floor(avail / 2)), title: '駅周辺でお土産購入', type: 'sightseeing', icon: '🛍️' });
+      } else if (avail > 40) {
+        day3Events.push({ time: this.minToTime(lockerMin + 30), title: '駅周辺でお土産購入・散策', type: 'sightseeing', icon: '🛍️' });
+      }
+      day3Events.push({ time: this.minToTime(pickupMin), title: 'コインロッカーから荷物をピックアップ', type: 'transport', icon: '🧳' });
+
     } else {
       day3Events.push({ time: '09:30', title: 'ホテルをチェックアウト（荷物は持ち歩き）', type: 'hotel', icon: '🏨' });
-      day3Events.push({ time: '10:00', title: '身軽に立ち寄れるスポット（カフェや展望台など）', type: 'sightseeing', icon: '☕' });
-      day3Events.push({ time: '11:30', title: '駅・空港周辺でお土産購入', type: 'sightseeing', icon: '🛍️' });
+      const startMin = 600; // 10:00
+      const avail = stationArrMin - startMin - 30;
+
+      if (avail > 100) {
+        day3Events.push({ time: this.minToTime(startMin), title: '身軽に立ち寄れるスポット（カフェや展望台など）', type: 'sightseeing', icon: '☕' });
+        day3Events.push({ time: this.minToTime(startMin + Math.floor(avail / 2)), title: '駅・空港周辺でお土産購入', type: 'sightseeing', icon: '🛍️' });
+      } else if (avail > 40) {
+        day3Events.push({ time: this.minToTime(startMin), title: '駅・空港周辺でお土産購入・散策', type: 'sightseeing', icon: '🛍️' });
+      }
     }
 
     day3Events.push({ time: this.minToTime(stationArrMin), title: `${dest.cityStation || dest.station} 到着（出発の準備）`, type: 'transport', icon: '🚉' });
