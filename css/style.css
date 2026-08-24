@@ -1811,9 +1811,13 @@ body {
 }
 
 @media (max-width: 600px) {
+  .header-partner-badges {
+    width: 100%;
+    justify-content: center;
+  }
   .header-partner-badge {
     width: 100%;
     justify-content: center;
-    margin-top: 5px;
+    margin-top: 4px;
   }
 }
