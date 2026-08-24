@@ -367,41 +367,37 @@
   <!-- ======================== -->
   <div id="howto-modal" class="modal" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 3000; align-items: center; justify-content: center;">
     <div class="modal-backdrop" id="howto-modal-backdrop" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6);"></div>
-    <div class="modal-content" style="position: relative; background: white; padding: 25px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <div class="modal-content" style="position: relative; background: white; padding: 25px; border-radius: 12px; max-width: 550px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
       <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
         <span>📖</span> このアプリの使い方
       </h2>
       
       <div style="font-size: 0.95rem; line-height: 1.6; color: #333;">
         <div style="background: #fff5f5; border-left: 4px solid #ff6b6b; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-          <h3 style="font-size: 1rem; color: #ff6b6b; margin-bottom: 8px; margin-top: 0;">1. 本アプリは「他の乗換アプリ」とセットで使います</h3>
-          <p style="margin: 0;">このアプリが計算する時間は「疲れないルート」を選ぶための概算（プロトタイプ版）です。</p>
-          <p style="margin: 8px 0 0 0;">旅程を決めた後、必ず使い慣れた<strong>無料の乗換アプリ（Yahoo!乗換など）で正確な時間を検索し、そのスクショ画像を貼り付けて</strong>しおりを完成させてください。（画像を貼ると自動で時間が修正されます！）</p>
+          <h3 style="font-size: 1rem; color: #ff6b6b; margin-bottom: 8px; margin-top: 0;">1. 本アプリはスマホの「Yahoo!乗換案内」アプリとセットで使います</h3>
+          <p style="margin: 0 0 8px 0;">この『こはる』アプリが計算する時間は「疲れないルート」を選ぶための概算（プロトタイプ版）です。</p>
+          <p style="margin: 0;">旅程を決めた後、無料の乗換アプリ（Yahoo!乗換案内）で正確な時間を検索し、そのスクショ画像を貼り付けて、しおりが完成します。Yahoo!乗換案内以外でもできますが、レイアウトは崩れます。</p>
         </div>
 
         <h3 style="font-size: 1.05rem; color: var(--color-primary); margin: 20px 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px;">2. パソコンで印刷するおすすめの手順</h3>
           
-          <div style="margin-bottom: 15px;">
-            <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: #333; line-height: 1.6;">
-              本アプリはセキュリティの都合上データを保存しないため、パソコンで印刷する場合は<strong>「スマホで調べたルートを、パソコンで開く」</strong>のが一番スムーズです。
-            </p>
-            
-            <div style="background: #eef2f9; padding: 15px; border-radius: 8px; font-size: 0.9rem; line-height: 1.6;">
-              <strong>💡 Yahoo!連携を使った便利な手順</strong>
-              <ol style="margin-top: 8px; margin-bottom: 0; padding-left: 20px;">
-                <li style="margin-bottom: 8px;">スマホの<strong>「Yahoo!乗換案内」</strong>アプリでお好みのルートを検索し、<br><strong>同じYahoo! JAPAN IDでログイン</strong>してルートを保存します。</li>
-                <li style="margin-bottom: 8px;">パソコンのブラウザで<strong>「Yahoo!路線情報 (transit.yahoo.co.jp)」</strong>を開き、同じIDでログインします。</li>
-                <li style="margin-bottom: 8px;">パソコン上で保存したルートを開き、画面をスクリーンショット（画面キャプチャ）します。</li>
-                <li>当アプリ「こはる」をパソコンで開き、その画像を添付して印刷すれば完了です！</li>
-              </ol>
-            </div>
-            <p style="margin-top: 10px; font-size: 0.85rem; color: #666;">
-              ※もちろん、スマホからAirPrint対応プリンターで直接印刷する場合は、スマホ上でスクショを撮ってそのまま当アプリに貼り付けるだけでOKです。
-            </p>
+        <div style="margin-bottom: 15px;">
+          <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: #333; line-height: 1.6;">
+            本アプリは「スマホで調べたルートを、パソコンで開く」のが一番スムーズです。スマホだけでもできますが、印刷画面がやや不安定になりがちです。（スマホからAirPrint対応プリンターで直接印刷する場合）
+          </p>
+          
+          <div style="background: #eef2f9; padding: 15px; border-radius: 8px; font-size: 0.9rem; line-height: 1.6;">
+            <strong style="color: var(--color-primary); font-size: 0.95rem;">💡 Yahoo!連携を使った便利な手順</strong>
+            <ul style="margin-top: 8px; margin-bottom: 0; padding-left: 0; list-style-type: none;">
+              <li style="margin-bottom: 8px;"><strong>（1）</strong> スマホの「Yahoo!乗換案内」アプリでお好みのルートを検索し、決定したら左から2つ目のアイコン「スクショ」を押します。</li>
+              <li style="margin-bottom: 8px;"><strong>（2）</strong> パソコン側の任意フォルダに移動します。Dropboxやパソコンとケーブル接続するなどしてもいいですが、【100均アプリ】にある「PCスマホ連動メモ」が一番簡単だと思います。</li>
+              <li><strong>（3）</strong> 『こはる』で画像を取得します。黒いマージンは自動で取り除かれます。(他の乗換アプリは対象外です)</li>
+            </ul>
           </div>
         </div>
+      </div>
 
-        <div class="modal-actions" style="margin-top: 20px;">
+      <div class="modal-actions" style="margin-top: 20px;">
         <button type="button" class="btn btn-primary" id="howto-modal-close" style="width: 100%;">閉じる</button>
       </div>
     </div>
