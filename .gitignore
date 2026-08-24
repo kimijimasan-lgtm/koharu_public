@@ -1,0 +1,12 @@
+node_modules/
+package-lock.json
+package.json
+patch.js
+patch2.js
+patch_app.js
+restore_day2.js
+test.js
+test_ocr.js
+test_routes.js
+route_test_report.md
+style_history.txt
