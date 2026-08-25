@@ -423,6 +423,9 @@ const App = {
           </div>
         </div>
       `;
+    } else {
+      // Fallback: use the transport mode defined in destination data
+      this.state.recommendedTransport = dest.transportMode === 'flight' ? 'flight' : 'shinkansen';
     }
 
     const accessLabel = dest.transportMode === 'flight'
