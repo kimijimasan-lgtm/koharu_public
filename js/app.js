@@ -1374,7 +1374,7 @@ const App = {
         const element = document.getElementById('step-confirmed');
         const opt = {
           margin:       [10, 10, 10, 10], // top, left, bottom, right in mm
-          filename:     'travel_itinerary.pdf',
+          filename:     'こはる_旅のしおり.pdf',
           image:        { type: 'jpeg', quality: 0.98 },
           html2canvas:  { 
             scale: 2, 
