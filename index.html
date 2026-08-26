@@ -295,6 +295,7 @@
   
         <div class="confirmed-actions top-actions no-print" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; text-align: center;">
           <button type="button" class="btn btn-primary" onclick="window.print()" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">🖨️ 印刷する</button>
+          <button type="button" id="btn-direct-pdf" class="btn btn-primary" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15); background-color: #e67e22; border-color: #d35400;">📄 PDFファイルで保存する</button>
           <button type="button" id="btn-back-to-yahoo-from-confirmed" class="btn btn-secondary" style="font-size: 1rem; padding: 10px; user-select: none;">🔙 前のページに戻る（画像を貼り直す）</button>
         </div>
         
@@ -326,6 +327,7 @@
 
 
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" defer></script>
   <script src="js/data.js?v=3"></script>
   <script src="js/app.js?v=3"></script>
 
@@ -417,6 +419,16 @@
     </div>
   </div>
 
+
+  <!-- PDF Generation Loading Overlay -->
+  <div id="pdf-loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:sans-serif;">
+    <div style="font-size: 3rem; margin-bottom: 20px; animation: spin 1s linear infinite;">⏳</div>
+    <div style="font-size: 1.5rem; font-weight: bold;">PDFを作成しています...</div>
+    <div style="font-size: 1rem; margin-top: 10px;">少々お待ちください</div>
+    <style>
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+  </div>
 
 </body>
 </html>
