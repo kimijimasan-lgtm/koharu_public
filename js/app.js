@@ -1209,6 +1209,17 @@ const App = {
     this.enrichEventsWithLinks(day3Events, hotel, dest);
 
     // Render logic
+    const ticketSection = `
+        <div class="no-print" style="width:100%; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
+          <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:var(--color-primary);">🎫 新幹線チケット（きっぷ）の購入</h3>
+          <p style="font-size:0.95rem; color:#666; margin-bottom:15px;">※印刷には表示されません</p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="https://www.eki-net.com/personal/top/index" target="_blank" class="btn btn-primary" style="text-decoration: none; padding: 10px 20px; font-weight: bold;">えきねっと（JR東日本・北海道）で購入する</a>
+            <a href="https://smart-ex.jp/" target="_blank" class="btn btn-primary" style="text-decoration: none; padding: 10px 20px; font-weight: bold; background-color: #f39c12; border-color: #e67e22;">スマートEX（東海道・山陽）で購入する</a>
+          </div>
+        </div>
+    `;
+
     const reservationHtml = this.getDinnerReservationLinks(day1Events, day2Events, day3Events, dest);
     const reservationSection = reservationHtml ? `
         <div style="width:100%; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
@@ -1287,6 +1298,7 @@ const App = {
     </div>
   </div>
 
+        ${ticketSection}
         ${reservationSection}
         <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
         
