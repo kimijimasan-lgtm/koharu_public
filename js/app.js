@@ -42,8 +42,7 @@ const App = {
       }
     });
 
-
-
+    this.bindDirectPdfButton();
     this.bindHowtoModalEvents();
     
     // Screenshot upload handling
@@ -1360,7 +1359,46 @@ const App = {
   },
 
 
-
+  bindDirectPdfButton() {
+    const btnPdf = document.getElementById('btn-direct-pdf');
+    if (!btnPdf) return;
+    
+    btnPdf.addEventListener('click', async () => {
+      const overlay = document.getElementById('pdf-loading-overlay');
+      if (overlay) overlay.style.display = 'flex';
+      
+      // wait a bit for the overlay to render
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      try {
+        const element = document.getElementById('step-confirmed');
+        const opt = {
+          margin:       [10, 10, 10, 10], // top, left, bottom, right in mm
+          filename:     'travel_itinerary.pdf',
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { 
+            scale: 2, 
+            useCORS: true,
+            ignoreElements: (el) => {
+              // Ignore elements with 'no-print' class
+              if (el.classList && el.classList.contains('no-print')) {
+                return true;
+              }
+              return false;
+            }
+          },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        await html2pdf().set(opt).from(element).save();
+      } catch (error) {
+        console.error("PDF生成中にエラーが発生しました:", error);
+        alert("PDFの作成に失敗しました。");
+      } finally {
+        if (overlay) overlay.style.display = 'none';
+      }
+    });
+  },
 
   resetState() {
     this.state = {
