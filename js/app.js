@@ -28,10 +28,8 @@ const App = {
     this.bindEvents();
     this.loadSavedInputs();
     this.updateStationChoiceLabels();
-    if (!this.restoreFromQr()) {
-      this.refreshTrainChoices();
-      this.showStep('input');
-    }
+    this.refreshTrainChoices();
+    this.showStep('input');
   },
 
   bindEvents() {
@@ -44,7 +42,7 @@ const App = {
       }
     });
 
-    this.bindQrModalEvents();
+    this.bindPdfButton();
     this.bindHowtoModalEvents();
     
     // Screenshot upload handling
@@ -1360,122 +1358,10 @@ const App = {
     if (backdrop) backdrop.addEventListener('click', closeModal);
   },
 
-  bindQrModalEvents() {
-    document.getElementById('btn-qr-open').addEventListener('click', () => this.openQrModal());
-    document.getElementById('qr-modal-close').addEventListener('click', () => this.closeQrModal());
-    document.getElementById('qr-modal-backdrop').addEventListener('click', () => this.closeQrModal());
-    document.getElementById('qr-modal-copy').addEventListener('click', () => {
-      const input = document.getElementById('qr-modal-url');
-      input.select();
-      input.setSelectionRange(0, 99999);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(input.value).catch(() => {});
-      }
+  bindPdfButton() {
+    document.getElementById('btn-pdf-save').addEventListener('click', () => {
+      window.print();
     });
-  },
-
-  buildShareUrl() {
-    const payload = {
-      v: 1,
-      inputs: { ...this.state.inputs },
-      trainChoice: { ...this.state.trainChoice },
-      hotelId: this.state.selectedHotel ? this.state.selectedHotel.id : null,
-      hakodateArrivalTime: document.getElementById('hakodate-arrival-time') ? document.getElementById('hakodate-arrival-time').value : '14:00',
-      hakodateDepartureTime: document.getElementById('hakodate-departure-time') ? document.getElementById('hakodate-departure-time').value : '13:00',
-      customTimes: this.state.customTimes || {},
-    };
-    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
-    // location.origin を動的に使うことで、localtunnel等の一時URLでも本番ドメインでもそのまま機能する
-    return `${window.location.origin}${window.location.pathname}#koharu=${compressed}`;
-  },
-
-  openQrModal() {
-    this.collectInputs(); // モーダルを開いた時点のフォーム内容を必ず反映する
-    const url = this.buildShareUrl();
-
-    const container = document.getElementById('qr-code-container');
-    if (!this._qrCodeInstance) {
-      container.innerHTML = '';
-      this._qrCodeInstance = new QRCode(container, {
-        text: url,
-        width: 200,
-        height: 200,
-        correctLevel: QRCode.CorrectLevel.M,
-      });
-    } else {
-      this._qrCodeInstance.clear();
-      this._qrCodeInstance.makeCode(url);
-    }
-
-    document.getElementById('qr-modal-url').value = url;
-    document.getElementById('qr-modal-caption').textContent = this.state.selectedHotel
-      ? `「${this.state.selectedHotel.name}」を選んだ状態の行程を復元します`
-      : (this.state.inputs.destination ? '入力済みの条件から宿の候補を復元します' : 'まだ条件が入力されていません（先に旅の条件を入力してください）');
-
-    const modal = document.getElementById('qr-modal');
-    modal.classList.add('is-open');
-    modal.setAttribute('aria-hidden', 'false');
-  },
-
-  closeQrModal() {
-    const modal = document.getElementById('qr-modal');
-    modal.classList.remove('is-open');
-    modal.setAttribute('aria-hidden', 'true');
-  },
-
-  // URLハッシュ(#koharu=...)に入力条件が含まれていれば復元し、入力画面を経由せず該当画面を表示する。
-  // 復元できた場合は true を返す(呼び出し側はこの場合デフォルトの showStep('input') をスキップする)。
-  restoreFromQr() {
-    const match = window.location.hash.match(/koharu=([^&]+)/);
-    if (!match) return false;
-
-    let payload;
-    try {
-      const json = LZString.decompressFromEncodedURIComponent(match[1]);
-      payload = json ? JSON.parse(json) : null;
-    } catch (e) {
-      payload = null;
-    }
-
-    // 復元後にURLを掃除し、リロードや戻る操作での二重処理を防ぐ
-    history.replaceState(null, '', window.location.pathname + window.location.search);
-
-    if (!payload || !payload.inputs) return false;
-
-    this.applyInputsToForm({ ...payload.inputs, trainChoice: payload.trainChoice });
-    this.saveInputsToStorage();
-
-    if (!this.generateHotelCandidates()) {
-      // 対応エリア外などの場合は入力画面のまま条件だけ復元しておく
-      this.showStep('input');
-      return true;
-    }
-
-    if (payload.hotelId) {
-      const destKey = this.resolveDestination(this.state.inputs.destination);
-      const dest = DESTINATIONS[destKey];
-      const hotel = dest.hotels.find((h) => h.id === payload.hotelId);
-      
-      if (hotel && this.isHotelAvailable(hotel, this.state.inputs.departureDate)) {
-        this.state.selectedHotel = hotel;
-        
-        // Restore times
-        if (payload.hakodateArrivalTime) {
-          const arrInput = document.getElementById('hakodate-arrival-time');
-          if (arrInput) arrInput.value = payload.hakodateArrivalTime;
-        }
-        if (payload.hakodateDepartureTime) {
-          const depInput = document.getElementById('hakodate-departure-time');
-          if (depInput) depInput.value = payload.hakodateDepartureTime;
-        }
-
-        this.showStep('yahoo-data');
-        return true;
-      }
-    }
-
-    this.showStep('hotels');
-    return true;
   },
 
   resetState() {
