@@ -259,7 +259,7 @@ body {
   font-size: 0.85rem;
 }
 
-/* 交通手段判定バッジ（公開版） */
+/* 交通手段判定バチE���E��E開版�E�E*/
 .transport-badge {
   display: flex;
   align-items: flex-start;
@@ -370,13 +370,13 @@ body {
 }
 
 /* ========================
-   実ダイヤの列車選択（A/B）
+   実ダイヤの列車選択！E/B�E�E
    ======================== */
 .train-choice:empty {
   display: none;
 }
 
-/* 選択が必要な状態はSunset（アクセント）側の色で「要対応」を示す */
+/* 選択が忁E��な状態�ESunset�E�アクセント）�Eの色で「要対応」を示ぁE*/
 .train-choice {
   margin-top: 0.75rem;
   padding: 0.9rem 1rem;
@@ -385,7 +385,7 @@ body {
   border-left: 4px solid var(--color-accent);
 }
 
-/* 選択不要（自動確定・完全一致）のときはSky側の落ち着いた色に切り替える */
+/* 選択不要E���E動確定�E完�E一致�E��Eとき�ESky側の落ち着ぁE��色に刁E��替える */
 .train-choice.is-resolved {
   background: var(--color-primary-light);
   border-left-color: var(--color-primary);
@@ -489,7 +489,7 @@ body {
   line-height: 1.55;
 }
 
-/* 希望との差が極端に大きい選択肢の注意書き */
+/* 希望との差が極端に大きい選択肢の注意書ぁE*/
 .train-choice-warning {
   display: inline-block;
   margin-top: 0.2rem;
@@ -907,7 +907,7 @@ body {
 }
 
 /* ========================
-   確定／概算バッジ
+   確定／概算バチE��
    ======================== */
 .src-badge {
   display: inline-block;
@@ -922,13 +922,13 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* 確定＝Sky側。実データ区間では連続して並ぶため、主張しすぎない配色にする */
+/* 確定＝Sky側。実データ区間では連続して並ぶため、主張しすぎなぁE�E色にする */
 .src-verified {
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
 }
 
-/* 概算＝Sunset側。数字を鵜呑みにしてほしくない側なのでコントラストを上げる */
+/* 概算＝Sunset側。数字を鵜呑みにしてほしくなぁE�Eなのでコントラストを上げめE*/
 .src-estimated {
   background: var(--color-accent-light);
   color: #a94d09;
@@ -1292,7 +1292,7 @@ body {
     line-height: 1.5 !important;
   }
 
-  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .qr-fab, .qr-modal, .home-fab {
+  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .pdf-fab, .home-fab {
     display: none !important;
   }
 
@@ -1315,7 +1315,7 @@ body {
     display: block !important;
   }
   
-  /* 連続フロー (自然な改ページ) */
+  /* 連続フロー (自然な改ペ�Eジ) */
   .print-page-1, .print-page-2 {
     display: flex;
     flex-direction: column;
@@ -1330,7 +1330,7 @@ body {
     padding: 0 !important;
   }
   
-  /* 要素の途中で不格好に切れるのを防ぐ */
+  /* 要素の途中で不格好に刁E��る�Eを防ぁE*/
   .hotel-card, .cost-summary-final, .checklist, .print-header, .timeline-item {
     page-break-inside: avoid;
     break-inside: avoid;
@@ -1351,10 +1351,10 @@ body {
 }
 
 /* ========================
-   QR: スマホで見る
+   QR: スマ�Eで見る
    ======================== */
 /* ========================
-   Home: トップへ戻る
+   Home: トップへ戻めE
    ======================== */
 .home-fab {
   position: fixed;
@@ -1387,7 +1387,10 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.qr-fab {
+/* ========================
+   PDF: �ۑ��E���L�{�^��
+   ======================== */
+.pdf-fab {
   position: fixed;
   right: 1.25rem;
   bottom: 1.25rem;
@@ -1408,147 +1411,12 @@ body {
   transition: all 0.2s ease;
 }
 
-.qr-fab:hover {
-  background: var(--color-primary-dark);
+.pdf-fab:hover {
+  background: var(--color-primary);
+  color: white;
   transform: translateY(-1px);
 }
 
-/* スマホ幅（768px未満）では非表示。スマホ→スマホでQRを使う意味がないための措置 */
-@media (max-width: 767px) {
-  .qr-fab {
-    display: none;
-  }
-}
-
-.qr-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-}
-
-.qr-modal.is-open {
-  display: flex;
-}
-
-.qr-modal-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(31, 41, 51, 0.55);
-}
-
-.qr-modal-content {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 340px;
-  max-height: 90vh;
-  overflow-y: auto;
-  background: var(--color-bg-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: 1.75rem 1.5rem 1.5rem;
-  text-align: center;
-}
-
-.qr-modal-close {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  width: 2rem;
-  height: 2rem;
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 1.3rem;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.qr-modal-close:hover {
-  background: var(--color-bg-section);
-}
-
-.qr-modal-title {
-  font-size: 1.05rem;
-  margin-bottom: 0.5rem;
-  color: var(--color-text);
-}
-
-.qr-modal-caption {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  margin-bottom: 1rem;
-}
-
-.qr-code-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 0.6rem;
-}
-
-.qr-code-container img,
-.qr-code-container canvas {
-  border-radius: var(--radius-sm);
-}
-
-.qr-modal-hint {
-  font-size: 0.85rem;
-  color: var(--color-text-light);
-  margin-bottom: 1.2rem;
-}
-
-.qr-modal-link-accordion {
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.qr-modal-link-accordion summary {
-  display: inline-block;
-  list-style: none;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.qr-modal-link-accordion summary::-webkit-details-marker {
-  display: none;
-}
-
-.qr-modal-link-accordion summary::before {
-  content: '🔗 ';
-}
-
-.qr-modal-link-accordion[open] summary {
-  margin-bottom: 0.7rem;
-}
-
-.qr-modal-url-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0;
-}
-
-.qr-modal-url-input {
-  flex: 1;
-  min-width: 0;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  color: var(--color-text-light);
-  background: var(--color-bg-section);
-}
-
-.qr-modal-note {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  line-height: 1.5;
-}
 
 /* Station Setup Accordion */
 .station-accordion-header {
