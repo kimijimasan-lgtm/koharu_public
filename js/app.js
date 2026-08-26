@@ -42,7 +42,8 @@ const App = {
       }
     });
 
-    this.bindPdfButton();
+
+
     this.bindHowtoModalEvents();
     
     // Screenshot upload handling
@@ -1358,11 +1359,8 @@ const App = {
     if (backdrop) backdrop.addEventListener('click', closeModal);
   },
 
-  bindPdfButton() {
-    document.getElementById('btn-pdf-save').addEventListener('click', () => {
-      window.print();
-    });
-  },
+
+
 
   resetState() {
     this.state = {
