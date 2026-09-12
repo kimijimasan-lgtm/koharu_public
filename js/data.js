@@ -18,94 +18,552 @@ const DESTINATIONS = {
 
   chitose: {
     name: '千歳', area: '道央', station: '千歳駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 105,
-    highlights: ['支笏湖', 'サケのふるさと', '新千歳空港温泉'],
+    highlights: ['支笏湖', 'サケのふるさと千歳水族館', '新千歳空港温泉'],
     hotels: [
-      { id: 'chitose1', name: 'しこつ湖鶴雅リゾートスパ 水の謌', type: '温泉リゾート', features: ['支笏湖畔', 'ビュッフェ', 'スパ'], taxiFromCityStation: 40, area: '支笏湖温泉', pricePerNight: 40000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'ct1', name: 'しこつ湖鶴雅リゾートスパ 水の謌', type: '温泉リゾート',
+        features: ['支笏湖畔の絶景', '全室レイクビュー', 'ビュッフェ＆スパ'],
+        taxiFromCityStation: 40, area: '支笏湖温泉', pricePerNight: 40000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ct2', name: 'レイクサイドヴィラ翠明閣', type: 'オーベルジュ',
+        features: ['全8室の隠れ宿', '全室展望ジャグジー', 'イタリアンコースディナー'],
+        taxiFromCityStation: 40, area: '支笏湖温泉', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ct3', name: '丸駒温泉旅館', type: '温泉旅館',
+        features: ['大正4年創業の秘湯', '湖と一体化する天然露天風呂', '山菜・湖魚の和食膳'],
+        taxiFromCityStation: 50, area: '支笏湖', pricePerNight: 20000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ct4', name: '休暇村支笏湖', type: '公共の宿',
+        features: ['支笏湖畔の自然環境', '天然温泉大浴場', 'ビュッフェ'],
+        taxiFromCityStation: 40, area: '支笏湖温泉', pricePerNight: 15000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ct5', name: 'ANAクラウンプラザホテル千歳', type: 'シティホテル',
+        features: ['JR千歳駅徒歩1分', '空港アクセス良好', '朝食ビュッフェ'],
+        taxiFromCityStation: 1, area: '千歳駅前', pricePerNight: 12000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'ct6', name: 'ホテルルートイン千歳駅前', type: 'ビジネスホテル',
+        features: ['JR千歳駅徒歩2分', '大浴場完備', '無料バイキング朝食'],
+        taxiFromCityStation: 1, area: '千歳駅前', pricePerNight: 9000, dinnerIncluded: false, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: 'ドレモルタオ', genre: 'スイーツカフェ', area: '千歳市内', reservationNeeded: false, budget: 1500 },
+        { name: '道の駅サーモンパーク千歳', genre: '地元グルメ', area: '千歳', reservationNeeded: false, budget: 1200 },
+      ],
+      dinner: [
+        { name: '支笏湖温泉 水の謌 アマム', genre: 'ビュッフェ', area: '支笏湖温泉', reservationNeeded: true, budget: 6000 },
+      ],
+      snack: [
+        { name: 'ロイズチョコレートワールド', genre: 'チョコレート', area: '新千歳空港', budget: 500 },
+      ],
+    },
+    spots: [
+      { name: '支笏湖（遊覧船・散策）', area: '支笏湖', duration: 90, indoor: false, taxiFromCityStation: 40 },
+      { name: 'サケのふるさと千歳水族館', area: '千歳', duration: 60, indoor: true, taxiFromCityStation: 5 },
+      { name: '新千歳空港温泉（万葉の湯）', area: '新千歳空港', duration: 90, indoor: true, taxiFromCityStation: 10 },
+      { name: '支笏湖ビジターセンター', area: '支笏湖', duration: 30, indoor: true, taxiFromCityStation: 40 },
+    ],
   },
   tomakomai: {
     name: '苫小牧', area: '道央', station: '苫小牧駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 130,
     highlights: ['ウトナイ湖', 'ノーザンホースパーク', 'マルトマ食堂'],
     hotels: [
-      { id: 'tomakomai1', name: 'グランドホテルニュー王子', type: 'シティホテル', features: ['駅周辺', '展望レストラン'], taxiFromCityStation: 5, area: '苫小牧駅周辺', pricePerNight: 15000, dinnerIncluded: false, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'tm1', name: 'グランドホテルニュー王子', type: 'シティホテル',
+        features: ['苫小牧駅周辺', '展望レストラン', '宴会場・会議室完備'],
+        taxiFromCityStation: 5, area: '苫小牧駅周辺', pricePerNight: 15000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'tm2', name: 'ホテルルートイン苫小牧駅前', type: 'ビジネスホテル',
+        features: ['JR苫小牧駅徒歩2分', '大浴場完備', '無料バイキング朝食'],
+        taxiFromCityStation: 2, area: '苫小牧駅前', pricePerNight: 10000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'tm3', name: 'コンフォートホテル苫小牧', type: 'ビジネスホテル',
+        features: ['苫小牧駅徒歩3分', '無料朝食サービス', '全室禁煙'],
+        taxiFromCityStation: 2, area: '苫小牧駅前', pricePerNight: 8500, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'tm4', name: '東横INN苫小牧駅前', type: 'ビジネスホテル',
+        features: ['JR苫小牧駅前', '安心の全国チェーン', '無料朝食'],
+        taxiFromCityStation: 1, area: '苫小牧駅前', pricePerNight: 7500, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'tm5', name: 'スーパーホテル苫小牧駅前', type: 'ビジネスホテル',
+        features: ['駅前の好立地', '天然温泉大浴場', '健康朝食無料'],
+        taxiFromCityStation: 2, area: '苫小牧駅前', pricePerNight: 6500, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'tm6', name: 'ホテルウイングインターナショナル苫小牧', type: 'ビジネスホテル',
+        features: ['苫小牧中心街', 'リーズナブルな料金', '朝食バイキング'],
+        taxiFromCityStation: 3, area: '苫小牧駅周辺', pricePerNight: 6000, dinnerIncluded: false, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: 'マルトマ食堂', genre: '海鮮丼・ホッキ貝', area: '苫小牧港', reservationNeeded: false, budget: 2000 },
+        { name: '味の大王 総本店', genre: 'カレーラーメン', area: '苫小牧', reservationNeeded: false, budget: 1000 },
+      ],
+      dinner: [
+        { name: '海の駅 ぷらっとみなと市場', genre: '海鮮', area: '苫小牧港', reservationNeeded: false, budget: 3500 },
+      ],
+      snack: [
+        { name: '三星 本店', genre: 'よいとまけ', area: '苫小牧', budget: 500 },
+      ],
+    },
+    spots: [
+      { name: 'ウトナイ湖（野鳥観察）', area: 'ウトナイ', duration: 60, indoor: false, taxiFromCityStation: 15 },
+      { name: 'ノーザンホースパーク', area: '苫小牧郊外', duration: 120, indoor: false, taxiFromCityStation: 30 },
+      { name: '樽前山 七合目ヒュッテ', area: '樽前', duration: 120, indoor: false, taxiFromCityStation: 40 },
+      { name: '苫小牧市科学センター', area: '苫小牧', duration: 60, indoor: true, taxiFromCityStation: 5 },
+    ],
   },
   otaru: {
     name: '小樽', area: '道央', station: '小樽駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 195,
     highlights: ['小樽運河', '堺町通り', '天狗山'],
     hotels: [
-      { id: 'otaru1', name: '運河の宿 おたる ふる川', type: '温泉旅館', features: ['運河沿い', 'レトロな雰囲気', '温泉大浴場'], taxiFromCityStation: 5, area: '小樽運河', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'ot1', name: '小樽旅亭 銀鱗荘', type: '温泉旅館',
+        features: ['明治期の鰊御殿を移築', '高台から海を一望', '源泉かけ流し露天風呂'],
+        taxiFromCityStation: 10, area: '小樽築港', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ot2', name: '運河の宿 おたる ふる川', type: '温泉旅館',
+        features: ['運河沿いの立地', 'レトロな雰囲気', '温泉大浴場'],
+        taxiFromCityStation: 5, area: '小樽運河', pricePerNight: 30000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ot3', name: 'ホテルノルド小樽', type: 'シティホテル',
+        features: ['小樽運河すぐ', 'ヨーロッパ調の外観', '朝食バイキング人気'],
+        taxiFromCityStation: 5, area: '小樽運河', pricePerNight: 18000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'ot4', name: 'グランドパーク小樽', type: 'シティホテル',
+        features: ['小樽築港・ウイングベイ直結', '海を望む全室オーシャンビュー', 'リゾート感'],
+        taxiFromCityStation: 10, area: '小樽築港', pricePerNight: 15000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'ot5', name: 'ホテルソニア小樽', type: 'シティホテル',
+        features: ['小樽運河至近', '堺町通り徒歩圏', '天然温泉大浴場'],
+        taxiFromCityStation: 5, area: '小樽運河', pricePerNight: 14000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'ot6', name: 'ドーミーインPREMIUM小樽', type: 'ビジネスホテル',
+        features: ['小樽駅徒歩3分', '天然温泉大浴場・サウナ', '夜鳴きそば無料サービス'],
+        taxiFromCityStation: 3, area: '小樽駅前', pricePerNight: 12000, dinnerIncluded: false, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: 'おたる政寿司 本店', genre: '寿司', area: '寿司屋通り', reservationNeeded: false, budget: 4000 },
+        { name: '小樽なると 本店', genre: '若鶏半身揚げ', area: '稲穂', reservationNeeded: false, budget: 1200 },
+      ],
+      dinner: [
+        { name: '伊勢鮨', genre: '寿司', area: '稲穂', reservationNeeded: true, budget: 12000 },
+        { name: '小樽バイン', genre: 'ワイン・洋食', area: '色内', reservationNeeded: false, budget: 3000 },
+      ],
+      snack: [
+        { name: 'ルタオ 本店', genre: 'ドゥーブルフロマージュ', area: '堺町通り', budget: 1000 },
+        { name: '北一硝子三号館 北一ホール', genre: 'カフェ', area: '堺町通り', budget: 800 },
+      ],
+    },
+    spots: [
+      { name: '小樽運河（散策・クルーズ）', area: '運河', duration: 60, indoor: false, taxiFromCityStation: 5 },
+      { name: '天狗山ロープウェイ', area: '天狗山', duration: 90, indoor: false, taxiFromCityStation: 15 },
+      { name: '小樽オルゴール堂 本館', area: '堺町', duration: 40, indoor: true, taxiFromCityStation: 7 },
+      { name: '堺町通り商店街', area: '堺町', duration: 60, indoor: false, taxiFromCityStation: 7 },
+    ],
   },
   niseko: {
     name: 'ニセコ', area: '道央', station: 'ニセコ駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 255,
     highlights: ['ニセコアンヌプリ', '羊蹄山', 'ミルク工房'],
     hotels: [
-      { id: 'niseko1', name: 'パークハイアット ニセコ', type: 'ラグジュアリー', features: ['マウンテンビュー', '温泉', '高級フレンチ'], taxiFromCityStation: 15, area: '花園', pricePerNight: 80000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'ns1', name: 'パークハイアット ニセコ HANAZONO', type: 'ラグジュアリー',
+        features: ['世界水準のラグジュアリーリゾート', 'マウンテンビュー', '温泉・スパ・フレンチ'],
+        taxiFromCityStation: 15, area: '花園', pricePerNight: 80000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ns2', name: 'ニセコ昆布温泉 鶴雅別荘 杢の抄', type: '温泉旅館',
+        features: ['全室露天風呂付', '木のぬくもりの和空間', '創作懐石'],
+        taxiFromCityStation: 10, area: '昆布温泉', pricePerNight: 55000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ns3', name: 'ヒルトンニセコビレッジ', type: 'リゾートホテル',
+        features: ['羊蹄山を正面に望む', 'ゴルフ・アクティビティ充実', '温泉大浴場'],
+        taxiFromCityStation: 10, area: 'ニセコビレッジ', pricePerNight: 40000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'ns4', name: 'ワンニセコリゾートタワーズ', type: 'コンドミニアム',
+        features: ['キッチン付の広い客室', 'モイワスキー場直結', '温泉大浴場'],
+        taxiFromCityStation: 8, area: 'モイワ', pricePerNight: 25000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'ns5', name: 'ニセコノーザンリゾート・アンヌプリ', type: 'リゾートホテル',
+        features: ['アンヌプリスキー場前', '露天風呂・サウナ', '北海道食材ビュッフェ'],
+        taxiFromCityStation: 10, area: 'アンヌプリ', pricePerNight: 18000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'ns6', name: 'ニセコグランドホテル', type: '温泉ホテル',
+        features: ['昆布温泉の老舗', '庭園露天風呂（混浴あり）', 'リーズナブルな温泉宿'],
+        taxiFromCityStation: 10, area: '昆布温泉', pricePerNight: 12000, dinnerIncluded: true, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: '高橋牧場 ミルク工房 レストラン プラティーヴォ', genre: '地元野菜ビュッフェ', area: 'ニセコ', reservationNeeded: false, budget: 2000 },
+        { name: 'グラウビュンデン', genre: 'カフェ・サンドイッチ', area: 'ニセコ', reservationNeeded: false, budget: 2000 },
+      ],
+      dinner: [
+        { name: '名水うどん 野々傘', genre: '手打ちうどん', area: '京極', reservationNeeded: false, budget: 1500 },
+      ],
+      snack: [
+        { name: '高橋牧場 ミルク工房', genre: 'ソフトクリーム・シュークリーム', area: 'ニセコ', budget: 500 },
+      ],
+    },
+    spots: [
+      { name: 'ニセコアンヌプリ ゴンドラ', area: 'アンヌプリ', duration: 90, indoor: false, taxiFromCityStation: 10 },
+      { name: '羊蹄山 半月湖自然公園', area: '倶知安', duration: 60, indoor: false, taxiFromCityStation: 15 },
+      { name: '神仙沼', area: 'ニセコパノラマライン', duration: 60, indoor: false, taxiFromCityStation: 25 },
+      { name: '高橋牧場 ミルク工房', area: 'ニセコ', duration: 45, indoor: false, taxiFromCityStation: 10 },
+    ],
   },
   toyako: {
     name: '洞爺湖', area: '道央', station: '洞爺駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 255,
     highlights: ['洞爺湖', '有珠山', '昭和新山'],
     hotels: [
-      { id: 'toyako1', name: 'ザ・ウィンザーホテル洞爺', type: 'リゾート', features: ['絶景', 'フレンチ', '温泉'], taxiFromCityStation: 20, area: '洞爺湖畔', pricePerNight: 60000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'tk1', name: 'ザ・ウィンザーホテル洞爺 リゾート＆スパ', type: 'リゾート',
+        features: ['G8サミット開催地', '山頂から洞爺湖一望', 'ミシュラン星付レストラン'],
+        taxiFromCityStation: 20, area: '洞爺湖畔', pricePerNight: 60000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'tk2', name: 'ザ・レイクスイート 湖の栖', type: '温泉旅館',
+        features: ['全室レイクビュー展望風呂', '2019年開業の新館', '和モダン空間'],
+        taxiFromCityStation: 10, area: '洞爺湖温泉', pricePerNight: 40000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'tk3', name: '乃の風リゾート', type: 'リゾートホテル',
+        features: ['洞爺湖一望のインフィニティ露天', 'スタイリッシュな和モダン', 'ブッフェダイニング'],
+        taxiFromCityStation: 10, area: '洞爺湖温泉', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'tk4', name: '洞爺湖万世閣 ホテルレイクサイドテラス', type: 'シティホテル',
+        features: ['洞爺湖温泉の大型ホテル', '空中露天風呂', '和洋中ビュッフェ'],
+        taxiFromCityStation: 10, area: '洞爺湖温泉', pricePerNight: 22000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'tk5', name: '洞爺サンパレス リゾート＆スパ', type: 'リゾートホテル',
+        features: ['大型ウォーターランド', '洞爺湖畔のリゾート', '家族向け充実'],
+        taxiFromCityStation: 15, area: '壮瞥', pricePerNight: 18000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'tk6', name: 'ゆとりろ洞爺湖', type: 'カジュアルホテル',
+        features: ['洞爺湖温泉街', 'リーズナブルな温泉宿', '湖畔散策に便利'],
+        taxiFromCityStation: 10, area: '洞爺湖温泉', pricePerNight: 12000, dinnerIncluded: true, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: 'レストラン望羊蹄', genre: '洋食', area: '洞爺湖温泉', reservationNeeded: false, budget: 2000 },
+        { name: 'わかさいも本舗 洞爺湖本店', genre: '和菓子・軽食', area: '洞爺湖温泉', reservationNeeded: false, budget: 1000 },
+      ],
+      dinner: [
+        { name: '洞爺湖温泉 ホテル内ダイニング', genre: '会席・ビュッフェ', area: '洞爺湖温泉', reservationNeeded: true, budget: 8000 },
+      ],
+      snack: [
+        { name: 'わかさいも', genre: '銘菓', area: '洞爺湖温泉', budget: 500 },
+      ],
+    },
+    spots: [
+      { name: '洞爺湖（遊覧船・中島）', area: '洞爺湖畔', duration: 90, indoor: false, taxiFromCityStation: 10 },
+      { name: '有珠山ロープウェイ', area: '有珠山', duration: 60, indoor: false, taxiFromCityStation: 15 },
+      { name: '昭和新山 熊牧場', area: '昭和新山', duration: 60, indoor: false, taxiFromCityStation: 15 },
+      { name: '洞爺湖ビジターセンター・火山科学館', area: '洞爺湖温泉', duration: 45, indoor: true, taxiFromCityStation: 10 },
+    ],
   },
   noboribetsu: {
     name: '登別', area: '道南', station: '登別駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 165,
     highlights: ['登別地獄谷', 'のぼりべつクマ牧場', '大湯沼'],
     hotels: [
-      { id: 'noboribetsu1', name: '登別温泉 滝乃家', type: '温泉旅館', features: ['源泉かけ流し', '割烹', '庭園'], taxiFromCityStation: 15, area: '登別温泉', pricePerNight: 55000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'nb1', name: '登別温泉 滝乃家', type: '温泉旅館',
+        features: ['源泉かけ流し', '割烹料理', '静寂の庭園'],
+        taxiFromCityStation: 15, area: '登別温泉', pricePerNight: 55000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'nb2', name: '望楼NOGUCHI登別', type: 'デザイナーズ旅館',
+        features: ['全室展望風呂付スイート', 'モダン和空間', '鉄板焼ダイニング'],
+        taxiFromCityStation: 15, area: '登別温泉', pricePerNight: 45000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'nb3', name: '登別温泉 第一滝本館', type: '温泉ホテル',
+        features: ['1858年創業・登別温泉の元祖', '7種の泉質・35の浴槽', '1,500坪の大浴場'],
+        taxiFromCityStation: 15, area: '登別温泉', pricePerNight: 25000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'nb4', name: '御やど清水屋', type: '温泉旅館',
+        features: ['落ち着いた和の佇まい', '源泉かけ流し', '旬の和食膳'],
+        taxiFromCityStation: 15, area: '登別温泉', pricePerNight: 20000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'nb5', name: '登別万世閣', type: '温泉ホテル',
+        features: ['温泉街中心の大型ホテル', '多彩な浴場', 'ビュッフェダイニング'],
+        taxiFromCityStation: 15, area: '登別温泉', pricePerNight: 16000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'nb6', name: '登別温泉 まほろば', type: '温泉ホテル',
+        features: ['日本最大級の露天風呂', '31種の多彩な浴槽', 'バイキングレストラン'],
+        taxiFromCityStation: 15, area: '登別温泉', pricePerNight: 14000, dinnerIncluded: true, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: '温泉市場', genre: '海鮮', area: '登別温泉', reservationNeeded: false, budget: 2000 },
+        { name: '味の大王 登別温泉店', genre: '地獄ラーメン', area: '登別温泉', reservationNeeded: false, budget: 1000 },
+      ],
+      dinner: [
+        { name: '花鐘亭はなや', genre: '和食会席', area: '登別温泉', reservationNeeded: true, budget: 8000 },
+      ],
+      snack: [
+        { name: '地獄谷周辺売店', genre: '温泉たまご', area: '登別温泉', budget: 300 },
+      ],
+    },
+    spots: [
+      { name: '登別地獄谷', area: '登別温泉', duration: 60, indoor: false, taxiFromCityStation: 15 },
+      { name: 'のぼりべつクマ牧場', area: '登別温泉', duration: 90, indoor: false, taxiFromCityStation: 18 },
+      { name: '大湯沼・奥の湯', area: '登別温泉', duration: 45, indoor: false, taxiFromCityStation: 18 },
+      { name: '登別マリンパークニクス', area: '登別', duration: 90, indoor: true, taxiFromCityStation: 5 },
+    ],
   },
   shakotan: {
     name: '積丹', area: '道央', station: '余市駅', transportMode: 'flight', airport: '新千歳空港', direction: 'hokkaido', travelTimeFromTokyo: 255,
     highlights: ['神威岬', '積丹ブルー', 'ウニ丼'],
     hotels: [
-      { id: 'shakotan1', name: '積丹の宿', type: '民宿', features: ['海鮮', 'アットホーム'], taxiFromCityStation: 40, area: '積丹半島', pricePerNight: 20000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'sk1', name: 'ホテルノイシュロス小樽', type: 'リゾートホテル',
+        features: ['断崖絶壁の絶景ホテル', '全室オーシャンビュー展望風呂', '積丹方面の拠点に最適'],
+        taxiFromCityStation: 25, area: '祝津（小樽西部）', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sk2', name: '小樽朝里クラッセホテル', type: '温泉ホテル',
+        features: ['朝里川温泉', 'テニス・プール等の施設', '積丹へのアクセス良好'],
+        taxiFromCityStation: 20, area: '朝里川温泉', pricePerNight: 18000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sk3', name: 'お宿 かさい', type: '民宿',
+        features: ['美国漁港至近', '新鮮な海鮮料理', 'アットホームな宿'],
+        taxiFromCityStation: 35, area: '積丹美国', pricePerNight: 12000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sk4', name: '民宿 海のや', type: '民宿',
+        features: ['積丹半島の漁師宿', '採れたてウニの食事', '積丹ブルーを満喫'],
+        taxiFromCityStation: 45, area: '積丹', pricePerNight: 10000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sk5', name: '旅館 北海', type: '旅館',
+        features: ['積丹の海鮮が自慢', '家族経営のおもてなし', '夏季ウニ漁体験'],
+        taxiFromCityStation: 45, area: '積丹', pricePerNight: 8000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sk6', name: '余市温泉 ホテル水明閣', type: 'ビジネスホテル',
+        features: ['余市駅徒歩圏', '天然温泉', 'ニッカウヰスキー蒸溜所至近'],
+        taxiFromCityStation: 5, area: '余市', pricePerNight: 7000, dinnerIncluded: false, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: 'みさき', genre: 'ウニ丼', area: '積丹美国', reservationNeeded: false, budget: 5000 },
+        { name: 'ふじ鮨 積丹本店', genre: '寿司', area: '美国', reservationNeeded: false, budget: 3500 },
+      ],
+      dinner: [
+        { name: '積丹料理 ふじ鮨', genre: '寿司・海鮮', area: '美国', reservationNeeded: true, budget: 5000 },
+      ],
+      snack: [
+        { name: '岬の湯しゃこたん', genre: '温泉・ソフトクリーム', area: '積丹', budget: 500 },
+      ],
+    },
+    spots: [
+      { name: '神威岬', area: '積丹', duration: 90, indoor: false, taxiFromCityStation: 60 },
+      { name: '島武意海岸', area: '積丹', duration: 60, indoor: false, taxiFromCityStation: 50 },
+      { name: '積丹水中展望船 ニューしゃこたん号', area: '美国', duration: 40, indoor: false, taxiFromCityStation: 35 },
+      { name: '余市蒸溜所（ニッカウヰスキー）', area: '余市', duration: 60, indoor: true, taxiFromCityStation: 5 },
+    ],
   },
   esashi: {
     name: '江差', area: '道南', station: '木古内駅', transportMode: 'flight', airport: '函館空港', direction: 'hokkaido', travelTimeFromTokyo: 195,
     highlights: ['江差追分', 'かもめ島', 'いにしえ街道'],
     hotels: [
-      { id: 'esashi1', name: '群来', type: '高級旅館', features: ['全室離れ', '温泉', '江差の食材'], taxiFromCityStation: 60, area: '江差町', pricePerNight: 70000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'es1', name: '江差旅庭 群来', type: '高級旅館',
+        features: ['全室離れ・源泉かけ流し', '江差の海山の幸', '静寂の和空間'],
+        taxiFromCityStation: 60, area: '江差町', pricePerNight: 70000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'es2', name: 'ワークマンハウス江差', type: 'ビジネスホテル',
+        features: ['2024年開業', '全30室の個室', 'リーズナブルな宿泊'],
+        taxiFromCityStation: 58, area: '江差町', pricePerNight: 6000, dinnerIncluded: false, breakfastIncluded: false },
+      { id: 'es3', name: 'ホテルニューえさし', type: 'シティホテル',
+        features: ['江差町中心部', 'いにしえ街道至近', 'ビジネス・観光の拠点'],
+        taxiFromCityStation: 60, area: '江差町', pricePerNight: 10000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'es4', name: '辻旅館', type: '旅館',
+        features: ['いにしえ街道の中心に位置', '郷土料理・三平汁', 'アットホームな宿'],
+        taxiFromCityStation: 60, area: '江差町中歌町', pricePerNight: 7000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'es5', name: '港旅館', type: '旅館',
+        features: ['かもめ島すぐそば', '全11室の和室', '女将の手作り料理'],
+        taxiFromCityStation: 60, area: '江差町姥神町', pricePerNight: 6500, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'es6', name: 'ふじや旅館', type: '旅館',
+        features: ['江差の老舗旅館', '新鮮な魚介料理', 'リーズナブル'],
+        taxiFromCityStation: 60, area: '江差町愛宕町', pricePerNight: 6000, dinnerIncluded: true, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: '江差追分会館 食堂', genre: '海鮮丼', area: '江差', reservationNeeded: false, budget: 1500 },
+        { name: '五勝手屋本舗', genre: '羊羹・和菓子', area: '江差', reservationNeeded: false, budget: 500 },
+      ],
+      dinner: [
+        { name: '居酒屋 漁火', genre: '海鮮・郷土料理', area: '江差', reservationNeeded: false, budget: 3500 },
+      ],
+      snack: [
+        { name: '五勝手屋本舗 丸缶羊羹', genre: '銘菓', area: '江差', budget: 500 },
+      ],
+    },
+    spots: [
+      { name: 'かもめ島', area: '江差', duration: 60, indoor: false, taxiFromCityStation: 60 },
+      { name: '江差追分会館', area: '江差', duration: 45, indoor: true, taxiFromCityStation: 60 },
+      { name: 'いにしえ街道', area: '江差', duration: 60, indoor: false, taxiFromCityStation: 60 },
+      { name: '開陽丸記念館', area: '江差', duration: 45, indoor: true, taxiFromCityStation: 60 },
+    ],
   },
   furano: {
     name: '富良野', area: '道北', station: '富良野駅', transportMode: 'flight', airport: '旭川空港', direction: 'hokkaido', travelTimeFromTokyo: 165,
-    highlights: ['ファーム富田', 'ニングルテラス', '青い池'],
+    highlights: ['ファーム富田', 'ニングルテラス', '富良野チーズ工房'],
     hotels: [
-      { id: 'furano1', name: 'フラノ寶亭留', type: 'リゾート', features: ['ラベンダー畑', 'フレンチ', '温泉'], taxiFromCityStation: 10, area: '富良野', pricePerNight: 45000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'fr1', name: 'フラノ寶亭留', type: 'リゾート',
+        features: ['35,000坪のプライベートガーデン', 'フレンチコースディナー', '天然温泉'],
+        taxiFromCityStation: 10, area: '富良野', pricePerNight: 45000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'fr2', name: '新富良野プリンスホテル', type: 'リゾートホテル',
+        features: ['ニングルテラス併設', '富良野スキー場直結', '北海道食材のビュッフェ'],
+        taxiFromCityStation: 10, area: '新富良野', pricePerNight: 35000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'fr3', name: '富良野ナチュラクスホテル', type: 'デザイナーズホテル',
+        features: ['市街地のスタイリッシュホテル', '北欧デザインの客室', '地元食材ビュッフェ朝食'],
+        taxiFromCityStation: 5, area: '富良野市街', pricePerNight: 20000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'fr4', name: 'ホテルナトゥールヴァルト富良野', type: 'リゾートホテル',
+        features: ['富良野の森に囲まれた宿', '家族向けサービス充実', '天然温泉大浴場'],
+        taxiFromCityStation: 8, area: '富良野', pricePerNight: 15000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'fr5', name: 'ホテルベルヒルズ', type: 'リゾートホテル',
+        features: ['丘の上から十勝岳連峰を一望', 'ウエディング対応', '展望レストラン'],
+        taxiFromCityStation: 10, area: '富良野', pricePerNight: 12000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'fr6', name: 'スパ＆ホテルリゾート ふらのラテール', type: '温泉ホテル',
+        features: ['和洋15種の温泉風呂', '十勝岳連峰を望む全25室', '地産食材の創作料理'],
+        taxiFromCityStation: 15, area: '中富良野', pricePerNight: 12000, dinnerIncluded: true, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: 'くまげら', genre: '和牛・オムカレー', area: '富良野', reservationNeeded: false, budget: 2000 },
+        { name: 'ファーム富田 カフェ', genre: 'ラベンダーソフト・軽食', area: '中富良野', reservationNeeded: false, budget: 800 },
+      ],
+      dinner: [
+        { name: '唯我独尊', genre: 'カレー', area: '富良野', reservationNeeded: false, budget: 1500 },
+      ],
+      snack: [
+        { name: 'フラノデリス', genre: 'プリン・ドゥーブル', area: '富良野', budget: 800 },
+        { name: 'カンパーナ六花亭', genre: 'スイーツ', area: '富良野', budget: 500 },
+      ],
+    },
+    spots: [
+      { name: 'ファーム富田', area: '中富良野', duration: 90, indoor: false, taxiFromCityStation: 15 },
+      { name: 'ニングルテラス', area: '新富良野', duration: 60, indoor: false, taxiFromCityStation: 10 },
+      { name: '富良野チーズ工房', area: '富良野', duration: 45, indoor: true, taxiFromCityStation: 10 },
+      { name: 'カンパーナ六花亭', area: '富良野', duration: 30, indoor: true, taxiFromCityStation: 10 },
+    ],
   },
   biei: {
     name: '美瑛', area: '道北', station: '美瑛駅', transportMode: 'flight', airport: '旭川空港', direction: 'hokkaido', travelTimeFromTokyo: 135,
     highlights: ['パッチワークの路', '四季彩の丘', '白金青い池'],
     hotels: [
-      { id: 'biei1', name: '森の旅亭 びえい', type: '温泉旅館', features: ['離れ', '白金温泉', '和食'], taxiFromCityStation: 25, area: '白金温泉', pricePerNight: 40000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'bi1', name: '森の旅亭 びえい', type: '温泉旅館',
+        features: ['全室離れの隠れ宿', '白金温泉・源泉かけ流し', '旬の和食膳'],
+        taxiFromCityStation: 25, area: '白金温泉', pricePerNight: 40000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'bi2', name: '湯元 白金温泉ホテル', type: '温泉ホテル',
+        features: ['白金温泉の老舗', '大浴場・露天風呂', '十勝岳を望む'],
+        taxiFromCityStation: 25, area: '白金温泉', pricePerNight: 18000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'bi3', name: 'ホテルラヴニール', type: 'ホテル',
+        features: ['美瑛駅徒歩圏', '観光拠点に最適', '朝食バイキング'],
+        taxiFromCityStation: 3, area: '美瑛市街', pricePerNight: 15000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'bi4', name: '白金四季の森 ホテルパークヒルズ', type: 'リゾートホテル',
+        features: ['白金温泉エリア', '十勝岳連峰の展望', '天然温泉'],
+        taxiFromCityStation: 25, area: '白金温泉', pricePerNight: 12000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'bi5', name: 'ペンション 歩人（ほびっと）', type: 'ペンション',
+        features: ['丘の上のペンション', '自家製パンの朝食', '美瑛の丘を一望'],
+        taxiFromCityStation: 5, area: '美瑛', pricePerNight: 9000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'bi6', name: '丘上の一軒宿 星ヶ丘', type: 'ペンション',
+        features: ['丘の上から絶景の夕日', '小さな天文台で星空観測', '自家製パンの朝食'],
+        taxiFromCityStation: 8, area: '美瑛', pricePerNight: 9500, dinnerIncluded: true, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: '美瑛選果 レストラン', genre: '地元野菜料理', area: '美瑛駅前', reservationNeeded: true, budget: 3000 },
+        { name: 'レストラン ASPERGES', genre: 'フレンチ', area: '美瑛', reservationNeeded: true, budget: 5000 },
+      ],
+      dinner: [
+        { name: 'bi.ble（ビブレ）', genre: 'フレンチ', area: '美瑛', reservationNeeded: true, budget: 8000 },
+      ],
+      snack: [
+        { name: '美瑛選果', genre: 'ソフトクリーム・農産物', area: '美瑛駅前', budget: 400 },
+      ],
+    },
+    spots: [
+      { name: '白金青い池', area: '白金', duration: 45, indoor: false, taxiFromCityStation: 20 },
+      { name: '四季彩の丘', area: '美瑛', duration: 60, indoor: false, taxiFromCityStation: 10 },
+      { name: 'パッチワークの路', area: '美瑛', duration: 90, indoor: false, taxiFromCityStation: 8 },
+      { name: '望岳台', area: '十勝岳', duration: 60, indoor: false, taxiFromCityStation: 30 },
+    ],
   },
   teshikaga: {
     name: '摩周湖', area: '道東', station: '摩周駅', transportMode: 'flight', airport: '釧路空港', direction: 'hokkaido', travelTimeFromTokyo: 165,
     highlights: ['摩周湖', '屈斜路湖', '硫黄山'],
     hotels: [
-      { id: 'teshikaga1', name: 'あかん遊久の里 鶴雅', type: '温泉旅館', features: ['阿寒湖畔', '屋上露天風呂', 'アイヌ文化'], taxiFromCityStation: 60, area: '阿寒湖温泉', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'ts1', name: 'あかん鶴雅別荘 鄙の座', type: '高級旅館',
+        features: ['全室温泉露天風呂付', '阿寒湖畔のプレミアム', '会席コース'],
+        taxiFromCityStation: 60, area: '阿寒湖温泉', pricePerNight: 50000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ts2', name: 'あかん遊久の里 鶴雅', type: '温泉旅館',
+        features: ['阿寒湖畔の大型リゾート', '屋上庭園露天風呂', 'アイヌ文化体験'],
+        taxiFromCityStation: 60, area: '阿寒湖温泉', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ts3', name: 'ニュー阿寒ホテル', type: 'リゾートホテル',
+        features: ['阿寒湖畔の大型ホテル', '屋上スパ・ガーデンスパ', 'ビュッフェダイニング'],
+        taxiFromCityStation: 60, area: '阿寒湖温泉', pricePerNight: 20000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ts4', name: 'お宿欣喜湯 別邸 忍冬', type: '温泉旅館',
+        features: ['強酸性硫黄泉100%かけ流し', '創作懐石ダイニング', '東館・西館の2棟構成'],
+        taxiFromCityStation: 15, area: '川湯温泉', pricePerNight: 15000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ts5', name: 'お宿 欣喜湯', type: '温泉旅館',
+        features: ['川湯温泉', '源泉かけ流しの強酸性泉', 'リーズナブルな温泉宿'],
+        taxiFromCityStation: 15, area: '川湯温泉', pricePerNight: 12000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'ts6', name: 'ホテル摩周', type: 'ビジネスホテル',
+        features: ['JR摩周駅徒歩圏', '弟子屈町の中心部', '観光の拠点に便利'],
+        taxiFromCityStation: 3, area: '弟子屈', pricePerNight: 8000, dinnerIncluded: false, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: '奈辺久', genre: '郷土料理・手打ちそば', area: '阿寒湖', reservationNeeded: false, budget: 1200 },
+        { name: '弟子屈ラーメン 総本店', genre: 'ラーメン', area: '弟子屈', reservationNeeded: false, budget: 900 },
+      ],
+      dinner: [
+        { name: '民芸喫茶 ポロンノ', genre: 'アイヌ料理', area: '阿寒湖', reservationNeeded: false, budget: 2500 },
+      ],
+      snack: [
+        { name: '阿寒湖アイヌコタン 売店', genre: '民芸品・軽食', area: '阿寒湖', budget: 500 },
+      ],
+    },
+    spots: [
+      { name: '摩周湖 第一展望台', area: '摩周', duration: 45, indoor: false, taxiFromCityStation: 25 },
+      { name: '屈斜路湖・コタン温泉', area: '屈斜路', duration: 60, indoor: false, taxiFromCityStation: 20 },
+      { name: '硫黄山（アトサヌプリ）', area: '川湯', duration: 30, indoor: false, taxiFromCityStation: 12 },
+      { name: '阿寒湖アイヌコタン', area: '阿寒湖', duration: 60, indoor: true, taxiFromCityStation: 60 },
+    ],
   },
   shiretoko: {
     name: '知床', area: '道東', station: '知床斜里駅', transportMode: 'flight', airport: '女満別空港', direction: 'hokkaido', travelTimeFromTokyo: 225,
     highlights: ['知床五湖', '知床峠', 'クルーズ'],
     hotels: [
-      { id: 'shiretoko1', name: '北こぶし知床 ホテル＆リゾート', type: 'リゾート', features: ['オホーツク海ビュー', 'サウナ', 'ブッフェ'], taxiFromCityStation: 40, area: 'ウトロ', pricePerNight: 30000, dinnerIncluded: true, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'sr1', name: '北こぶし知床 ホテル＆リゾート', type: 'リゾート',
+        features: ['オホーツク海一望', '流氷テラス・サウナ', 'オールインクルーシブ'],
+        taxiFromCityStation: 40, area: 'ウトロ', pricePerNight: 35000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sr2', name: 'KIKI知床 ナチュラルリゾート', type: 'リゾートホテル',
+        features: ['知床の自然に溶け込むリゾート', '温泉棟・大浴場', 'ビュッフェダイニング'],
+        taxiFromCityStation: 40, area: 'ウトロ', pricePerNight: 28000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sr3', name: '知床第一ホテル', type: '温泉ホテル',
+        features: ['ウトロ温泉の大型ホテル', '展望大浴場', 'マルスコイのビュッフェ'],
+        taxiFromCityStation: 40, area: 'ウトロ', pricePerNight: 22000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sr4', name: '知床プリンスホテル風なみ季', type: 'リゾートホテル',
+        features: ['ウトロ漁港至近', '天然温泉・露天風呂', '海鮮を中心としたビュッフェ'],
+        taxiFromCityStation: 40, area: 'ウトロ', pricePerNight: 18000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sr5', name: 'ホテル知床', type: '温泉ホテル',
+        features: ['ウトロ温泉街の高台', 'オホーツク海を見渡す展望浴場', '知床の味覚'],
+        taxiFromCityStation: 40, area: 'ウトロ', pricePerNight: 15000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'sr6', name: 'ホテルルートイン知床斜里駅前', type: 'ビジネスホテル',
+        features: ['JR知床斜里駅前', '大浴場完備', '無料バイキング朝食'],
+        taxiFromCityStation: 2, area: '知床斜里駅前', pricePerNight: 9000, dinnerIncluded: false, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: '道の駅 うとろ・シリエトク', genre: '海鮮', area: 'ウトロ', reservationNeeded: false, budget: 2000 },
+        { name: '波飛沫', genre: 'ラーメン', area: 'ウトロ', reservationNeeded: false, budget: 1000 },
+      ],
+      dinner: [
+        { name: '番屋', genre: '海鮮・炉端焼き', area: 'ウトロ', reservationNeeded: false, budget: 4000 },
+      ],
+      snack: [
+        { name: '知床自然センター 売店', genre: 'ソフトクリーム', area: '知床', budget: 400 },
+      ],
+    },
+    spots: [
+      { name: '知床五湖', area: '知床', duration: 120, indoor: false, taxiFromCityStation: 50 },
+      { name: '知床峠展望台', area: '知床', duration: 30, indoor: false, taxiFromCityStation: 55 },
+      { name: 'オシンコシンの滝', area: 'ウトロ', duration: 20, indoor: false, taxiFromCityStation: 30 },
+      { name: '知床観光船（ウトロ港発）', area: 'ウトロ港', duration: 120, indoor: false, taxiFromCityStation: 40 },
+    ],
   },
   nemuro: {
     name: '根室', area: '道東', station: '根室駅', transportMode: 'flight', airport: '釧路空港', direction: 'hokkaido', travelTimeFromTokyo: 225,
     highlights: ['納沙布岬', '春国岱', 'エスカロップ'],
     hotels: [
-      { id: 'nemuro1', name: '根室グランドホテル', type: 'シティホテル', features: ['市内中心', 'レストラン'], taxiFromCityStation: 5, area: '根室', pricePerNight: 12000, dinnerIncluded: false, breakfastIncluded: true, closedPeriod: { start: '2027-01-01', end: '2027-01-05' } }
-    ]
+      { id: 'nm1', name: 'ホテルねむろ海陽亭', type: '温泉旅館',
+        features: ['根室港を望む', '天然温泉', '花咲ガニ・海鮮料理'],
+        taxiFromCityStation: 5, area: '根室', pricePerNight: 18000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'nm2', name: '根室グランドホテル', type: 'シティホテル',
+        features: ['根室市内中心部', 'レストラン併設', 'ビジネス・観光拠点'],
+        taxiFromCityStation: 5, area: '根室', pricePerNight: 12000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'nm3', name: 'イーストハーバーホテル', type: 'シティホテル',
+        features: ['根室港至近', '海を望む客室', '地元食材の朝食'],
+        taxiFromCityStation: 3, area: '根室港', pricePerNight: 10000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'nm4', name: 'ホテルルートイン根室駅前', type: 'ビジネスホテル',
+        features: ['根室駅前', '大浴場完備', '無料バイキング朝食'],
+        taxiFromCityStation: 2, area: '根室駅前', pricePerNight: 9000, dinnerIncluded: false, breakfastIncluded: true },
+      { id: 'nm5', name: '照月旅館', type: '料理旅館',
+        features: ['明治創業の老舗', 'うにの茶碗蒸し・花咲ガニ', '手作り会席料理'],
+        taxiFromCityStation: 5, area: '根室', pricePerNight: 14000, dinnerIncluded: true, breakfastIncluded: true },
+      { id: 'nm6', name: 'ビジネスホテル ルピナス', type: 'ビジネスホテル',
+        features: ['根室市内', 'リーズナブル', '長期滞在にも対応'],
+        taxiFromCityStation: 5, area: '根室', pricePerNight: 6000, dinnerIncluded: false, breakfastIncluded: true },
+    ],
+    restaurants: {
+      lunch: [
+        { name: 'ニューモンブラン', genre: 'エスカロップ', area: '根室', reservationNeeded: false, budget: 1200 },
+        { name: '回転寿司 根室花まる 根室本店', genre: '回転寿司', area: '根室', reservationNeeded: false, budget: 2500 },
+      ],
+      dinner: [
+        { name: '大ちゃん', genre: '花咲ガニ・海鮮', area: '根室', reservationNeeded: false, budget: 4000 },
+      ],
+      snack: [
+        { name: 'どりあん', genre: 'エスカロップ・洋食', area: '根室', budget: 1200 },
+      ],
+    },
+    spots: [
+      { name: '納沙布岬（日本最東端）', area: '納沙布', duration: 45, indoor: false, taxiFromCityStation: 30 },
+      { name: '春国岱（原生花園）', area: '根室', duration: 90, indoor: false, taxiFromCityStation: 20 },
+      { name: '北方原生花園', area: '根室', duration: 60, indoor: false, taxiFromCityStation: 25 },
+      { name: '根室市歴史と自然の資料館', area: '根室', duration: 30, indoor: true, taxiFromCityStation: 5 },
+    ],
   },
   hakodate: {
     name: '函館',

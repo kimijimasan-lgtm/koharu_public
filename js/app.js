@@ -683,6 +683,75 @@ const App = {
 
       container.appendChild(card);
     });
+
+    const customCard = document.createElement('div');
+    customCard.className = 'hotel-card';
+    customCard.innerHTML = `
+      <div class="hotel-card-header">
+        <div class="hotel-title-group">
+          <h3>🔗 自分でホテルを指定する</h3>
+          <span class="hotel-type">URL貼り付け</span>
+        </div>
+      </div>
+      <div class="hotel-card-body">
+        <p style="font-size:0.9rem; color:#666; margin-bottom:12px; line-height:1.5;">
+          候補以外のホテルを使いたい場合、ホテル名とURLを入力してください。<br>
+          じゃらん・楽天トラベル・公式サイト等のURLを貼り付けられます。
+        </p>
+        <div style="margin-bottom:10px;">
+          <label style="font-weight:bold; font-size:0.9rem; color:#444; display:block; margin-bottom:4px;">ホテル名</label>
+          <input type="text" id="custom-hotel-name" placeholder="例：○○ホテル" style="width:100%; padding:10px; border:2px solid #ccc; border-radius:8px; font-size:1rem; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-weight:bold; font-size:0.9rem; color:#444; display:block; margin-bottom:4px;">ホテルのURL（任意）</label>
+          <input type="url" id="custom-hotel-url" placeholder="https://..." style="width:100%; padding:10px; border:2px solid #ccc; border-radius:8px; font-size:1rem; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:bold; font-size:0.9rem; color:#444; display:block; margin-bottom:4px;">駅からの所要時間（タクシー、分）</label>
+          <input type="number" id="custom-hotel-taxi" placeholder="例：10" min="1" max="120" style="width:120px; padding:10px; border:2px solid #ccc; border-radius:8px; font-size:1rem;">
+        </div>
+        <button class="btn btn-secondary btn-simulate" id="btn-custom-hotel-select" style="width:100%;">
+          このホテルで決定して次へ
+        </button>
+        <p id="custom-hotel-error" style="color:#e74c3c; font-size:0.85rem; margin-top:8px; display:none;"></p>
+      </div>
+    `;
+    container.appendChild(customCard);
+
+    customCard.querySelector('#btn-custom-hotel-select').addEventListener('click', () => {
+      const nameVal = document.getElementById('custom-hotel-name').value.trim();
+      const urlVal = document.getElementById('custom-hotel-url').value.trim();
+      const taxiVal = parseInt(document.getElementById('custom-hotel-taxi').value) || 0;
+      const errEl = document.getElementById('custom-hotel-error');
+
+      if (!nameVal) {
+        errEl.textContent = 'ホテル名を入力してください。';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (taxiVal < 1) {
+        errEl.textContent = '駅からの所要時間を入力してください（1分以上）。';
+        errEl.style.display = 'block';
+        return;
+      }
+      errEl.style.display = 'none';
+
+      this.state.selectedHotel = {
+        id: 'custom',
+        name: nameVal,
+        type: 'ユーザー指定',
+        features: urlVal ? [`<a href="${urlVal}" target="_blank" rel="noopener" style="color:#2980b9;">ホテル詳細ページ</a>`] : [],
+        taxiFromCityStation: taxiVal,
+        area: 'ユーザー指定',
+        pricePerNight: 0,
+        dinnerIncluded: false,
+        breakfastIncluded: false,
+        customUrl: urlVal || null,
+      };
+      this.showStep('yahoo-data');
+      window.scrollTo(0, 0);
+    });
+
     return true;
   },
 
@@ -788,6 +857,50 @@ const App = {
       return { venue: event.title, area: s ? s.area : '__unknown__', taxiFromCityStation: s ? s.taxiFromCityStation : null };
     }
     return { venue: '__unknown__', area: '__unknown__', taxiFromCityStation: null };
+  },
+
+  checkRouteEfficiency(dayArrays, hotel, dest) {
+    const warnings = [];
+    const dayLabels = ['1日目', '2日目', '3日目'];
+
+    dayArrays.forEach((events, dayIdx) => {
+      const locations = [];
+      for (const ev of events) {
+        if (ev.type === 'transfer') continue;
+        const loc = this.inferEventLocation(ev, hotel, dest);
+        if (!loc || loc.area === '__unknown__' || loc.taxiFromCityStation == null) continue;
+        locations.push({ name: ev.title, area: loc.area, dist: loc.taxiFromCityStation });
+      }
+
+      for (let i = 1; i < locations.length - 1; i++) {
+        const prev = locations[i - 1];
+        const curr = locations[i];
+        const next = locations[i + 1];
+        if (prev.area === curr.area || curr.area === next.area || prev.area === next.area) continue;
+
+        const prevDist = prev.dist;
+        const currDist = curr.dist;
+        const nextDist = next.dist;
+
+        const goingOut = currDist > prevDist && currDist > nextDist;
+        const goingIn  = currDist < prevDist && currDist < nextDist;
+        const backtrack = goingOut || goingIn;
+
+        if (backtrack) {
+          const detour = Math.abs(prevDist - currDist) + Math.abs(currDist - nextDist);
+          const direct = Math.abs(prevDist - nextDist);
+          const wastedMin = detour - direct;
+
+          if (wastedMin >= 15) {
+            const direction = goingOut ? '遠い地点を経由してから戻る' : '近い地点を経由してから再び遠くへ';
+            warnings.push(
+              `【${dayLabels[dayIdx]}】${prev.name} → <strong>${curr.name}</strong> → ${next.name}：${direction}ルートです（推定 +${wastedMin}分の迂回）`
+            );
+          }
+        }
+      }
+    });
+    return warnings;
   },
 
   estimateMovement(fromLoc, toLoc, hotel, dest) {
@@ -1208,6 +1321,10 @@ const App = {
     this.enrichEventsWithLinks(day2Events, hotel, dest);
     this.enrichEventsWithLinks(day3Events, hotel, dest);
 
+    const routeWarnings = this.checkRouteEfficiency(
+      [day1Events, day2Events, day3Events], hotel, dest
+    );
+
     // Render logic
     const ticketSection = `
         <div class="no-print" style="width:100%; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
@@ -1265,7 +1382,7 @@ const App = {
       <div class="print-page-1" style="margin-bottom: 30px;">
         <div class="itinerary-header" style="text-align:center; padding: 20px; background:var(--color-bg-sub); border-radius:12px; margin-bottom: 20px;">
           <h1 style="color:var(--color-primary); font-size: 1.8rem; margin:0;">${dest.name}滞在 特化型しおり</h1>
-          <p style="color:#555; margin-top:5px;">ご宿泊：<strong>${hotel.name}</strong></p>
+          <p style="color:#555; margin-top:5px;">ご宿泊：<strong>${hotel.customUrl ? `<a href="${hotel.customUrl}" target="_blank" rel="noopener" style="color:var(--color-primary);">${hotel.name}</a>` : hotel.name}</strong></p>
         </div>
 
         <div style="background:white; padding: 25px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
@@ -1339,6 +1456,16 @@ const App = {
         </div>
       </div>
       ${costHtml}
+      ${routeWarnings.length > 0 ? `
+        <div class="no-print" style="background:#fff3cd; border:2px solid #ffc107; padding:20px; border-radius:12px; margin-bottom:30px;">
+          <h3 style="margin-top:0; color:#856404;">⚠️ 経路効率チェック</h3>
+          <p style="font-size:0.9rem; color:#856404; margin-bottom:10px;">以下の区間で非効率な移動（行ったり来たり）が検出されました：</p>
+          <ul style="margin:0; padding-left:20px; color:#856404; font-size:0.95rem; line-height:1.8;">
+            ${routeWarnings.map(w => `<li>${w}</li>`).join('')}
+          </ul>
+          <p style="font-size:0.85rem; color:#997a00; margin-top:10px; margin-bottom:0;">見学地の順序を並べ替えると、移動時間とタクシー代を節約できるかもしれません。</p>
+        </div>
+      ` : ''}
     `;
 
     this.updatePrintScreenshotsLayout();
