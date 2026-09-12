@@ -4,6 +4,7 @@
   --color-bg: #fbfdff;
   --color-bg-card: #ffffff;
   --color-bg-section: #eef4fa;
+  --color-bg-sub: #eef4fa;
   --color-text: #1f2933;
   --color-text-light: #3e4c59;
   --color-text-muted: #5b6b78;
@@ -1279,20 +1280,23 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 15mm;
+    margin: 12mm 15mm;
   }
 
-  * {
+  *, *::before, *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 
   body {
-    font-size: 11pt !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 10.5pt !important;
     line-height: 1.5 !important;
   }
 
-  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .pdf-fab, .home-fab {
+  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .pdf-fab, .home-fab, .no-print {
     display: none !important;
   }
 
@@ -1315,38 +1319,217 @@ body {
     display: block !important;
   }
   
-  /* 騾｣邯壹ヵ繝ｭ繝ｼ (閾ｪ辟ｶ縺ｪ謾ｹ繝壹・繧ｸ) */
+  /* 印刷ページ連続レイアウト */
   .print-page-1, .print-page-2 {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem !important;
-    margin-bottom: 2rem;
+    gap: 1.2rem !important;
+    margin-bottom: 1.5rem;
   }
 
+  /* しおりヘッダー：淡い青背景と濃いネイビー文字 */
+  .itinerary-header {
+    background: #eaf2fb !important;
+    border: 1.5px solid #1c6fc9 !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+    text-align: center !important;
+  }
+  .itinerary-header h1 {
+    color: #0c3c78 !important;
+    font-size: 1.7rem !important;
+    font-weight: 700 !important;
+  }
+  .itinerary-header p {
+    color: #1f2933 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+  }
+  .itinerary-header a {
+    color: #0c3c78 !important;
+    text-decoration: underline !important;
+  }
+
+  /* 厳選スポット＆グルメカード */
+  .spots-gourmet-card {
+    background: #fafcff !important;
+    border: 1.5px solid #c9d8e8 !important;
+    border-radius: 12px !important;
+    padding: 18px !important;
+    margin-bottom: 1.5rem !important;
+    box-shadow: none !important;
+  }
+  .spots-gourmet-card h3 {
+    color: #0c3c78 !important;
+    border-bottom: 2px solid #c9d8e8 !important;
+    font-weight: 700 !important;
+    font-size: 1.15rem !important;
+    padding-bottom: 8px !important;
+  }
+  .spots-gourmet-card p {
+    color: #2c3e50 !important;
+    font-size: 0.9rem !important;
+  }
+  .spots-gourmet-card h4 {
+    color: #0c3c78 !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    border-left: 4px solid #0c3c78 !important;
+    padding-left: 8px !important;
+  }
+  .spots-gourmet-card a {
+    color: #0c3c78 !important;
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+  }
+  .spots-gourmet-card span {
+    color: #333333 !important;
+    font-weight: 500 !important;
+  }
+
+  /* 予約が必要なレストランセクション */
+  .reservation-link-item {
+    border: 1.5px solid #fed7aa !important;
+    background: #fffaf5 !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+    margin-bottom: 8px !important;
+  }
+  .reservation-link-label {
+    color: #1f2933 !important;
+    font-weight: 700 !important;
+  }
+
+  /* 日程ヘッダーとセクション見出し */
+  .section-title {
+    color: #0c3c78 !important;
+    font-weight: 700 !important;
+    font-size: 1.25rem !important;
+    margin: 1.2rem 0 0.5rem 0 !important;
+  }
+  #confirmed-content h4 {
+    color: #0c3c78 !important;
+    border-bottom: 2px solid #0c3c78 !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    padding-bottom: 4px !important;
+    margin-top: 1rem !important;
+  }
+
+  /* 各日のスケジュールカード */
   .day-section {
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 0 2rem 0 !important;
-    padding: 0 !important;
+    margin: 0 0 1.2rem 0 !important;
+    padding: 14px !important;
+    background: #ffffff !important;
+    border: 1.5px solid #d0dbe5 !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
   }
-  
-  /* 隕∫ｴ�縺ｮ騾比ｸｭ縺ｧ荳肴�ｼ螂ｽ縺ｫ蛻・ｌ繧九・繧帝亟縺・*/
-  .hotel-card, .cost-summary-final, .checklist, .print-header, .timeline-item {
+
+  /* タイムラインテキストの視認性向上 */
+  .timeline-title {
+    color: #111111 !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+  }
+  .timeline-title a {
+    color: #0c3c78 !important;
+    text-decoration: underline !important;
+  }
+  .timeline-time {
+    color: #111111 !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+  }
+  .timeline-detail {
+    color: #2d3748 !important;
+    font-weight: 500 !important;
+    font-size: 0.85rem !important;
+  }
+  .transfer-label {
+    color: #111111 !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+  }
+  .transfer-cost {
+    color: #8c3b00 !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+  }
+  .timeline-dot {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border-color: #ffffff !important;
+  }
+
+  /* 持ち物チェックリストカード */
+  .checklist-card {
+    background: #fafcff !important;
+    border: 1.5px solid #d0dbe5 !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    margin-bottom: 1.5rem !important;
+    box-shadow: none !important;
+  }
+  .checklist-card h3 {
+    color: #1f2933 !important;
+    border-bottom: 2px solid #d0dbe5 !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    padding-bottom: 6px !important;
+  }
+  .checklist-card ul li label {
+    color: #111111 !important;
+    font-weight: 500 !important;
+  }
+
+  /* 概算料金テーブルカード */
+  .cost-summary-card {
+    background: #ffffff !important;
+    border: 1.5px solid #d0dbe5 !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    margin-bottom: 1.5rem !important;
+    box-shadow: none !important;
+  }
+  .cost-summary-card h3 {
+    color: #145a32 !important;
+    border-bottom: 2px solid #d0dbe5 !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    padding-bottom: 6px !important;
+  }
+  .cost-summary-card table {
+    color: #111111 !important;
+  }
+  .cost-summary-card table td {
+    color: #111111 !important;
+    padding: 8px 0 !important;
+  }
+  .cost-summary-card table tr:last-child td,
+  .cost-summary-card table tr[style*="color: #d35400"] td {
+    color: #8c3b00 !important;
+    font-weight: 800 !important;
+  }
+  .cost-summary-card p {
+    color: #444444 !important;
+  }
+
+  /* 改ページ設定 */
+  .hotel-card, .cost-summary-card, .checklist-card, .spots-gourmet-card, .print-header, .timeline-item, .day-section {
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
-  /* UI sizes */
   .hotel-image img {
     max-height: 200px !important;
   }
   
-  .hotel-card, .cost-summary-final, .checklist {
-    padding: 1rem !important;
-  }
-  
-  h1, h2, h3, p {
-    margin: 0.4rem 0 !important;
+  h1, h2, h3, h4, p {
+    margin: 0.3rem 0 !important;
   }
 }
 
