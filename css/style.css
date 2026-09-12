@@ -259,7 +259,7 @@ body {
   font-size: 0.85rem;
 }
 
-/* 交通手段判定バチE���E��E開版�E�E*/
+/* 莠､騾壽焔谿ｵ蛻､螳壹ヰ繝・ず・亥・髢狗沿・・*/
 .transport-badge {
   display: flex;
   align-items: flex-start;
@@ -370,13 +370,13 @@ body {
 }
 
 /* ========================
-   実ダイヤの列車選択！E/B�E�E
+   螳溘ム繧､繝､縺ｮ蛻苓ｻ企∈謚橸ｼ・/B・・
    ======================== */
 .train-choice:empty {
   display: none;
 }
 
-/* 選択が忁E��な状態�ESunset�E�アクセント）�Eの色で「要対応」を示ぁE*/
+/* 驕ｸ謚槭′蠢・ｦ√↑迥ｶ諷九・Sunset・医い繧ｯ繧ｻ繝ｳ繝茨ｼ牙・縺ｮ濶ｲ縺ｧ縲瑚ｦ∝ｯｾ蠢懊阪ｒ遉ｺ縺・*/
 .train-choice {
   margin-top: 0.75rem;
   padding: 0.9rem 1rem;
@@ -385,7 +385,7 @@ body {
   border-left: 4px solid var(--color-accent);
 }
 
-/* 選択不要E���E動確定�E完�E一致�E��Eとき�ESky側の落ち着ぁE��色に刁E��替える */
+/* 驕ｸ謚樔ｸ崎ｦ・ｼ郁・蜍慕｢ｺ螳壹・螳悟・荳閾ｴ・峨・縺ｨ縺阪・Sky蛛ｴ縺ｮ關ｽ縺｡逹縺・◆濶ｲ縺ｫ蛻・ｊ譖ｿ縺医ｋ */
 .train-choice.is-resolved {
   background: var(--color-primary-light);
   border-left-color: var(--color-primary);
@@ -489,7 +489,7 @@ body {
   line-height: 1.55;
 }
 
-/* 希望との差が極端に大きい選択肢の注意書ぁE*/
+/* 蟶梧悍縺ｨ縺ｮ蟾ｮ縺梧･ｵ遶ｯ縺ｫ螟ｧ縺阪＞驕ｸ謚櫁い縺ｮ豕ｨ諢乗嶌縺・*/
 .train-choice-warning {
   display: inline-block;
   margin-top: 0.2rem;
@@ -907,7 +907,7 @@ body {
 }
 
 /* ========================
-   確定／概算バチE��
+   遒ｺ螳夲ｼ乗ｦらｮ励ヰ繝・ず
    ======================== */
 .src-badge {
   display: inline-block;
@@ -922,13 +922,13 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* 確定＝Sky側。実データ区間では連続して並ぶため、主張しすぎなぁE�E色にする */
+/* 遒ｺ螳夲ｼ抓ky蛛ｴ縲ょｮ溘ョ繝ｼ繧ｿ蛹ｺ髢薙〒縺ｯ騾｣邯壹＠縺ｦ荳ｦ縺ｶ縺溘ａ縲∽ｸｻ蠑ｵ縺励☆縺弱↑縺・・濶ｲ縺ｫ縺吶ｋ */
 .src-verified {
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
 }
 
-/* 概算＝Sunset側。数字を鵜呑みにしてほしくなぁE�Eなのでコントラストを上げめE*/
+/* 讎らｮ暦ｼ抓unset蛛ｴ縲よ焚蟄励ｒ魴懷荘縺ｿ縺ｫ縺励※縺ｻ縺励￥縺ｪ縺・・縺ｪ縺ｮ縺ｧ繧ｳ繝ｳ繝医Λ繧ｹ繝医ｒ荳翫￡繧・*/
 .src-estimated {
   background: var(--color-accent-light);
   color: #a94d09;
@@ -1315,7 +1315,7 @@ body {
     display: block !important;
   }
   
-  /* 連続フロー (自然な改ペ�Eジ) */
+  /* 騾｣邯壹ヵ繝ｭ繝ｼ (閾ｪ辟ｶ縺ｪ謾ｹ繝壹・繧ｸ) */
   .print-page-1, .print-page-2 {
     display: flex;
     flex-direction: column;
@@ -1330,7 +1330,7 @@ body {
     padding: 0 !important;
   }
   
-  /* 要素の途中で不格好に刁E��る�Eを防ぁE*/
+  /* 隕∫ｴ�縺ｮ騾比ｸｭ縺ｧ荳肴�ｼ螂ｽ縺ｫ蛻・ｌ繧九・繧帝亟縺・*/
   .hotel-card, .cost-summary-final, .checklist, .print-header, .timeline-item {
     page-break-inside: avoid;
     break-inside: avoid;
@@ -1351,10 +1351,10 @@ body {
 }
 
 /* ========================
-   QR: スマ�Eで見る
+   QR: 繧ｹ繝槭・縺ｧ隕九ｋ
    ======================== */
 /* ========================
-   Home: トップへ戻めE
+   Home: 繝医ャ繝励∈謌ｻ繧・
    ======================== */
 .home-fab {
   position: fixed;
@@ -1388,7 +1388,7 @@ body {
 }
 
 /* ========================
-   PDF: �ۑ��E���L�{�^��
+   PDF: 保存・共有ボタン
    ======================== */
 .pdf-fab {
   position: fixed;
@@ -1528,7 +1528,7 @@ body {
   position: relative;
 }
 .compare-details li::before {
-  content: "・";
+  content: "繝ｻ";
   position: absolute;
   left: 0;
   color: var(--text-light);
@@ -1688,4 +1688,10 @@ body {
     justify-content: center;
     margin-top: 4px;
   }
+}
+
+a.header-partner-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: #ff6b6b !important;
 }
