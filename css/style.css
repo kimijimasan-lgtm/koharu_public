@@ -1562,10 +1562,71 @@ body {
     border-color: #ffffff !important;
   }
 
-  /* 改ページ設定 */
-  .hotel-card, .cost-summary-card, .checklist-card, .spots-gourmet-card, .print-header, .timeline-item, .day-section {
-    page-break-inside: avoid;
-    break-inside: avoid;
+  /* 改ページ設定 — 意味的ブロック単位で分断を防止 */
+  .hotel-card,
+  .cost-summary-card,
+  .checklist-card,
+  .spots-gourmet-card,
+  .print-header,
+  .timeline-item,
+  .day-section {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* タイムライン内部要素の分断防止 */
+  .timeline-content,
+  .timeline-title,
+  .timeline-detail {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* スポット＆グルメ: リスト項目・カラム単位の分断防止 */
+  .spots-gourmet-card li {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .spots-gourmet-card > div > div {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* チェックリスト: 各項目の分断防止 */
+  .checklist-card li {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 費用テーブル: 行の分断防止 */
+  .cost-summary-card tr {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 日付見出し(h4)がページ末尾に孤立しないようにする */
+  #confirmed-content h4 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* セクション見出し(h3)も直後コンテンツと分離させない */
+  #confirmed-content h3 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* 乗換経路画像ブロックの分断防止 */
+  .day-section > div {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .hotel-image img {
