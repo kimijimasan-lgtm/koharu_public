@@ -1348,7 +1348,7 @@ const App = {
     
     const costs = this.calculateTotalCost(hotel, day1Events, day2Events, day3Events);
     const costHtml = `
-      <div style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
+      <div class="cost-summary-card" style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
         <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:#27ae60;">💰 2名様 旅行代金（概算）</h3>
         <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem;">
           <tr style="border-bottom: 1px dashed #ccc;">
@@ -1385,7 +1385,7 @@ const App = {
           <p style="color:#555; margin-top:5px;">ご宿泊：<strong>${hotel.customUrl ? `<a href="${hotel.customUrl}" target="_blank" rel="noopener" style="color:var(--color-primary);">${hotel.name}</a>` : hotel.name}</strong></p>
         </div>
 
-        <div style="background:white; padding: 25px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
+        <div class="spots-gourmet-card" style="background:white; padding: 25px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
     <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color: var(--color-primary);">🌟 ${dest.name} 厳選スポット＆グルメ</h3>
     <p style="font-size: 0.95rem; color: #666; margin-bottom: 20px; line-height: 1.5;">滞在型の旅行だからこそじっくり楽しめる、${dest.name}の魅力を凝縮した全リストです。行程の空き時間にぜひ訪れてみてください。</p>
     
@@ -1439,7 +1439,7 @@ const App = {
           </div>
           ${img3Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto; break-inside: avoid; page-break-inside: avoid;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
         </div>
-      <div style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px; break-inside: avoid; page-break-inside: avoid;">
+      <div class="checklist-card" style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px; break-inside: avoid; page-break-inside: avoid;">
           <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🎒 持ち物チェックリスト</h3>
           <div style="display: flex; flex-wrap: wrap; gap: 20px;">
             <ul style="list-style:none; padding:0; margin:0; font-size:1rem; line-height:2; flex:1; min-width:250px;">
