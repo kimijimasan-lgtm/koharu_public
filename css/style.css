@@ -1459,11 +1459,6 @@ body {
     font-weight: 700 !important;
     font-size: 0.85rem !important;
   }
-  .timeline-dot {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    border-color: #ffffff !important;
-  }
 
   /* 持ち物チェックリストカード */
   .checklist-card {
@@ -1518,6 +1513,55 @@ body {
     color: #444444 !important;
   }
 
+  /* ================================================
+     インラインstyle色の一括上書き
+     app.jsで生成されるHTMLはインラインstyleで薄い色
+     (#666, #555, #999等)を指定している。
+     親要素へのCSS !importantでは子のインラインcolorを
+     上書きできないため、直接要素セレクタで上書きする。
+     ================================================ */
+  #confirmed-content h1,
+  #confirmed-content h2,
+  #confirmed-content h3,
+  #confirmed-content h5 {
+    color: #0c3c78 !important;
+    font-weight: 700 !important;
+  }
+  #confirmed-content p,
+  #confirmed-content span,
+  #confirmed-content label,
+  #confirmed-content li,
+  #confirmed-content div {
+    color: #1f2933 !important;
+  }
+  #confirmed-content td {
+    color: #111111 !important;
+  }
+  #confirmed-content tr[style*="color"] td {
+    color: #6b3200 !important;
+    font-weight: 800 !important;
+  }
+  #confirmed-content a {
+    color: #0c3c78 !important;
+    text-decoration: underline !important;
+  }
+  #confirmed-content strong {
+    color: #111111 !important;
+  }
+
+  /* タイムライン移動コスト（タクシー代等）は目立つ色で残す */
+  #confirmed-content .transfer-cost {
+    color: #8c3b00 !important;
+    font-weight: 700 !important;
+  }
+
+  /* タイムラインドット: 背景色を保持 */
+  .timeline-dot {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border-color: #ffffff !important;
+  }
+
   /* 改ページ設定 */
   .hotel-card, .cost-summary-card, .checklist-card, .spots-gourmet-card, .print-header, .timeline-item, .day-section {
     page-break-inside: avoid;
@@ -1527,7 +1571,7 @@ body {
   .hotel-image img {
     max-height: 200px !important;
   }
-  
+
   h1, h2, h3, h4, p {
     margin: 0.3rem 0 !important;
   }
