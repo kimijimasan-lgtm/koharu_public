@@ -1983,3 +1983,182 @@ a.header-partner-badge:hover {
   box-shadow: var(--shadow-md);
   border-color: #ff6b6b !important;
 }
+
+/* ============================================================
+   データ信頼度バッジ（確定 / 概算 / 目安）
+   ============================================================
+   しおりは印刷して持ち歩く前提のため、色だけに頼らず
+   「文字 + 枠線」で区別する。白黒印刷でも判別できることを優先。 */
+.rl-badge {
+  display: inline-block;
+  font-size: 0.72em;
+  line-height: 1.5;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid;
+  margin-left: 6px;
+  white-space: nowrap;
+  vertical-align: middle;
+  font-weight: bold;
+  cursor: help;
+}
+.rl-verified   { color: #1b7a3d; border-color: #1b7a3d; background: #eaf7ef; }
+.rl-researched { color: #a06a00; border-color: #a06a00; background: #fff6e5; }
+.rl-estimated  { color: #5b5b5b; border-color: #8c8c8c; background: #f2f2f2; }
+.rl-caveat-mark { margin-left: 3px; }
+
+/* 季節運行・所要の幅など、行程の組み替え判断に関わる注意。
+   印刷時は title 属性が読めないため本文としても出す */
+.rl-caveat {
+  /* 移動行（.type-transfer .timeline-content）は display:flex なので、
+     注意書きがバッジと同じ行に並ばないよう 1行分の幅を確保する */
+  flex-basis: 100%;
+  margin-top: 4px;
+  padding: 5px 8px;
+  border-left: 3px solid #a06a00;
+  background: #fff9ed;
+  color: #7a5200;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  border-radius: 0 4px 4px 0;
+}
+
+/* 凡例 */
+.rl-legend {
+  margin: 0 0 18px 0;
+  padding: 12px 14px;
+  background: #fbfbfb;
+  border: 1px solid #e3e3e3;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 2;
+  color: #444;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.rl-legend .rl-badge { margin-left: 10px; }
+.rl-legend-note {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #666;
+}
+
+/* ============================================================
+   しおりの交通ルートカード（行き / 帰り）
+   ============================================================ */
+.route-column {
+  width: 320px;
+  max-width: 100%;
+  flex-shrink: 0;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.route-card {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+/* カード幅が320pxと狭いため、見出しと所要時間は縦に積む。
+   横並びにすると見出しが語句の途中で折り返されて読みにくくなる */
+.route-card-header {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: bold;
+  color: #555;
+  font-size: 0.95rem;
+}
+.route-card-header > span { display: block; }
+.route-card-total {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-weight: normal;
+  color: #777;
+}
+.route-node {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.86rem;
+  color: #222;
+  padding: 2px 0;
+}
+.route-time {
+  font-family: monospace;
+  font-weight: bold;
+  color: var(--color-primary, #2980b9);
+  white-space: nowrap;
+}
+.route-text { word-break: break-word; }
+/* 移動区間は場所イベントと別の要素として時刻の間に挟む */
+.route-edge {
+  margin: 2px 0 2px 10px;
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid #cbd5e1;
+  font-size: 0.8rem;
+  color: #555;
+}
+.route-edge-text { vertical-align: middle; }
+
+/* 幅の狭いスマホでは経路カードを本文と同じ1列に落とす */
+@media (max-width: 700px) {
+  .route-column { width: 100%; }
+}
+
+@media print {
+  /* バッジは印刷でも残す（紙のしおりで確定/概算を見分けるため）。
+     背景色が出ない環境でも読めるよう、枠線と文字色を明示する */
+  .rl-badge {
+    border-width: 1px !important;
+    font-weight: bold !important;
+  }
+  .rl-verified   { color: #14532d !important; border-color: #14532d !important; background: #eaf7ef !important; }
+  .rl-researched { color: #7a4f00 !important; border-color: #7a4f00 !important; background: #fff6e5 !important; }
+  .rl-estimated  { color: #333333 !important; border-color: #666666 !important; background: #f2f2f2 !important; }
+  .rl-caveat {
+    color: #5c3d00 !important;
+    background: #fff9ed !important;
+    border-left-color: #7a4f00 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .rl-legend {
+    color: #222222 !important;
+    background: #fbfbfb !important;
+    border-color: #bbbbbb !important;
+  }
+  .rl-legend-note { color: #444444 !important; }
+  .route-card {
+    background: #f9f9f9 !important;
+    border-color: #bbbbbb !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .route-node { color: #111111 !important; }
+  .route-time { color: #14425f !important; }
+  .route-edge { color: #333333 !important; border-left-color: #999999 !important; }
+}
+
+@media print {
+  /* ------------------------------------------------------------
+     #confirmed-content 配下の一括色上書き（span/div を #1f2933 にする指定）は
+     ID セレクタを含むため、クラスのみの .rl-badge より優先度が高い。
+     バッジと経路カードの色分けを保つため、同じ優先度で明示的に上書きする。
+     ------------------------------------------------------------ */
+  #confirmed-content span.rl-badge.rl-verified   { color: #14532d !important; border-color: #14532d !important; background: #eaf7ef !important; }
+  #confirmed-content span.rl-badge.rl-researched { color: #7a4f00 !important; border-color: #7a4f00 !important; background: #fff6e5 !important; }
+  #confirmed-content span.rl-badge.rl-estimated  { color: #333333 !important; border-color: #666666 !important; background: #f2f2f2 !important; }
+  #confirmed-content div.rl-caveat               { color: #5c3d00 !important; background: #fff9ed !important; border-left-color: #7a4f00 !important; }
+  #confirmed-content div.rl-legend               { color: #222222 !important; background: #fbfbfb !important; border-color: #bbbbbb !important; }
+  #confirmed-content div.rl-legend-note          { color: #444444 !important; }
+  #confirmed-content div.route-node              { color: #111111 !important; }
+  #confirmed-content span.route-time             { color: #14425f !important; }
+  #confirmed-content div.route-edge              { color: #333333 !important; border-left-color: #999999 !important; }
+  #confirmed-content div.route-card              { background: #f9f9f9 !important; border-color: #bbbbbb !important; }
+}

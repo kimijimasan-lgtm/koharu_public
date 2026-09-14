@@ -14,6 +14,68 @@ const PREFECTURE_STATIONS = {
   '神奈川県': ['横浜', '新横浜', '小田原']
 };
 
+// ============================================================
+// データ信頼度（確定 / 概算 / 目安）
+// ============================================================
+// しおり・比較画面に出す数値が「どこまで裏が取れているか」を1つの構造で表す。
+// 新幹線側（在来線含む）・飛行機側・現地移動のすべてで同じ形を使うこと。
+//
+// 3段階にしている理由：
+//   公開版は個人の出発地特定を避けるため実ダイヤ（SHINKANSEN_SCHEDULES）を空にしており、
+//   新幹線・フライトの発車時刻は generateHourlySchedule() 等による仮想ダイヤである。
+//   2段階（確定/概算）にすると、実地で裏を取った所要時間（例：知床エアポートライナー136分）と
+//   アプリが機械生成した時刻が同じ「概算」に潰れ、表示が情報として機能しなくなる。
+const RELIABILITY = {
+  // 公式時刻表・公示運賃を直接確認した値。source と verifiedDate を必ず持たせる
+  VERIFIED: 'verified',
+  // 複数ソースで一致を確認した実測値の代表値。実在するが「その日のその便」ではない
+  RESEARCHED: 'researched',
+  // アプリが機械生成した値（仮想ダイヤ・距離換算・固定値）。実ダイヤ未確認
+  ESTIMATED: 'estimated',
+};
+
+// 表示用のラベル定義。色だけに頼らず文字と枠線で区別する（白黒印刷対応のため）
+const RELIABILITY_LABELS = {
+  [RELIABILITY.VERIFIED]:   { text: '確定', className: 'rl-verified',   fallback: '公式時刻表・公示運賃で確認済み' },
+  [RELIABILITY.RESEARCHED]: { text: '概算', className: 'rl-researched', fallback: '複数ソースで確認した実測の代表値' },
+  [RELIABILITY.ESTIMATED]:  { text: '目安', className: 'rl-estimated',  fallback: 'アプリによる自動計算（実ダイヤ未確認）' },
+};
+
+// 信頼度メタデータを作る。
+//   source       … 出典（例：'JR北海道公式・駅探'）
+//   verifiedDate … 確認日（'YYYY-MM-DD'）
+//   note         … なぜこの信頼度なのかの補足（ツールチップに出す）
+//   caveat       … 利用者が行動を変えるべき注意（季節運行・所要の幅など）。行程に本文として出す
+function reliability(level, { source = null, verifiedDate = null, note = null, caveat = null } = {}) {
+  return { level, source, verifiedDate, note, caveat };
+}
+
+// ツールチップ用の文字列を組み立てる（出典・確認日が無ければ既定の説明にフォールバック）
+function describeReliability(rl) {
+  if (!rl) return '';
+  const label = RELIABILITY_LABELS[rl.level];
+  const parts = [];
+  if (rl.source) {
+    parts.push(rl.verifiedDate ? `${rl.source}（${rl.verifiedDate}確認）` : rl.source);
+  } else if (label) {
+    parts.push(label.fallback);
+  }
+  if (rl.note) parts.push(rl.note);
+  if (rl.caveat) parts.push(`⚠ ${rl.caveat}`);
+  return parts.join(' ／ ');
+}
+
+// 複数区間のうち最も信頼度の低いレベルを返す（行程全体の確からしさの要約に使う）
+const RELIABILITY_ORDER = [RELIABILITY.VERIFIED, RELIABILITY.RESEARCHED, RELIABILITY.ESTIMATED];
+function worstReliabilityLevel(levels) {
+  let worstIdx = -1;
+  for (const lv of levels) {
+    const idx = RELIABILITY_ORDER.indexOf(lv);
+    if (idx > worstIdx) worstIdx = idx;
+  }
+  return worstIdx < 0 ? null : RELIABILITY_ORDER[worstIdx];
+}
+
 const DESTINATIONS = {
 
   chitose: {
@@ -1040,9 +1102,9 @@ const SHINKANSEN_FARES = {
 // 実ダイヤ（乗り継ぎパターン）
 // ============================================================
 // 公開版注記：
-// 個人版では出発地起点の実ダイヤを往復パターンで保持していたが、
-// 個人の出発地が特定されるため公開版では削除した。
-// 公開版は概算計算（TABLE_B所要時間）を使用する。
+// 個人版では特定の出発地→函館の実ダイヤを
+// 7パターン往復で保持していたが、個人の出発地が特定されるため
+// 公開版では削除した。公開版は概算計算（TABLE_B所要時間）を使用する。
 // 将来、主要新幹線駅の実ダイヤを整備する場合はここに追加する。
 const SHINKANSEN_SCHEDULES = {
   // 公開版：実ダイヤは未整備。概算計算にフォールバックする。
@@ -1052,7 +1114,7 @@ const SHINKANSEN_SCHEDULES = {
 };
 
 // 「出発駅名|目的地エリア名」→ SHINKANSEN_SCHEDULES のキー。
-// 公開版：出発地固有のルートは削除。実ダイヤ未整備のため全区間概算計算にフォールバック。
+// 公開版：個人の出発地固有のルートは削除。実ダイヤ未整備のため全区間概算計算にフォールバック。
 const SCHEDULE_ROUTES = {
   // 公開版：実ダイヤ未整備のため空。概算計算（TABLE_B）を使用する。
   // '仙台|函館': { outbound: 'sendai-hakodate', inbound: 'hakodate-sendai' }, // 将来整備予定
@@ -1383,18 +1445,42 @@ function pickCityConnectionBefore(leg, beforeMin, bufferMin = 0) {
   return best;
 }
 
-// 出発地の最寄り駅→新幹線駅の在来線接続。
-// JR東日本公式時刻表等で確認済みの実在時刻のみを登録する。憶測での時刻生成は禁止。
-// schedule.weekday の outboundDepartures/inboundArrivals は「実在する列車の時刻」そのもの。
-// schedule.holiday が未確認(null)の区間は、平日ダイヤを参考値として代用する(isApproximateSchedule で判別)。
-// 公開版：実データは個人の出発地が特定されるため未登録。区間を追加する場合も同じ schedule 構造（outboundDepartures/inboundArrivals）を用いること。
+// 出発地の最寄り駅 → 新幹線駅の在来線接続。
+//
+// 【公開版について】
+// 実データは個人の出発地（最寄りの在来線駅）が特定される情報のため、公開版では登録していない。
+// SHINKANSEN_SCHEDULES / SCHEDULE_ROUTES を空にしているのと同じ理由。
+// 空のままでも findLocalTrainAccess() が null を返し、行程は新幹線駅発として組まれる。
+//
+// 【区間を追加する場合のルール】
+// - JR各社の公式時刻表等で確認できた「実在する列車の時刻」のみを登録する。憶測での時刻生成は禁止
+// - キーは '在来線駅-新幹線駅' の駅ペア形式。CITY_STATION_CONNECTIONS と同じ引き方に揃えてある
+// - schedule.weekday の outboundDepartures / inboundArrivals はどちらも実在する列車の時刻そのもの
+// - schedule.holiday が未確認(null)の区間は、平日ダイヤを参考値として代用する。
+//   このとき lookupLocalTrain() は reliability を ESTIMATED（目安）に落として返すので、
+//   しおり上でも「確定」ではなく「目安」として表示される
+// - 追加した駅は PREFECTURE_STATIONS にも登録しないと利用者が選択できない。
+//   その際、個人の居住地が推測できる駅を公開版に加えないよう注意すること
+//
+// 登録例（形式の参考。架空の駅名）:
+//   'サンプル-サンプル新幹線': {
+//     line: 'JR◯◯線',
+//     type: '普通',
+//     duration_min: 16,              // 出発→到着は一律+16分（公式時刻表確認済み）
+//     transfers: 0,
+//     stops: '◯◯・△△',
+//     source: 'JR◯◯公式時刻表',
+//     verified_date: 'YYYY-MM-DD',
+//     schedule: {
+//       weekday: {
+//         outboundDepartures: ['05:46', '06:21', /* …実在する発車時刻 */],
+//         inboundArrivals:    ['05:48', '06:14', /* …実在する到着時刻 */],
+//       },
+//       holiday: null,               // 土休日ダイヤが未確認なら null（平日ダイヤを代用し「目安」表示になる）
+//     },
+//   },
 const LOCAL_TRAIN_CONNECTIONS = {
   // 公開版：実データは未登録（上記コメント参照）
-};
-
-// 出発地テキスト中のキーワード → 最寄り駅名のマッピング
-const DEPARTURE_TO_LOCAL_STATION = {
-  // 公開版：実データは未登録
 };
 
 function localTrainTimeToMinutes(timeStr) {
@@ -1433,24 +1519,63 @@ function pickLocalTrainArrival(times, targetMin) {
   return best;
 }
 
-function lookupLocalTrain(departureText, shinkansenStation, dateStr) {
-  const normalizedStation = shinkansenStation.replace(/駅$/, '');
-  for (const [keyword, localStation] of Object.entries(DEPARTURE_TO_LOCAL_STATION)) {
-    if (departureText.includes(keyword) && localStation !== normalizedStation) {
-      const key = `${localStation}-${normalizedStation}`;
-      const conn = LOCAL_TRAIN_CONNECTIONS[key];
-      if (conn) {
-        const weekend = isWeekendDate(dateStr);
-        const useHoliday = weekend && conn.schedule.holiday;
-        return {
-          ...conn,
-          schedule: useHoliday ? conn.schedule.holiday : conn.schedule.weekday,
-          isApproximateSchedule: weekend && !conn.schedule.holiday,
-          fromStation: `${localStation}駅`,
-          toStation: `${normalizedStation}駅`,
-        };
-      }
-    }
+// 在来線区間を「出発駅名 → 新幹線駅名」で引く。
+//
+// 【設計変更 2026-09-14】以前は第1引数が「出発地の自由入力テキスト」で、
+// DEPARTURE_TO_LOCAL_STATION によるキーワード曖昧マッチを行っていた。
+// しかし公開版UIでは出発地の自由入力欄が廃止され（都道府県→駅のプルダウンのみ）、
+// この関数を呼べる入口が存在しなくなり、在来線側が実質機能不全になっていた。
+// そこで CITY_STATION_CONNECTIONS（はこだてライナー）と同じ「駅ペアキー」方式に統一し、
+// プルダウンで選ばれた駅名をそのまま渡せるようにした。
+//
+// isApproximateSchedule（boolean）は reliability に置き換えた。
+// 土休日ダイヤが未確認（schedule.holiday === null）の区間で土日に検索した場合、
+// 平日ダイヤを代用しているため ESTIMATED になる。
+function lookupLocalTrain(localStationName, shinkansenStation, dateStr) {
+  if (!localStationName || !shinkansenStation) return null;
+  const from = localStationName.replace(/駅$/, '');
+  const to = shinkansenStation.replace(/駅$/, '');
+  if (from === to) return null;
+
+  const conn = LOCAL_TRAIN_CONNECTIONS[`${from}-${to}`];
+  if (!conn) return null;
+
+  const weekend = isWeekendDate(dateStr);
+  const useHoliday = weekend && conn.schedule.holiday;
+  const substitutingWeekdaySchedule = weekend && !conn.schedule.holiday;
+
+  return {
+    ...conn,
+    schedule: useHoliday ? conn.schedule.holiday : conn.schedule.weekday,
+    reliability: substitutingWeekdaySchedule
+      ? reliability(RELIABILITY.ESTIMATED, {
+          source: conn.source,
+          verifiedDate: conn.verified_date,
+          note: '土休日ダイヤが未確認のため、平日ダイヤを参考値として代用しています',
+          caveat: '土休日は運転本数・時刻が変わります。実際の時刻を必ずご確認ください',
+        })
+      : reliability(RELIABILITY.VERIFIED, {
+          source: conn.source,
+          verifiedDate: conn.verified_date,
+        }),
+    fromStation: `${from}駅`,
+    toStation: `${to}駅`,
+  };
+}
+
+// 選択された駅が新幹線駅でない場合に、「どの新幹線駅まで在来線で出るか」を引く。
+// LOCAL_TRAIN_CONNECTIONS のキー（'出発駅-新幹線駅'）だけを根拠にするため、
+// 新しい在来線区間を1件登録すればそのまま機能する。
+//
+// ※公開版の PREFECTURE_STATIONS には新幹線駅しか登録していないため、
+//   通常このルックアップは null を返し、行程は従来どおり新幹線駅発として組まれる。
+//   個人の出発地が特定されないよう、駅名をここに追加しないこと。
+function findLocalTrainAccess(fromStationName) {
+  if (!fromStationName) return null;
+  const from = fromStationName.replace(/駅$/, '');
+  for (const key of Object.keys(LOCAL_TRAIN_CONNECTIONS)) {
+    const [connFrom, connTo] = key.split('-');
+    if (connFrom === from) return { fromStation: connFrom, shinkansenStation: connTo };
   }
   return null;
 }
@@ -1532,6 +1657,35 @@ function getTravelTimes() {
   };
 }
 
+// getTravelTimes() のうち、コメントで「公式確認済み」と記されている区間。
+// 所要時間そのものは裏が取れているが、どの便に乗るか（発車時刻）は
+// 公開版では仮想ダイヤのため、VERIFIED ではなく RESEARCHED とする。
+const VERIFIED_TRAVEL_TIME_KEYS = new Set([
+  '東京-函館', '宇都宮-函館', '那須塩原-函館', '仙台-函館', '盛岡-函館', '新青森-函館',
+]);
+
+// 新幹線の乗車区間に付ける信頼度を返す。
+// key が VERIFIED_TRAVEL_TIME_KEYS に無い区間は「他区間からの足し引きで求めた概算」なので ESTIMATED。
+function travelTimeReliability(key) {
+  if (VERIFIED_TRAVEL_TIME_KEYS.has(key)) {
+    return reliability(RELIABILITY.RESEARCHED, {
+      source: 'JR公式所要時間',
+      note: '所要時間は確認済み。発車時刻はアプリの模擬ダイヤです',
+    });
+  }
+  return reliability(RELIABILITY.ESTIMATED, {
+    note: '他区間の所要時間から足し引きして求めた概算です',
+  });
+}
+
+// 仮想ダイヤ（generateHourlySchedule）から算出した待ち時間・発車時刻に付ける信頼度。
+// 公開版は個人の出発地特定を避けるため実ダイヤ（SHINKANSEN_SCHEDULES）を持たない。
+function virtualScheduleReliability() {
+  return reliability(RELIABILITY.ESTIMATED, {
+    note: '発車時刻はアプリの模擬ダイヤです。実際の列車はえきねっと等でご確認ください',
+  });
+}
+
 // ============================================================
 // 5時間ルール判定と交通手段の詳細比較（公開版）
 // ============================================================
@@ -1578,9 +1732,19 @@ function generateHourlySchedule(minuteList, startH = 6, endH = 22) {
   return list;
 }
 
-function generateShinkansenTimeline(stationName, destName, departTimeStr) {
+// departDateStr（'YYYY-MM-DD'）は在来線区間の平日/土休日ダイヤ判定にのみ使う。
+// 省略時は平日扱い（isWeekendDate の既定）。
+function generateShinkansenTimeline(stationName, destName, departTimeStr, departDateStr = null) {
   const times = getTravelTimes();
-  const normStation = stationName.replace(/駅$/, '');
+  let normStation = stationName.replace(/駅$/, '');
+
+  // 選択された駅が新幹線駅でない場合、新幹線駅までの在来線区間を行程の先頭に挿入する。
+  // 公開版は新幹線駅しかプルダウンに無いため通常 null（従来どおりの行程になる）。
+  const localAccess = findLocalTrainAccess(normStation);
+  const localLeg = localAccess
+    ? lookupLocalTrain(localAccess.fromStation, localAccess.shinkansenStation, departDateStr)
+    : null;
+
   const toOmiya = { '那須塩原': 45, '宇都宮': 30, '郡山': 60, '福島': 80 };
   const toSendai = { '那須塩原': 60, '宇都宮': 80, '郡山': 40, '福島': 25, '白石蔵王': 15, '新白河': 50, '白河': 55 };
 
@@ -1589,11 +1753,41 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
   let totalMins = 0;
 
   const pushNode = (time, text) => timeline.push({ type: 'node', time, text });
-  const pushEdge = (text) => timeline.push({ type: 'edge', text });
+  // 移動区間には必ず reliability を添える。省略した区間は「目安」扱いになる
+  // durationMin は復路の逆算に使う。移動以外の注意書き行は null のままにする
+  const pushEdge = (text, rl = null, durationMin = null) => timeline.push({ type: 'edge', text, reliability: rl, durationMin });
 
-  // 仮想ダイヤ
+  // 仮想ダイヤ（公開版は実ダイヤを持たないため、待ち時間はすべて ESTIMATED）
   const yamabikoSchedule = generateHourlySchedule([12]); // 毎時12分
   const hayabusaSchedule = generateHourlySchedule([53]); // 毎時53分
+  const waitRl = virtualScheduleReliability();
+
+  // ── 在来線区間（新幹線駅までのアクセス）──
+  // 実在する時刻リストから便を選ぶ。所要時間だけで機械的に時刻を作らないこと
+  if (localLeg) {
+    const targetMin = localTrainTimeToMinutes(departTimeStr);
+    const depTime = pickLocalTrainDeparture(
+      localLeg.schedule.outboundDepartures, targetMin, 0, localLeg.duration_min
+    );
+    pushNode(depTime, `${localLeg.fromStation} 発`);
+    const transferWait = localTrainTimeToMinutes(departTimeStr)
+      - (localTrainTimeToMinutes(depTime) + localLeg.duration_min);
+    pushEdge(
+      `\u{1F686} ${localLeg.line} ${localLeg.type}（約${localLeg.duration_min}分）`,
+      localLeg.reliability,
+      localLeg.duration_min
+    );
+    totalMins += localLeg.duration_min;
+    const arrTime = addMins(depTime, localLeg.duration_min);
+    pushNode(arrTime, `${localLeg.toStation} 着`);
+    // 乗り換え待ちが20分を超える場合は待ち時間そのものを行程に明示する
+    if (transferWait > 20) {
+      pushEdge(`☕ 新幹線への乗り換え待ち（${transferWait}分）`, localLeg.reliability, transferWait);
+      totalMins += transferWait;
+    }
+    // 以降の新幹線区間は、在来線で到着した新幹線駅を起点として組む
+    normStation = localAccess.shinkansenStation;
+  }
 
   if (['札幌', '函館', '新函館北斗', '旭川', '帯広', '釧路', '網走', '稚内'].includes(normStation)) {
     let dur = 120;
@@ -1608,16 +1802,17 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
     
     pushNode(t, `${normStation}駅 発`);
     if (stationWait > 0) {
-      pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+      pushEdge(`☕ 駅での待ち（${stationWait}分）`, waitRl, stationWait);
       t = addMins(t, stationWait);
       totalMins += stationWait;
     }
-    pushEdge(`🚃 特急等（約${dur}分）`);
+    // 道内発の特急。所要は区間ごとの固定値のため ESTIMATED
+    pushEdge(`🚃 特急等（約${dur}分）`, reliability(RELIABILITY.ESTIMATED, { note: '道内特急の所要は概算値です' }), dur);
     t = addMins(t, dur);
     totalMins += dur;
     pushNode(t, `${destName.replace('北海道', '')} 着`);
     
-    return { time: totalMins, timeline, totalMins };
+    return { time: totalMins, timeline, totalMins, reliabilityLevel: summarizeTimelineReliability(timeline) };
   }
 
   if (destName.includes('函館')) {
@@ -1630,12 +1825,13 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
       
       pushNode(t, `${normStation}駅 発`);
       if (stationWait > 0) {
-        pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+        pushEdge(`☕ 駅での待ち（${stationWait}分）`, waitRl, stationWait);
         t = addMins(t, stationWait);
         totalMins += stationWait;
       }
       
-      pushEdge(`🚄 やまびこ・なすの等（約${dur1}分）`);
+      // toSendai の固定マップ由来の所要時間
+      pushEdge(`🚄 やまびこ・なすの等（約${dur1}分）`, reliability(RELIABILITY.ESTIMATED, { note: '仙台までの所要は概算値です' }), dur1);
       t = addMins(t, dur1);
       totalMins += dur1;
       pushNode(t, `仙台駅 着`);
@@ -1643,12 +1839,12 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
       const nextHayabusa = findNextDeparture(t, hayabusaSchedule);
       const wait = diffMins(t, nextHayabusa);
       
-      pushEdge(`☕ 乗換・待ち（${wait}分）`);
+      pushEdge(`☕ 乗換・待ち（${wait}分）`, waitRl, wait);
       t = addMins(t, wait);
       totalMins += wait;
       pushNode(t, `仙台駅 発`);
       
-      pushEdge(`🚄 はやぶさ（約${dur2}分）`);
+      pushEdge(`🚄 はやぶさ（約${dur2}分）`, travelTimeReliability('仙台-函館'), dur2);
       t = addMins(t, dur2);
       totalMins += dur2;
       pushNode(t, `新函館北斗駅 着`);
@@ -1662,12 +1858,13 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
       
       pushNode(t, `${normStation}駅 発`);
       if (stationWait > 0) {
-        pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+        pushEdge(`☕ 駅での待ち（${stationWait}分）`, waitRl, stationWait);
         t = addMins(t, stationWait);
         totalMins += stationWait;
       }
       
-      pushEdge(`🚄 なすの等（約${dur1}分）`);
+      // toOmiya の固定マップ由来の所要時間
+      pushEdge(`🚄 なすの等（約${dur1}分）`, reliability(RELIABILITY.ESTIMATED, { note: '大宮までの所要は概算値です' }), dur1);
       t = addMins(t, dur1);
       totalMins += dur1;
       pushNode(t, `大宮駅 着`);
@@ -1675,12 +1872,12 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
       const nextHayabusa = findNextDeparture(t, hayabusaSchedule);
       const wait = diffMins(t, nextHayabusa);
       
-      pushEdge(`☕ 乗換・待ち（${wait}分）`);
+      pushEdge(`☕ 乗換・待ち（${wait}分）`, waitRl, wait);
       t = addMins(t, wait);
       totalMins += wait;
       pushNode(t, `大宮駅 発`);
       
-      pushEdge(`🚄 はやぶさ（約${dur2}分）`);
+      pushEdge(`🚄 はやぶさ（約${dur2}分）`, travelTimeReliability('大宮-函館'), dur2);
       t = addMins(t, dur2);
       totalMins += dur2;
       pushNode(t, `新函館北斗駅 着`);
@@ -1692,11 +1889,11 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
       
       pushNode(t, `${normStation}駅 発`);
       if (stationWait > 0) {
-        pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+        pushEdge(`☕ 駅での待ち（${stationWait}分）`, waitRl, stationWait);
         t = addMins(t, stationWait);
         totalMins += stationWait;
       }
-      pushEdge(`🚄 はやぶさ等（約${dur}分）`);
+      pushEdge(`🚄 はやぶさ等（約${dur}分）`, travelTimeReliability(`${normStation}-函館`), dur);
       t = addMins(t, dur);
       totalMins += dur;
       pushNode(t, `新函館北斗駅 着`);
@@ -1732,12 +1929,13 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
     const nextHokuto = findNextDeparture(t, hokutoSchedule);
     const wait = diffMins(t, nextHokuto);
     
-    pushEdge(`☕ 乗換・待ち（${wait}分）`);
+    pushEdge(`☕ 乗換・待ち（${wait}分）`, waitRl, wait);
     t = addMins(t, wait);
     totalMins += wait;
     
     pushNode(t, `新函館北斗駅 発`);
-    pushEdge(`🚃 特急北斗等（約${plus}分）`);
+    // plus は目的地ごとの固定値。実ダイヤ未確認
+    pushEdge(`🚃 特急北斗等（約${plus}分）`, reliability(RELIABILITY.ESTIMATED, { note: '新函館北斗から先の所要は概算値です' }), plus);
     t = addMins(t, plus);
     totalMins += plus;
     pushNode(t, `${destName.replace('北海道', '')} 着`);
@@ -1750,204 +1948,401 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr) {
     
     pushNode(t, `${normStation}駅 発`);
     if (stationWait > 0) {
-      pushEdge(`☕ 駅での待ち（${stationWait}分）`);
+      pushEdge(`☕ 駅での待ち（${stationWait}分）`, waitRl, stationWait);
       t = addMins(t, stationWait);
       totalMins += stationWait;
     }
-    pushEdge(`🚄 新幹線（約${dur}分）`);
+    pushEdge(`🚄 新幹線（約${dur}分）`, travelTimeReliability(`${normStation}-${destName}`), dur);
     t = addMins(t, dur);
     totalMins += dur;
     pushNode(t, `${destName.replace('北海道', '')} 着`);
   }
 
-  return { time: totalMins, timeline, totalMins };
+  return { time: totalMins, timeline, totalMins, reliabilityLevel: summarizeTimelineReliability(timeline) };
+}
+
+// ============================================================
+// 飛行機ルート：出発地 → 空港 のアクセス（AIRPORT_ACCESS）
+// ============================================================
+// 以前は generateFlightTimeline() 内の if/else 連鎖に所要時間・文言が直書きされており、
+// 出典が構造化されていなかった。ここにテーブルとして外出しし、reliability を必ず持たせる。
+// ※ stations の判定順は元の if/else と同じ。配列の順序を入れ替えないこと。
+//
+// flightSchedule は実在する便のダイヤではなく「その空港におおむね存在する便数・時間帯」を
+// 模した仮の配列のため、フライトに関わる区間の信頼度は ESTIMATED とする。
+const AIRPORT_ACCESS = [
+  {
+    stations: ['新青森', '青森', '八戸'],
+    airport: '青森空港(または三沢空港)',
+    durationMin: 40,
+    label: '🚌 リムジンバス等',
+    flightSchedule: ['09:50', '11:45', '14:25', '19:40'],
+    overrideFlightTime: 45,
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: 'リムジンバス所要は概算。実ダイヤ未確認' }),
+  },
+  {
+    stations: ['秋田'],
+    airport: '秋田空港',
+    durationMin: 40,
+    label: '🚌 リムジンバス等',
+    flightSchedule: ['09:40', '19:00'],
+    overrideFlightTime: 55,
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: 'リムジンバス所要は概算。実ダイヤ未確認' }),
+  },
+  {
+    stations: ['盛岡', '一ノ関'],
+    airport: 'いわて花巻空港',
+    durationMin: 45,
+    label: '🚌 特急バス等',
+    flightSchedule: ['11:55', '15:20', '18:50'],
+    overrideFlightTime: 55,
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '特急バス所要は概算。実ダイヤ未確認' }),
+  },
+  {
+    stations: ['仙台', '古川'],
+    airport: '仙台空港',
+    durationMin: 30,
+    label: '🚃 仙台空港アクセス線',
+    flightSchedule: ['08:30', '10:15', '12:00', '14:45', '17:30', '19:00'],
+    overrideFlightTime: 70,
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '仙台駅起点の所要。古川発は乗り継ぎ分が未反映' }),
+  },
+  {
+    stations: ['山形', '米沢'],
+    airport: '山形空港',
+    durationMin: 30,
+    label: '🚌 シャトルバス',
+    flightSchedule: ['08:45', '16:30'],
+    overrideFlightTime: 75,
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '山形駅起点の所要。米沢発は乗り継ぎ分が未反映' }),
+  },
+  {
+    // 目的地が函館かどうかで利用空港が変わる区間。resolve() で分岐させる
+    stations: ['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'],
+    resolve: (normStation, destName) => {
+      if (destName.includes('函館')) {
+        const durationMin = normStation === '宇都宮' ? 120 : 90;
+        return {
+          airport: '仙台空港',
+          durationMin,
+          label: '🚗 自家用車・高速バス等',
+          flightSchedule: ['10:45', '14:00'],
+          overrideFlightTime: null,
+          reliability: reliability(RELIABILITY.ESTIMATED, {
+            note: '自家用車前提の概算。交通状況により大きく変動する',
+          }),
+        };
+      }
+      const durationMin = ['那須塩原', '宇都宮'].includes(normStation) ? 90 : 60;
+      return {
+        airport: '福島空港',
+        durationMin,
+        label: '🚗 自家用車等',
+        flightSchedule: ['10:30'],
+        overrideFlightTime: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '自家用車前提の概算。交通状況により大きく変動する',
+        }),
+      };
+    },
+  },
+  {
+    stations: ['札幌', '函館', '新函館北斗', '旭川', '帯広', '釧路', '網走', '稚内'],
+    airport: '丘珠空港(または最寄り空港)',
+    durationMin: 30,
+    label: '🚌 連絡バス',
+    flightSchedule: ['08:00', '10:30', '13:00', '16:00', '18:30'],
+    overrideFlightTime: 40,
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '道内発。最寄り空港・連絡バスとも概算' }),
+  },
+];
+
+// どのテーブル項目にも当たらない出発地に使う既定値
+const AIRPORT_ACCESS_DEFAULT = {
+  airport: '羽田空港(または主要空港)',
+  durationMin: 90,
+  label: '🚃 在来線等',
+  flightSchedule: ['08:00', '10:30', '13:00', '16:00', '18:30'],
+  overrideFlightTime: null,
+  reliability: reliability(RELIABILITY.ESTIMATED, { note: '主要空港までの在来線所要を一律90分と仮定した値' }),
+};
+
+function lookupAirportAccess(normStation, destName) {
+  for (const entry of AIRPORT_ACCESS) {
+    if (!entry.stations.includes(normStation)) continue;
+    return entry.resolve ? entry.resolve(normStation, destName) : entry;
+  }
+  return AIRPORT_ACCESS_DEFAULT;
+}
+
+// ============================================================
+// 飛行機ルート：到着空港 → 目的地 のローカル交通（AIRPORT_LOCAL_TRANSIT）
+// ============================================================
+// 元は generateFlightTimeline() 内の if/else 連鎖にあり、調査結果がコード上の
+// コメントとしてしか残っていなかった（「要検証日2026-09-13」等）。
+// コメントとコードの二重管理を避けるため、出典・確認日・注意事項をすべてフィールド化する。
+//
+// match は destName.includes() で判定する。元の if/else と同じ順序で先頭から評価するため、
+// 配列の順序を入れ替えないこと（'函館' を先に評価する必要がある）。
+//
+// caveat は「利用者が行程を組み替える判断材料になる注意」を書く。
+// しおり上でツールチップだけでなく本文としても表示する（印刷時に title 属性が見えないため）。
+const AIRPORT_LOCAL_TRANSIT = [
+  {
+    match: '函館',
+    airport: '函館空港',
+    durationMin: 20,
+    label: '🚖 連絡バス・タクシー等',
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '函館空港→市内中心部の概算。実ダイヤ未確認' }),
+  },
+  {
+    match: '江差',
+    airport: '函館空港',
+    durationMin: 180,
+    label: '🚌 バス等',
+    // 函館空港連絡バス（函館帝産バス）で函館駅前まで約20分、
+    // 函館バス610系統「函館・江差線」で函館駅前→江差ターミナルまで約148分。
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: '函館バス公式時刻表・函館タクシー公式',
+      verifiedDate: '2026-09-13',
+      note: '函館駅前での乗り継ぎ待ちを含め約2時間30分〜3時間',
+      caveat: '函館駅前でのバス乗り継ぎが必要です。便数が少ないため待ち時間が長くなることがあります',
+    }),
+  },
+  {
+    match: '旭川',
+    airport: '旭川空港',
+    durationMin: 40,
+    label: '🚌 連絡バス等',
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '旭川空港→市内の概算。出典未確認' }),
+  },
+  {
+    match: '富良野',
+    airport: '旭川空港',
+    durationMin: 60,
+    label: '🚌 連絡バス等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: 'ふらのバス「快速ラベンダー号」（2ソース一致）',
+      verifiedDate: '2026-09-13',
+      note: '旭川空港→富良野駅前 約61分',
+    }),
+  },
+  {
+    match: '美瑛',
+    airport: '旭川空港',
+    durationMin: 16,
+    label: '🚌 連絡バス等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: '美瑛町観光協会公式・NAVITIME/ジョルダン各社時刻表',
+      verifiedDate: '2026-09-13',
+      note: '旭川空港→美瑛駅 約16分',
+    }),
+  },
+  {
+    match: '網走',
+    airport: '女満別空港',
+    durationMin: 30,
+    label: '🚌 連絡バス',
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '女満別空港→網走市内の概算。出典未確認' }),
+  },
+  {
+    match: '知床',
+    airport: '女満別空港',
+    durationMin: 136,
+    label: '🚌 知床エアポートライナー等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: '斜里バス系列 運行情報',
+      verifiedDate: '2026-09-13',
+      note: '女満別空港→ウトロ温泉バスターミナル 約136分・3,300円',
+      caveat: '知床エアポートライナーは冬季（流氷期）・夏季の季節限定運行です。通年運行ではない点は未反映のため、旅行時期の運行有無を必ずご確認ください',
+    }),
+  },
+  {
+    match: '釧路',
+    airport: 'たんちょう釧路空港',
+    durationMin: 45,
+    label: '🚌 連絡バス',
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '釧路空港→釧路市内の概算。出典未確認' }),
+  },
+  {
+    match: '摩周湖',
+    airport: 'たんちょう釧路空港',
+    durationMin: 130,
+    label: '🚌＋🚃 連絡バス・JR等',
+    // 連絡バスで釧路駅まで約45分＋JR釧網線で摩周駅まで約75分＝乗車時間だけで約120分。
+    // ※車・タクシー直行なら「1時間強」との記載もあるが、本アプリは乗換案内前提のため公共交通ベース。
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: 'たびらい・弟子屈なび等',
+      verifiedDate: '2026-09-13',
+      note: '公共交通ベース。乗り継ぎ待ちを含め130〜150分',
+      caveat: 'JR釧網線は本数が少なく、釧路駅での乗り継ぎ待ちが大きくなることがあります',
+    }),
+  },
+  {
+    match: '根室',
+    airport: 'たんちょう釧路空港',
+    durationMin: 200,
+    label: '🚌＋🚃 連絡バス・JR等',
+    // 連絡バスで釧路駅まで約45分＋JR根室本線で根室駅まで約131〜162分。
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: '駅探・バス比較なび等',
+      verifiedDate: '2026-09-13',
+      note: '乗車時間だけで176〜207分。バス乗り継ぎのみの別ルートでは269分との情報もある',
+      caveat: '乗り継ぎ次第で3時間〜4時間30分と幅があります。時間に余裕を持ってご計画ください',
+    }),
+  },
+  {
+    match: '帯広',
+    airport: 'とかち帯広空港',
+    durationMin: 40,
+    label: '🚌 連絡バス',
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '帯広空港→帯広市内の概算。出典未確認' }),
+  },
+  {
+    match: '稚内',
+    airport: '稚内空港',
+    durationMin: 30,
+    label: '🚌 連絡バス',
+    reliability: reliability(RELIABILITY.ESTIMATED, { note: '稚内空港→稚内市内の概算。出典未確認' }),
+  },
+  {
+    match: '千歳',
+    airport: '新千歳空港',
+    durationMin: 7,
+    label: '🚃 JR千歳線 等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: '駅探・trip.com（2ソース一致）',
+      verifiedDate: '2026-09-13',
+      note: '新千歳空港駅→千歳駅 直通7分・290円',
+    }),
+  },
+  {
+    match: '苫小牧',
+    airport: '新千歳空港',
+    durationMin: 35,
+    label: '🚃 JR快速エアポート等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: '駅探',
+      verifiedDate: '2026-09-13',
+      note: '快速エアポート→南千歳乗換→千歳線/室蘭本線 約31〜38分・700円',
+    }),
+  },
+  {
+    match: '小樽',
+    airport: '新千歳空港',
+    durationMin: 80,
+    label: '🚃 快速エアポート等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: 'JR北海道公式・複数まとめサイト',
+      verifiedDate: '2026-09-13',
+      note: '最速の特別快速で約73分、通常の快速で約80〜90分',
+    }),
+  },
+  {
+    match: 'ニセコ',
+    airport: '新千歳空港',
+    durationMin: 150,
+    label: '🚌 高速バス等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: 'トラベリスト等の複数サイト',
+      verifiedDate: '2026-09-13',
+      note: '直行バス 約150〜180分・3,000〜4,000円',
+      caveat: '新千歳空港⇔ニセコの直行バスは冬季（12〜3月頃）中心の運行です。夏季は直行便がなくJR（小樽・倶知安経由）で約3時間30分〜4時間かかります',
+    }),
+  },
+  {
+    match: '洞爺湖',
+    airport: '新千歳空港',
+    durationMin: 120,
+    label: '🚃 JR特急＋バス等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: '洞爺湖温泉観光協会公式',
+      verifiedDate: '2026-09-13',
+      note: 'JR特急（南千歳乗換）で洞爺駅まで約90分＋道南バスで洞爺湖温泉まで約20分',
+      caveat: '空港からの直行高速バスはありません。札幌乗り継ぎのバス利用だと約4時間10分かかります',
+    }),
+  },
+  {
+    match: '登別',
+    airport: '新千歳空港',
+    durationMin: 60,
+    label: '🚃 特急等',
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: '駅探',
+      verifiedDate: '2026-09-13',
+      note: '乗車時間のみ約45分。接続待ちを含めた実際は約54〜85分',
+    }),
+  },
+  {
+    match: '積丹',
+    airport: '新千歳空港',
+    durationMin: 180,
+    label: '🚃 快速エアポート・バス等',
+    // 快速エアポートで札幌駅(約37分)→函館本線で小樽駅(約40分)→路線バス積丹線で美国(約80分)。
+    reliability: reliability(RELIABILITY.RESEARCHED, {
+      source: 'hondarent等の複数サイト',
+      verifiedDate: '2026-09-13',
+      note: '乗車時間の合計だけで約157分。乗り換え待ちを含め180〜200分',
+      caveat: '積丹に鉄道はなく、札幌・小樽での2回の乗り換えが必要です',
+    }),
+  },
+];
+
+// どのテーブル項目にも当たらない目的地に使う既定値
+const AIRPORT_LOCAL_TRANSIT_DEFAULT = {
+  airport: '新千歳空港',
+  durationMin: 50,
+  label: '🚃 快速エアポート等',
+  reliability: reliability(RELIABILITY.ESTIMATED, { note: '新千歳空港→札幌方面の概算。実ダイヤ未確認' }),
+};
+
+function lookupAirportLocalTransit(destName) {
+  for (const entry of AIRPORT_LOCAL_TRANSIT) {
+    if (destName.includes(entry.match)) return entry;
+  }
+  return AIRPORT_LOCAL_TRANSIT_DEFAULT;
 }
 
 function generateFlightTimeline(stationName, destName, departTimeStr) {
   const normStation = stationName.replace(/駅$/, '');
-  let airportTransferTime = 90;
-  let airportTransText = '🚃 在来線等（約90分）';
-  let airport = '羽田空港(または主要空港)';
-  let flightSchedule = ['08:00', '10:30', '13:00', '16:00', '18:30'];
-  let overrideFlightTime = null;
-  
-  if (['新青森', '青森', '八戸'].includes(normStation)) {
-    airport = '青森空港(または三沢空港)';
-    airportTransferTime = 40;
-    airportTransText = '🚌 リムジンバス等（約40分）';
-    flightSchedule = ['09:50', '11:45', '14:25', '19:40'];
-    overrideFlightTime = 45;
-  } else if (['秋田'].includes(normStation)) {
-    airport = '秋田空港';
-    airportTransferTime = 40;
-    airportTransText = '🚌 リムジンバス等（約40分）';
-    flightSchedule = ['09:40', '19:00'];
-    overrideFlightTime = 55;
-  } else if (['盛岡', '一ノ関'].includes(normStation)) {
-    airport = 'いわて花巻空港';
-    airportTransferTime = 45;
-    airportTransText = '🚌 特急バス等（約45分）';
-    flightSchedule = ['11:55', '15:20', '18:50'];
-    overrideFlightTime = 55;
-  } else if (['仙台', '古川'].includes(normStation)) {
-    airport = '仙台空港';
-    airportTransferTime = 30;
-    airportTransText = '🚃 仙台空港アクセス線（約30分）';
-    flightSchedule = ['08:30', '10:15', '12:00', '14:45', '17:30', '19:00'];
-    overrideFlightTime = 70;
-  } else if (['山形', '米沢'].includes(normStation)) {
-    airport = '山形空港';
-    airportTransferTime = 30;
-    airportTransText = '🚌 シャトルバス（約30分）';
-    flightSchedule = ['08:45', '16:30'];
-    overrideFlightTime = 75;
-  } else if (['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'].includes(normStation)) {
-    if (destName.includes('函館')) {
-      airportTransferTime = normStation === '宇都宮' ? 120 : 90;
-      airportTransText = `🚗 自家用車・高速バス等（約${airportTransferTime}分）`;
-      airport = '仙台空港';
-      flightSchedule = ['10:45', '14:00']; 
-    } else {
-      airportTransferTime = ['那須塩原', '宇都宮'].includes(normStation) ? 90 : 60;
-      airportTransText = `🚗 自家用車等（約${airportTransferTime}分）`;
-      airport = '福島空港';
-      flightSchedule = ['10:30']; 
-    }
-  } else if (['札幌', '函館', '新函館北斗', '旭川', '帯広', '釧路', '網走', '稚内'].includes(normStation)) {
-    airport = '丘珠空港(または最寄り空港)';
-    airportTransferTime = 30;
-    airportTransText = '🚌 連絡バス（約30分）';
-    overrideFlightTime = 40;
-  }
+
+  // 出発地 → 空港（AIRPORT_ACCESS）と 到着空港 → 目的地（AIRPORT_LOCAL_TRANSIT）は
+  // どちらもテーブル引き。分岐の順序に依存するため、配列の順序を変えないこと
+  const access = lookupAirportAccess(normStation, destName);
+  const airport = access.airport;
+  const airportTransferTime = access.durationMin;
+  const airportTransText = `${access.label}（約${access.durationMin}分）`;
+  const flightSchedule = access.flightSchedule;
+  const overrideFlightTime = access.overrideFlightTime;
 
   const flightTime = overrideFlightTime ? overrideFlightTime : (destName.includes('函館') ? 70 : 80);
-  let localTransfer = 50;
-  let localTransText = '🚃 快速エアポート等（約50分）';
-  let destAirport = '新千歳空港';
-  
-  if (destName.includes('函館')) {
-    destAirport = '函館空港';
-    localTransfer = 20;
-    localTransText = '🚖 連絡バス・タクシー等（約20分）';
-  } else if (destName.includes('江差')) {
-    // 函館空港→江差：函館空港連絡バス（函館帝産バス）で函館駅前まで約20分、
-    // 函館バス610系統「函館・江差線」で函館駅前→江差ターミナルまで約148分。
-    // 乗り継ぎ待ちを含めた実際の所要は約2時間30分〜3時間程度（函館バス公式時刻表・函館タクシー公式で確認、要検証日2026-09-13）。
-    // 旧データの90分は実態の約半分で、大幅な過小評価だったため修正。
-    destAirport = '函館空港';
-    localTransfer = 180;
-    localTransText = '🚌 バス等（約180分）';
-  } else if (destName.includes('旭川')) {
-    destAirport = '旭川空港';
-    localTransfer = 40;
-    localTransText = '🚌 連絡バス等（約40分）';
-  } else if (destName.includes('富良野')) {
-    // 旭川空港→富良野駅前：ふらのバス「快速ラベンダー号」約61分（2ソース一致）。要検証日2026-09-13
-    destAirport = '旭川空港';
-    localTransfer = 60;
-    localTransText = '🚌 連絡バス等（約60分）';
-  } else if (destName.includes('美瑛')) {
-    // 旭川空港→美瑛駅：ふらのバス「快速ラベンダー号」約16分（美瑛町観光協会公式・NAVITIME/ジョルダン各社時刻表で一致、要検証日2026-09-13）。
-    // 旧データは40分としていたが実際の2.5倍近い誤りだったため修正。
-    destAirport = '旭川空港';
-    localTransfer = 16;
-    localTransText = '🚌 連絡バス等（約16分）';
-  } else if (destName.includes('網走')) {
-    destAirport = '女満別空港';
-    localTransfer = 30;
-    localTransText = '🚌 連絡バス（約30分）';
-  } else if (destName.includes('知床')) {
-    // 女満別空港→ウトロ温泉バスターミナル：知床エアポートライナーで約136分（2時間16分）・3,300円
-    // （斜里バス系列の運行情報で確認、要検証日2026-09-13）。旧データの100分は実態より短かったため修正。
-    // ⚠ この直行バスは冬季（流氷期）・夏季の季節限定運行で、通年運行ではない点は未反映。
-    destAirport = '女満別空港';
-    localTransfer = 136;
-    localTransText = '🚌 知床エアポートライナー等（約136分）';
-  } else if (destName.includes('釧路')) {
-    destAirport = 'たんちょう釧路空港';
-    localTransfer = 45;
-    localTransText = '🚌 連絡バス（約45分）';
-  } else if (destName.includes('摩周湖')) {
-    // 釧路空港→摩周駅（弟子屈町）：公共交通では連絡バスで釧路駅まで約45分＋JR釧網線で摩周駅まで約75分＝
-    // 乗車時間だけで約120分、乗り継ぎ待ちを含め130〜150分程度（たびらい・弟子屈なび等で確認、要検証日2026-09-13）。
-    // ※車・タクシー直行なら弟子屈なび公式で「1時間強」との記載もあるが、本アプリは乗換案内前提のため
-    // 公共交通ベースの数値を採用。旧データの60分は車移動の値に近く、公共交通としては過小評価。
-    destAirport = 'たんちょう釧路空港';
-    localTransfer = 130;
-    localTransText = '🚌＋🚃 連絡バス・JR等（約130分）';
-  } else if (destName.includes('根室')) {
-    // 釧路空港→根室駅：連絡バスで釧路駅まで約45分＋JR根室本線で根室駅まで約131〜162分＝
-    // 乗車時間だけで176〜207分、乗り継ぎ待ちを含めるとさらに長くなる。
-    // 別ルート（バス乗り継ぎのみ）では所要4時間29分（269分）との情報もあり（駅探・バス比較なび等で確認、要検証日2026-09-13）。
-    // 旧データの120分は実態の半分程度で大幅な過小評価だったため修正。
-    destAirport = 'たんちょう釧路空港';
-    localTransfer = 200;
-    localTransText = '🚌＋🚃 連絡バス・JR等（約200分）';
-  } else if (destName.includes('帯広')) {
-    destAirport = 'とかち帯広空港';
-    localTransfer = 40;
-    localTransText = '🚌 連絡バス（約40分）';
-  } else if (destName.includes('稚内')) {
-    destAirport = '稚内空港';
-    localTransfer = 30;
-    localTransText = '🚌 連絡バス（約30分）';
-  } else if (destName.includes('千歳')) {
-    // 新千歳空港駅→千歳駅：JR千歳線 直通7分・290円（駅探・trip.comの2ソース一致、要検証日2026-09-13）。
-    // 旧データは「タクシー等（約10分）」としていたが、実際は徒歩圏内の隣駅でJR直通の方が速く安い。
-    localTransfer = 7;
-    localTransText = '🚃 JR千歳線 等（約7分）';
-  } else if (destName.includes('苫小牧')) {
-    // 新千歳空港駅→苫小牧駅：JR（快速エアポート→南千歳乗換→千歳線/室蘭本線）約31〜38分・700円（駅探で確認、要検証日2026-09-13）。
-    // 道南バス直行便は実際には約71〜76分かかり「バス約30分」は誤り（乗り物種別を誤認していた）。
-    localTransfer = 35;
-    localTransText = '🚃 JR快速エアポート等（約35分）';
-  } else if (destName.includes('小樽')) {
-    // 新千歳空港駅→小樽駅：JR快速エアポート直通、最速の特別快速で約73分・通常の快速で約80〜90分
-    // （JR北海道公式・複数まとめサイトで一致、要検証日2026-09-13）。旧データの90分は上限に近いやや長めの値だったため80分に修正。
-    localTransfer = 80;
-    localTransText = '🚃 快速エアポート等（約80分）';
-  } else if (destName.includes('ニセコ')) {
-    // 新千歳空港⇔ニセコ直行バス（ニセコバス等）は冬季（12〜3月頃）中心の運行で約150〜180分・3,000〜4,000円
-    // （トラベリスト等の複数サイトで一致、要検証日2026-09-13）。
-    // ⚠ 夏季は直行バスがなく、JR（小樽・倶知安経由）で乗り継ぎ約3時間30分〜4時間かかる点は未反映。
-    localTransfer = 150;
-    localTransText = '🚌 高速バス等（約150分）';
-  } else if (destName.includes('洞爺湖')) {
-    // 新千歳空港→洞爺湖温泉：JR特急（南千歳乗換）で洞爺駅まで約90分＋道南バス洞爺湖温泉まで約20分＝計約2時間
-    // （洞爺湖温泉観光協会公式で確認、要検証日2026-09-13）。
-    // 旧データは「高速バス等（約150分）」としていたが、実際は空港からの直行高速バスは無く
-    // 札幌乗り継ぎだと約4時間10分かかる。乗り物種別・所要時間とも誤りだったためJR経由に修正。
-    localTransfer = 120;
-    localTransText = '🚃 JR特急＋バス等（約120分）';
-  } else if (destName.includes('登別')) {
-    // 新千歳空港駅→登別駅：JR（快速エアポート→南千歳乗換→特急北斗/すずらん）で乗車時間のみ約45分、
-    // 接続待ちを含めた実際の所要は約54〜85分と乗り継ぎにより幅がある（駅探で確認、要検証日2026-09-13）。
-    // 60分は実測レンジの下寄りに位置する妥当な代表値のため据え置き。
-    localTransfer = 60;
-    localTransText = '🚃 特急等（約60分）';
-  } else if (destName.includes('積丹')) {
-    // 新千歳空港→積丹（美国）：積丹に鉄道はなく、快速エアポートで札幌駅(約37分)→
-    // 函館本線で小樽駅(約40分)→路線バス積丹線で美国(約80分)の順に乗り継ぐ経路が実質唯一のルート。
-    // 乗車時間の合計だけで約157分、乗り換え待ちを含めると180〜200分程度（hondarent等の複数サイトで一致、要検証日2026-09-13）。
-    // 旧データの150分は乗り換え待ちを含まない値に近く、実態はやや長め。
-    localTransfer = 180;
-    localTransText = '🚃 快速エアポート・バス等（約180分）';
-  }
+  const local = lookupAirportLocalTransit(destName);
+  const localTransfer = local.durationMin;
+  const localTransText = `${local.label}（約${local.durationMin}分）`;
+  const destAirport = local.airport;
 
-  const REQUIRED_SECURE_TIME = 60; 
+
+  const REQUIRED_SECURE_TIME = 60;
   let totalMins = 0;
-  
+
   let t = departTimeStr;
   let timeline = [];
   const pushNode = (time, text) => timeline.push({ type: 'node', time, text });
-  const pushEdge = (text) => timeline.push({ type: 'edge', text });
+  // 移動区間には必ず reliability を添える。省略した区間は「目安」扱いになる
+  // durationMin は復路の逆算に使う。移動以外の注意書き行は null のままにする
+  const pushEdge = (text, rl = null, durationMin = null) => timeline.push({ type: 'edge', text, reliability: rl, durationMin });
+
+  // フライトの便は実ダイヤではなく模擬ダイヤのため、搭乗待ち・フライト自体は常に ESTIMATED
+  const flightReliability = reliability(RELIABILITY.ESTIMATED, {
+    note: '便の時刻はアプリの模擬ダイヤです。実際の運航ダイヤは航空会社サイトでご確認ください',
+  });
 
   pushNode(t, `${normStation}（ご自宅周辺） 発`);
-  pushEdge(airportTransText);
+  pushEdge(airportTransText, access.reliability, airportTransferTime);
   t = addMins(t, airportTransferTime);
   totalMins += airportTransferTime;
   pushNode(t, `${airport} 着`);
-  
+
   const readyToFly = addMins(t, REQUIRED_SECURE_TIME);
   let flightDepart = findNextDeparture(readyToFly, flightSchedule);
   
@@ -1959,29 +2354,138 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   let waitTime = diffMins(t, flightDepart);
   if (waitTime > 0) {
     if (waitTime >= 180) {
+      // これは警告文であって移動区間ではないため、信頼度バッジは付けない
       pushEdge(`⚠️ ご注意：ご希望時刻に近い便がないため、大幅な待ち時間が発生しています`);
     }
-    pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`);
+    pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`, flightReliability, waitTime);
     t = addMins(t, waitTime);
     totalMins += waitTime;
   }
   pushNode(t, `${airport} 発${flightNote}`);
-  
-  pushEdge(`✈️ フライト（約${flightTime}分）`);
+
+  pushEdge(`✈️ フライト（約${flightTime}分）`, flightReliability, flightTime);
   t = addMins(t, flightTime);
   totalMins += flightTime;
   pushNode(t, `${destAirport} 着`);
-  
-  pushEdge(localTransText);
+
+  pushEdge(localTransText, local.reliability, localTransfer);
   t = addMins(t, localTransfer);
   totalMins += localTransfer;
   pushNode(t, `${destName.replace('北海道', '')} 着`);
 
-  return { time: totalMins, timeline, totalMins };
+  return { time: totalMins, timeline, totalMins, reliabilityLevel: summarizeTimelineReliability(timeline) };
 }
 
-function compareTransportRoutes(stationName, destName, departTimeStr = '10:00') {
-  const shinkansen = generateShinkansenTimeline(stationName, destName, departTimeStr);
+// 往路のタイムラインを「地点の列」と「移動区間の列」に分解する。
+//
+// タイムラインは node/edge が厳密に交互に並んでいるとは限らない。
+// 例：「宇都宮駅 発 → ☕駅での待ち → 🚄やまびこ → 仙台駅 着」のように
+// edge が2つ続く（待ち + 乗車）。そのため、待ち区間は「直後の移動区間に付随するもの」
+// として扱う。搭乗待ちは飛行機に乗る空港に、乗換待ちは乗り換える駅に紐づくので、
+// この対応づけなら復路に反転しても待ち時間が正しい地点に残る。
+function decomposeRouteTimeline(timeline) {
+  const places = [];
+  const moves = [];
+  let pendingWait = null;
+
+  for (const item of timeline) {
+    if (item.type === 'node') {
+      // 「◯◯ 発」「◯◯ 発 ※ANA 1日1便」などから地点名だけを取り出す
+      const place = item.text.replace(/\s(発|着).*$/, '');
+      // 同じ地点の「着」「発」が連続する場合は1つの地点に畳む
+      if (places[places.length - 1] !== place) places.push(place);
+      continue;
+    }
+    if (item.durationMin == null) continue; // 警告文などの移動でない行は無視する
+    if (item.text.includes('待ち')) {
+      pendingWait = item;
+      continue;
+    }
+    moves.push({ move: item, wait: pendingWait });
+    pendingWait = null;
+  }
+
+  return { places, moves };
+}
+
+// 往路のタイムラインを反転して復路（目的地 → 自宅）のタイムラインを作る。
+//
+// 【なぜ往路の反転なのか】
+// generateShinkansenTimeline / generateFlightTimeline は「出発地 → 目的地」専用で、
+// 引数を入れ替えて呼ぶと（例：generateShinkansenTimeline('知床','宇都宮')）
+// 分岐条件のどれにも当たらず、既定値の255分・新千歳空港などデタラメな行程になる。
+// 所要時間テーブルは往復で同じ値を使うため、往路の区間を逆順に並べ替え、
+// 復路の出発時刻から時刻を振り直すのが、手元のデータで作れる唯一まともな復路である。
+//
+// 地点数と移動区間数が噛み合わない（想定外の形の）タイムラインは、
+// 無理に反転せず null を返す。行程を捏造しないこと。
+function reverseRouteTimeline(route, departTimeStr) {
+  if (!route || !route.timeline || !route.timeline.length || !departTimeStr) return null;
+
+  const { places, moves } = decomposeRouteTimeline(route.timeline);
+  if (places.length < 2 || moves.length < 1) return null;
+  if (places.length !== moves.length + 1) return null;
+
+  const revPlaces = [...places].reverse();
+  const revMoves = [...moves].reverse();
+
+  // 待ち時間は往路の仮想ダイヤ由来の値なので、復路では「待ちの目安」に格下げする
+  const waitRl = reliability(RELIABILITY.ESTIMATED, {
+    note: '往路の所要時間から求めた復路の目安です。乗り換え・搭乗の待ち時間は実際のダイヤで変わります',
+  });
+
+  let t = departTimeStr;
+  let totalMins = 0;
+  const timeline = [];
+
+  revPlaces.forEach((place, idx) => {
+    const isFirst = idx === 0;
+    const isLast = idx === revPlaces.length - 1;
+    timeline.push({ type: 'node', time: t, text: `${place} ${isFirst ? '発' : '着'}` });
+
+    if (isLast) return;
+
+    const { move, wait } = revMoves[idx];
+
+    // 中間地点では「着」のあとに待ち時間を挟み、あらためて「発」を出す
+    if (!isFirst && wait) {
+      timeline.push({ type: 'edge', text: wait.text, durationMin: wait.durationMin, reliability: waitRl });
+      t = addMins(t, wait.durationMin);
+      totalMins += wait.durationMin;
+      timeline.push({ type: 'node', time: t, text: `${place} 発` });
+    } else if (isFirst && wait) {
+      // 出発地点での待ち（往路の「駅での待ち」に相当）はそのまま先頭に置く
+      timeline.push({ type: 'edge', text: wait.text, durationMin: wait.durationMin, reliability: waitRl });
+      t = addMins(t, wait.durationMin);
+      totalMins += wait.durationMin;
+    }
+
+    timeline.push({
+      type: 'edge', text: move.text, durationMin: move.durationMin, reliability: move.reliability,
+    });
+    t = addMins(t, move.durationMin);
+    totalMins += move.durationMin;
+  });
+
+  return {
+    time: totalMins,
+    totalMins,
+    timeline,
+    reliabilityLevel: summarizeTimelineReliability(timeline),
+    // この行程が往路の反転で作られたことを、表示側が利用者に明示できるようにする
+    isReversedFromOutbound: true,
+  };
+}
+
+// タイムライン中の移動区間から、行程全体として最も低い信頼度を求める
+function summarizeTimelineReliability(timeline) {
+  return worstReliabilityLevel(
+    timeline.filter(i => i.type === 'edge' && i.reliability).map(i => i.reliability.level)
+  );
+}
+
+function compareTransportRoutes(stationName, destName, departTimeStr = '10:00', departDateStr = null) {
+  const shinkansen = generateShinkansenTimeline(stationName, destName, departTimeStr, departDateStr);
   const flight = generateFlightTimeline(stationName, destName, departTimeStr);
 
   let recommended = 'flight';

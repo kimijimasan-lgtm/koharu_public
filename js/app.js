@@ -320,7 +320,7 @@ const App = {
     // Check if the route is valid and under 5 hours
     const station = this.getSelectedStationName();
     if (station && station.includes('駅')) {
-        const routeInfo = compareTransportRoutes(station, dest.name, this.state.inputs.departureTime || '10:00');
+        const routeInfo = compareTransportRoutes(station, dest.name, this.state.inputs.departureTime || '10:00', this.state.inputs.departureDate || null);
         const recommendedRoute = routeInfo[routeInfo.recommended];
         if (!recommendedRoute || recommendedRoute.time === 0) {
             alert('ご指定の出発時刻では、本日中に到着できる交通機関がありません。\n出発時刻を早めるか、別の出発地をご検討ください。');
@@ -345,7 +345,8 @@ const App = {
     let transportHtml = '';
     if (stationName && dest.name) {
       const departTimeStr = document.getElementById('departure-time').value || '10:00';
-      const comparison = compareTransportRoutes(stationName, dest.name, departTimeStr);
+      const departDateStr = document.getElementById('departure-date')?.value || null;
+      const comparison = compareTransportRoutes(stationName, dest.name, departTimeStr, departDateStr);
       // Save recommended transport mode for reuse in hotel step
       this.state.recommendedTransport = comparison.recommended;
       
@@ -360,7 +361,8 @@ const App = {
           if (item.type === 'node') {
             return `<div class="timeline-node"><span class="tl-time">${item.time}</span> <span class="tl-text">${item.text}</span></div>`;
           } else {
-            return `<div class="timeline-edge">${item.text}</div>`;
+            // 区間ごとの確定/概算/目安をバッジで示す
+            return `<div class="timeline-edge">${item.text}${this.renderReliabilityBadge(item.reliability)}${this.renderReliabilityCaveat(item.reliability)}</div>`;
           }
         }).join('');
       };
@@ -430,6 +432,7 @@ const App = {
       transportHtml = `
         <div class="transport-comparison">
           <div class="comparison-title">💡 ${conclusionText}</div>
+          ${this.renderReliabilityLegend()}
           <div class="comparison-grid">
             ${shinHtml}
             ${fliHtml}
@@ -841,8 +844,8 @@ const App = {
     return minutes * 500;
   },
 
-  makeTransfer(icon, title, duration, cost) {
-    return { type: 'transfer', icon, title, duration: duration, cost: cost };
+  makeTransfer(icon, title, duration, cost, rl = null) {
+    return { type: 'transfer', icon, title, duration: duration, cost: cost, reliability: rl };
   },
   
   lookupAreaTaxi(area, dest) {
@@ -918,22 +921,32 @@ const App = {
     return warnings;
   },
 
+  // 現地移動はいずれも「駅からの所要分の差」から機械的に導いた値であり、
+  // 実際の経路検索の結果ではない。運賃も所要分から距離を逆算した概算なので、
+  // すべて ESTIMATED（目安）として扱う
   estimateMovement(fromLoc, toLoc, hotel, dest) {
+    const walkRl = reliability(RELIABILITY.ESTIMATED, {
+      note: '同一エリア内とみなした概算です',
+    });
+    const taxiRl = reliability(RELIABILITY.ESTIMATED, {
+      note: '駅からの所要時間の差から求めた概算です。運賃は所要分から距離を逆算しています',
+    });
+
     if (fromLoc.area === toLoc.area && fromLoc.area !== '__unknown__' && fromLoc.area !== '__station__') {
-      return this.makeTransfer('🚶', '徒歩で移動', '約5分', null);
+      return this.makeTransfer('🚶', '徒歩で移動', '約5分', null, walkRl);
     }
     const fromTaxi = fromLoc.taxiFromCityStation;
     const toTaxi = toLoc.taxiFromCityStation;
     if (fromTaxi != null && toTaxi != null) {
       const diff = Math.abs(fromTaxi - toTaxi);
       const est = Math.max(10, diff + 5);
-      return this.makeTransfer('🚕', 'タクシー等で移動', `約${est}分`, `¥${this.estimateTaxiFare(dest.name, est).toLocaleString()}`);
+      return this.makeTransfer('🚕', 'タクシー等で移動', `約${est}分`, `¥${this.estimateTaxiFare(dest.name, est).toLocaleString()}`, taxiRl);
     }
     if (fromTaxi != null || toTaxi != null) {
       const est = fromTaxi != null ? fromTaxi : toTaxi;
-      return this.makeTransfer('🚕', 'タクシー等で移動', `約${est}分`, `¥${this.estimateTaxiFare(dest.name, est).toLocaleString()}`);
+      return this.makeTransfer('🚕', 'タクシー等で移動', `約${est}分`, `¥${this.estimateTaxiFare(dest.name, est).toLocaleString()}`, taxiRl);
     }
-    return this.makeTransfer('🔄', '移動', '', null);
+    return this.makeTransfer('🔄', '移動', '', null, taxiRl);
   },
 
   fillMovementGaps(events, hotel, dest) {
@@ -1144,6 +1157,82 @@ const App = {
     });
   },
 
+  // HTML属性に値を埋めるためのエスケープ（出典文字列に " や < が混ざっても壊れないように）
+  escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  },
+
+  // 信頼度バッジ。色だけに頼らず文字（確定／概算／目安）と枠線で区別する（白黒印刷対応）
+  renderReliabilityBadge(rl) {
+    if (!rl) return '';
+    const label = RELIABILITY_LABELS[rl.level];
+    if (!label) return '';
+    const tip = this.escapeHtml(describeReliability(rl));
+    const mark = rl.caveat ? '<span class="rl-caveat-mark" aria-hidden="true">⚠</span>' : '';
+    return `<span class="rl-badge ${label.className}" title="${tip}">${label.text}${mark}</span>`;
+  },
+
+  // caveat（季節運行・所要の幅など、行程を組み替える判断材料）は本文としても出す。
+  // 印刷時は title 属性が読めないため、バッジのツールチップだけに頼らない
+  renderReliabilityCaveat(rl) {
+    if (!rl || !rl.caveat) return '';
+    return `<div class="rl-caveat">※ ${this.escapeHtml(rl.caveat)}</div>`;
+  },
+
+  // 信頼度の凡例（しおりのスケジュール見出し直下に1回だけ出す）
+  renderReliabilityLegend() {
+    return `
+      <div class="rl-legend">
+        <strong>データの見かた：</strong>
+        <span class="rl-badge rl-verified">確定</span> 公式時刻表・公示運賃で確認済み
+        <span class="rl-badge rl-researched">概算</span> 複数ソースで確認した実測の代表値
+        <span class="rl-badge rl-estimated">目安</span> アプリの自動計算（実ダイヤ未確認）
+        <div class="rl-legend-note">「概算」「目安」の時刻・料金は実際の乗換案内で必ずご確認ください。⚠ が付く項目には季節運行など重要な注意があります。</div>
+      </div>
+    `;
+  },
+
+  // 交通ルート（generateShinkansenTimeline / generateFlightTimeline の結果）を
+  // しおり用に描画する。比較画面と違い、印刷して持ち歩く前提なので
+  // バッジと注意書きを必ず一緒に出す
+  renderRouteTimeline(route, heading) {
+    if (!route || !route.timeline || !route.timeline.length) return '';
+    const rows = route.timeline.map(item => {
+      if (item.type === 'node') {
+        return `<div class="route-node"><span class="route-time">${item.time || ''}</span><span class="route-text">${item.text}</span></div>`;
+      }
+      return `
+        <div class="route-edge">
+          <span class="route-edge-text">${item.text}</span>
+          ${this.renderReliabilityBadge(item.reliability)}
+          ${this.renderReliabilityCaveat(item.reliability)}
+        </div>
+      `;
+    }).join('');
+
+    const h = Math.floor(route.totalMins / 60);
+    const m = route.totalMins % 60;
+    const durText = h > 0 ? `${h}時間${m > 0 ? m + '分' : ''}` : `${m}分`;
+
+    // 往路を反転して作った行程は、その旨をはっきり書く（利用者が裏取りの必要性を判断できるように）
+    const reversedNote = route.isReversedFromOutbound
+      ? `<div class="rl-caveat">※ この復路は往路の所要時間を逆順に並べて算出した目安です。乗り換え・搭乗の待ち時間は実際のダイヤで変わります。</div>`
+      : '';
+
+    return `
+      <div class="route-card">
+        <div class="route-card-header">
+          <span>${heading}</span>
+          <span class="route-card-total">所要 約${durText}</span>
+        </div>
+        ${reversedNote}
+        ${rows}
+      </div>
+    `;
+  },
+
   renderTimeline(events) {
     let html = '<div class="timeline">';
     events.forEach(e => {
@@ -1160,6 +1249,8 @@ const App = {
             <div class="timeline-content">
               <span class="transfer-icon">${e.icon}</span>
               <span class="transfer-label">${e.title}</span>\n              ${e.cost ? ` <span class="transfer-cost" style="margin-left: 10px; color: #e67e22; font-weight: bold; font-size: 0.85em;">${e.cost}</span>` : ""}
+              ${this.renderReliabilityBadge(e.reliability)}
+              ${this.renderReliabilityCaveat(e.reliability)}
               ${e.detail ? `<div class="timeline-detail" style="margin-top: 5px;">${e.detail}</div>` : ''}
             </div>
           </div>
@@ -1228,9 +1319,32 @@ const App = {
     let currentMin = arrMin;
     let day1Events = [];
     
+    // ── 往復の交通ルートを生成する ──
+    // しおりに実際の行程として描画し、区間ごとに確定/概算/目安のバッジを出す。
+    // 以前は「右の経路図を参照」というプレースホルダのみで、
+    // 生成済みのタイムラインはこの画面に一切出ていなかった
+    const itineraryStation = this.getSelectedStationName();
+    const outboundRoute = itineraryStation
+      ? (() => {
+          const cmp = compareTransportRoutes(
+            itineraryStation, dest.name, inputs.departureTime || '10:00', inputs.departureDate || null
+          );
+          return cmp[cmp.recommended] || null;
+        })()
+      : null;
+    // 復路は往路の反転で作る。generateShinkansenTimeline 等は「出発地→目的地」専用で、
+    // 引数を入れ替えて呼ぶと分岐に当たらず既定値（255分・新千歳空港など）の
+    // でたらめな行程になってしまうため
+    const returnRoute = reverseRouteTimeline(outboundRoute, depInput);
+
     // Prepend home departure based on uploaded images
     day1Events.push({ time: '', title: '自宅・出発地を出発', type: 'transport', icon: '🏠' });
-    day1Events.push({ type: 'transfer', title: '行きのルート（右の経路図を参照）', icon: '🚄', duration: null });
+    day1Events.push({
+      type: 'transfer', title: '行きのルート（右の「行きの交通ルート」を参照）', icon: '🚄', duration: null,
+      reliability: outboundRoute && outboundRoute.reliabilityLevel
+        ? reliability(outboundRoute.reliabilityLevel, { note: '区間ごとの確からしさは右の交通ルートをご覧ください' })
+        : null,
+    });
     
     day1Events.push({ time: this.minToTime(currentMin), title: `${dest.cityStation || dest.station} 到着`, type: 'transport', icon: '🚉' });
     
@@ -1325,7 +1439,12 @@ const App = {
     day3Events.push({ time: this.minToTime(stationArrMin), title: `${dest.cityStation || dest.station} 到着（出発の準備）`, type: 'transport', icon: '🚉' });
     day3Events.push({ time: this.minToTime(depMin), title: `${dest.cityStation || dest.station} 出発`, type: 'transport', icon: '🚄' });
     
-    day3Events.push({ type: 'transfer', title: '帰りのルート（右の経路図を参照）', icon: '🚄', duration: null });
+    day3Events.push({
+      type: 'transfer', title: '帰りのルート（右の「帰りの交通ルート」を参照）', icon: '🚄', duration: null,
+      reliability: returnRoute && returnRoute.reliabilityLevel
+        ? reliability(returnRoute.reliabilityLevel, { note: '区間ごとの確からしさは右の交通ルートをご覧ください' })
+        : null,
+    });
     day3Events.push({ time: '', title: '自宅・出発地に帰着', type: 'transport', icon: '🏠' });
 
     day1Events = this.fillMovementGaps(day1Events, hotel, dest);
@@ -1367,19 +1486,19 @@ const App = {
         <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:#27ae60;">💰 2名様 旅行代金（概算）</h3>
         <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem;">
           <tr style="border-bottom: 1px dashed #ccc;">
-             <td style="padding: 10px 0;">🚅 新幹線・交通費 (東京方面目安)</td>
+             <td style="padding: 10px 0;">🚅 新幹線・交通費 (東京方面目安)${this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '東京-函館間を想定した固定値です。出発地・目的地による差は反映していません' }))}</td>
              <td style="text-align: right; padding: 10px 0;">¥${costs.shinkansen.toLocaleString()}</td>
           </tr>
           <tr style="border-bottom: 1px dashed #ccc;">
-             <td style="padding: 10px 0;">🏨 宿泊代 (${hotel.name} / 2泊)</td>
+             <td style="padding: 10px 0;">🏨 宿泊代 (${hotel.name} / 2泊)${this.renderReliabilityBadge(reliability(RELIABILITY.RESEARCHED, { note: '宿泊プランの公表料金に基づく目安です。時期により変動します' }))}</td>
              <td style="text-align: right; padding: 10px 0;">¥${costs.accommodation.toLocaleString()}</td>
           </tr>
           <tr style="border-bottom: 1px dashed #ccc;">
-             <td style="padding: 10px 0;">🚕 現地タクシー代 (2泊3日分)</td>
+             <td style="padding: 10px 0;">🚕 現地タクシー代 (2泊3日分)${this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '所要分から距離を逆算し、公示運賃を当てはめた概算です' }))}</td>
              <td style="text-align: right; padding: 10px 0;">¥${costs.taxi.toLocaleString()}</td>
           </tr>
           <tr style="border-bottom: 2px solid #333;">
-             <td style="padding: 10px 0;">🍽️ 飲食代 (昼食・夕食目安)</td>
+             <td style="padding: 10px 0;">🍽️ 飲食代 (昼食・夕食目安)${this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '各店の予算帯から求めた概算です' }))}</td>
              <td style="text-align: right; padding: 10px 0;">¥${costs.food.toLocaleString()}</td>
           </tr>
           <tr style="font-weight: bold; font-size: 1.3rem; color: #d35400;">
@@ -1433,13 +1552,17 @@ const App = {
         ${ticketSection}
         ${reservationSection}
         <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
-        
+        ${this.renderReliabilityLegend()}
+
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 ${dest.name}へ到着</h4>
         <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
           <div style="flex: 1; min-width: 300px;">
             ${this.renderTimeline(day1Events)}
           </div>
-          ${img1Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto; break-inside: avoid; page-break-inside: avoid;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 行きの乗換経路</h5><img src="${img1Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
+          <div class="route-column">
+            ${this.renderRouteTimeline(outboundRoute, '🚄 行きの交通ルート')}
+            ${img1Src ? `<div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 行きの乗換経路（実際の検索結果）</h5><img src="${img1Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div>` : ''}
+          </div>
         </div>
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【2日目】 終日フリー・観光</h4>
@@ -1452,7 +1575,10 @@ const App = {
           <div style="flex: 1; min-width: 300px;">
             ${this.renderTimeline(day3Events)}
           </div>
-          ${img3Src ? `<div style="width: 320px; max-width: 100%; flex-shrink: 0; margin: 0 auto; break-inside: avoid; page-break-inside: avoid;"><div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div></div>` : ''}
+          <div class="route-column">
+            ${this.renderRouteTimeline(returnRoute, '🚄 帰りの交通ルート')}
+            ${img3Src ? `<div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路（実際の検索結果）</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div>` : ''}
+          </div>
         </div>
       <div class="checklist-card" style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px; break-inside: avoid; page-break-inside: avoid;">
           <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🎒 持ち物チェックリスト</h3>
