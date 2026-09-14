@@ -2123,7 +2123,10 @@ a.header-partner-badge:hover {
 .day-section-split > .route-column {
   width: 260px;
 }
-@media (max-width: 700px) {
+/* screen専用にする理由：A4印刷の実効幅（余白15mm×2を引くと約680px）が
+   700px未満のため、scaleを付けないとこの分岐が印刷時にも発動してしまい、
+   狭めたはずの右カラム(260px)が全幅まで広がって画像が大きく崩れる */
+@media screen and (max-width: 700px) {
   .day-section-split {
     grid-template-columns: 1fr;
   }
@@ -2227,8 +2230,10 @@ a.header-partner-badge:hover {
 }
 .route-edge-text { vertical-align: middle; }
 
-/* 幅の狭いスマホでは経路カードを本文と同じ1列に落とす */
-@media (max-width: 700px) {
+/* 幅の狭いスマホでは経路カードを本文と同じ1列に落とす。
+   screen専用にする理由は上の .day-section-split と同じ
+   （A4印刷の実効幅が700px未満になり、印刷時にも誤って全幅化するため） */
+@media screen and (max-width: 700px) {
   .route-column { width: 100%; }
 }
 
@@ -2264,6 +2269,14 @@ a.header-partner-badge:hover {
   .route-node { color: #111111 !important; }
   .route-time { color: #14425f !important; }
   .route-edge { color: #333333 !important; border-left-color: #999999 !important; }
+
+  /* A4の印刷可能幅(約680px)は700px未満のため、上のスマホ用ブレークポイントを
+     screen専用にしても、他の要因で.route-columnが崩れた場合に画像が
+     用紙いっぱいまで拡大されると被害が大きい。念のため印刷時の幅を固定する */
+  .route-column {
+    width: 260px !important;
+    margin: 0 auto !important;
+  }
 
   /* ヤフー乗換案内の実画像と内容が重複するアプリ概算カードは、
      折りたたんだまま（未展開）の場合は紙面では丸ごと非表示にする。
