@@ -411,7 +411,7 @@ const App = {
               : '';
             const joinT = sTime && fTime ? '、' : '';
             const fNote = fUnverified
-              ? '\n※飛行機側は直行便の有無・所要時間が未検証のため、合計は目安です。'
+              ? '\n※飛行機側は直行便の有無・所要時間・便の時刻が未検証のため、合計は「空港到着の60分後に搭乗できた場合」の最短の目安です。'
               : '';
             alert('ご指定のルートは ' + sTime + joinT + fTime + ' かかるため、片道5時間（300分）を超えてしまいます。' + fNote + '\n「疲れない旅」の基準を満たさないため、出発地または目的地を変更してください。');
             return false;
@@ -464,7 +464,7 @@ const App = {
       // 「約6時間6分」を確定値として読ませないよう、合計の隣に注記を出す
       const fliUnverified = fli && fli.hasUnverifiedFlightLeg;
       const fliTimeNote = fliUnverified
-        ? `<div class="compare-time-note">※フライトの所要時間が未検証のため、合計は目安です</div>`
+        ? `<div class="compare-time-note">※フライトの所要時間・便の時刻が未検証のため、合計は最短の目安です（空港到着の60分後に搭乗できた場合）</div>`
         : '';
 
       const fliHtml = (fli) ? `
@@ -518,7 +518,7 @@ const App = {
         if (fliUnverified) {
           const pair = fli.flightPair;
           const pairText = pair ? `${pair.from}→${pair.to}` : '利用区間';
-          conclusionText += `<br><span style="font-size: 0.9em; color: #b45309;">※${pairText}の直行便の有無・所要時間が未検証のため、飛行機側の合計は目安です。乗り継ぎになる場合は所要時間が変わります</span>`;
+          conclusionText += `<br><span style="font-size: 0.9em; color: #b45309;">※${pairText}の直行便の有無・所要時間・便の時刻が未検証のため、飛行機側の合計は「空港到着の60分後に搭乗できた場合」の最短の目安です。実際の便の時刻によっては待ち時間が加わり、乗り継ぎになる場合は所要時間が大きく変わります</span>`;
         }
       } else {
          conclusionText = comparison.recommended === 'shinkansen' ? '🚄 【新幹線】推奨' : '✈️ 【飛行機】推奨';
@@ -1379,7 +1379,7 @@ const App = {
     const unverifiedFlightNote = route.hasUnverifiedFlightLeg
       ? `<div class="rl-caveat">※ ${
           route.flightPair ? `${route.flightPair.from}→${route.flightPair.to}の` : ''
-        }直行便の有無・所要時間が未検証のため、上の合計時間は目安です。乗り継ぎになる場合は大きく変わります。航空会社の公式時刻表で必ずご確認ください。</div>`
+        }直行便の有無・所要時間・便の時刻が未検証のため、上の合計時間は「空港到着の60分後に搭乗できた場合」の最短の目安です。実際の便の時刻によっては待ち時間が加わり、乗り継ぎになる場合は大きく変わります。航空会社の公式時刻表で必ずご確認ください。</div>`
       : '';
 
     return `
