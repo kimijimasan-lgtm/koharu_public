@@ -2346,11 +2346,14 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   const readyToFly = addMins(t, REQUIRED_SECURE_TIME);
   let flightDepart = findNextDeparture(readyToFly, flightSchedule);
   
-  let flightNote = '';
-  if (airport === '福島空港') flightNote = ' ※ANA 1日1便';
-  else if (airport === '仙台空港' || airport === '青森空港' || airport === '秋田空港' || airport === 'いわて花巻空港') flightNote = ' ※JAL/ANA/ADO等';
-  else flightNote = ' ※複数便あり';
-  
+  // 就航路線・航空会社・便数は目的地空港ごとに実際の時刻表を確認していない。
+  // 以前は空港名だけで「福島空港→ANA 1日1便」のように断定していたが、
+  // 実際には福島空港から女満別空港への直行便は存在せず、事実と異なる
+  // 具体的な情報（架空の航空会社・便数）を表示していた。
+  // 出発空港と到着空港の組み合わせごとに直行便の有無を検証できていない以上、
+  // 特定の航空会社名・便数は一切書かず、必ず利用者自身の確認を促す表現にする
+  const flightNote = ' ※直行便の有無・便数は要確認（乗り継ぎとなる場合があります）';
+
   let waitTime = diffMins(t, flightDepart);
   if (waitTime > 0) {
     if (waitTime >= 180) {
