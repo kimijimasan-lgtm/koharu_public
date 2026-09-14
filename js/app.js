@@ -261,7 +261,22 @@ const App = {
     this.state.currentStep = step;
     document.querySelectorAll('.step').forEach((el) => el.classList.remove('active'));
     document.getElementById(`step-${step}`).classList.add('active');
+    if (step === 'yahoo-data') this.updateYahooDataLabels();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  // 「ヤフー乗換データの連携」画面の駅名表示を、選択中のエリアに合わせて更新する。
+  // 元テンプレートが函館固定だった名残の要素(id="yahoo-data-*")をエリア名/駅名で上書きする。
+  updateYahooDataLabels() {
+    const destKey = this.resolveDestination(this.state.inputs.destination);
+    const dest = destKey ? DESTINATIONS[destKey] : null;
+    if (!dest) return;
+    const stationName = dest.cityStation || dest.station;
+    document.querySelectorAll('#yahoo-data-station-name-1, #yahoo-data-station-name-2, #yahoo-data-station-name-3').forEach((el) => {
+      el.textContent = stationName;
+    });
+    const destNameEl = document.getElementById('yahoo-data-dest-name');
+    if (destNameEl) destNameEl.textContent = dest.name;
   },
 
   collectInputs() {
@@ -303,7 +318,7 @@ const App = {
     const dest = DESTINATIONS[destKey];
 
     // Check if the route is valid and under 5 hours
-    const station = this.state.inputs.topStation;
+    const station = this.getSelectedStationName();
     if (station && station.includes('駅')) {
         const routeInfo = compareTransportRoutes(station, dest.name, this.state.inputs.departureTime || '10:00');
         const recommendedRoute = routeInfo[routeInfo.recommended];
@@ -1372,7 +1387,7 @@ const App = {
              <td style="text-align: right; padding: 15px 0;">¥${costs.total.toLocaleString()}</td>
           </tr>
         </table>
-        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">※交通費は出発地や時期によって変動します。タクシー代と飲食代はスケジュールに基づく概算です。</p>
+        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">※新幹線・交通費は東京-函館間を想定した概算値（固定¥60,000）です。飛行機利用エリア（稚内・知床・根室等）では実際の航空券代を反映していないため、実際の運賃は別途ご確認ください。タクシー代と飲食代はスケジュールに基づく概算です。</p>
       </div>
     `;
 

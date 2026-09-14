@@ -263,16 +263,16 @@
         </div>
         
         <div class="arrival-departure-input" style="background:white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
-          <h3 style="margin-top:0; font-size: 1.1rem; color: var(--color-primary); border-bottom: 2px solid #eef2f9; padding-bottom: 10px;">⏰ 乗換アプリで調べた「函館駅」の到着/出発時間を教えてください</h3>
-          <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">※この時間をもとに、函館での正確な滞在スケジュールを自動生成します。</p>
-          
+          <h3 style="margin-top:0; font-size: 1.1rem; color: var(--color-primary); border-bottom: 2px solid #eef2f9; padding-bottom: 10px;">⏰ 乗換アプリで調べた「<span id="yahoo-data-station-name-1">函館駅</span>」の到着/出発時間を教えてください</h3>
+          <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">※この時間をもとに、<span id="yahoo-data-dest-name">函館</span>での正確な滞在スケジュールを自動生成します。</p>
+
           <div style="display:flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
             <div style="flex:1; min-width: 200px;">
-              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">行き：函館駅への到着時刻</label>
+              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">行き：<span id="yahoo-data-station-name-2">函館駅</span>への到着時刻</label>
               <input type="time" id="hakodate-arrival-time" value="14:00" style="width:100%; padding: 12px; font-size:1.4rem; border-radius: 8px; border:2px solid #ccc; text-align:center;">
             </div>
             <div style="flex:1; min-width: 200px;">
-              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">帰り：函館駅からの出発時刻</label>
+              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">帰り：<span id="yahoo-data-station-name-3">函館駅</span>からの出発時刻</label>
               <input type="time" id="hakodate-departure-time" value="13:00" style="width:100%; padding: 12px; font-size:1.4rem; border-radius: 8px; border:2px solid #ccc; text-align:center;">
             </div>
           </div>

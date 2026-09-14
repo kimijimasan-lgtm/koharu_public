@@ -1207,6 +1207,108 @@ const LOCAL_TRANSIT_FARES = {
   },
 };
 
+// 函館以外の全19エリア（元からある札幌・旭川・帯広・釧路・網走・稚内、および
+// Phase2で追加した千歳・苫小牧・小樽・ニセコ・洞爺湖・登別・積丹・江差・富良野・
+// 美瑛・摩周湖・知床・根室）は、以前は getTaxiFareData() に個別データが存在せず、
+// app.js の estimateTaxiFare() が「所要分×500円」という距離を一切考慮しない
+// フォールバック計算に頼っていた（函館のような初乗り運賃・加算運賃の仕組みが
+// 存在しなかった）。
+//
+// タクシー運賃は国土交通省地方運輸局が「運賃適用地域」ごとに公示する認可運賃制で、
+// 個々のタクシー会社が独自に決めるものではないため、地区(ゾーン)さえ特定できれば
+// 会社ごとに調べ直さなくても公式の運賃が確定する。函館の初乗り700円/267mごとに100円
+// という既存データも、実は下記と同じ北海道運輸局公示の「函館Ａ地区・普通車・上限運賃」
+// と完全に一致する値だった（函館市公式サイトの表記も同じ公示に基づく）。
+//
+// 【出典】北海道運輸局公示第６１号（令和８年６月２日最終改正、令和８年７月１０日適用）
+//   本文・別紙（自動認可運賃・料金表）:
+//   https://wwwtb.mlit.go.jp/hokkaido/20260526_00003.html
+//   PDF: https://hokuhakyo.or.jp/wphhk2507/wp-content/uploads/2025/07/fare_auto-authorization.pdf
+//   運賃適用地域（市町村→ゾーンの対応）は別添の営業区域表による。
+// 各ゾーンとも「普通車・距離制運賃・上限運賃」の値を採用（函館の既存データと同じ考え方）。
+// verified_date は本公示を確認した日。
+const HOKKAIDO_TAXI_FARE_ZONES = {
+  // 札幌・小樽地区 → 小樽（+ 札幌）
+  sapporo_otaru: {
+    initial_fare: { distance_km: 1.05, yen: 600 },
+    additional_fare: { distance_m: 272, yen: 100 },
+    source: '北海道運輸局公示第61号（札幌・小樽地区）',
+    verified_date: '2026-09-13',
+  },
+  // 千歳・空知・後志地区 → 千歳・ニセコ（倶知安圏）・積丹（岩内余市圏）
+  chitose_sorachi_shiribeshi: {
+    initial_fare: { distance_km: 1.4, yen: 740 },
+    additional_fare: { distance_m: 293, yen: 100 },
+    source: '北海道運輸局公示第61号（千歳・空知・後志地区）',
+    verified_date: '2026-09-13',
+  },
+  // 旭川地区 → 富良野・美瑛（富良野圏）+ 旭川・稚内
+  asahikawa: {
+    initial_fare: { distance_km: 1.31, yen: 750 },
+    additional_fare: { distance_m: 281, yen: 100 },
+    source: '北海道運輸局公示第61号（旭川地区）',
+    verified_date: '2026-09-13',
+  },
+  // 函館Ｂ地区 → 江差（檜山圏）※函館市自体はhakodate_taxi_fare（函館Ａ地区）を別途使用
+  hakodate_b: {
+    initial_fare: { distance_km: 1.4, yen: 700 },
+    additional_fare: { distance_m: 276, yen: 100 },
+    source: '北海道運輸局公示第61号（函館Ｂ地区）',
+    verified_date: '2026-09-13',
+  },
+  // 室蘭地区 → 苫小牧（苫小牧交通圏）・登別（登別市）・洞爺湖（洞爺湖圏）
+  muroran: {
+    initial_fare: { distance_km: 1.3, yen: 700 },
+    additional_fare: { distance_m: 275, yen: 100 },
+    source: '北海道運輸局公示第61号（室蘭地区）',
+    verified_date: '2026-09-13',
+  },
+  // 釧路地区 → 摩周湖/弟子屈（厚岸川上圏）・根室（根室市）+ 釧路
+  kushiro: {
+    initial_fare: { distance_km: 1.4, yen: 800 },
+    additional_fare: { distance_m: 259, yen: 100 },
+    source: '北海道運輸局公示第61号（釧路地区）',
+    verified_date: '2026-09-13',
+  },
+  // 帯広地区 → 帯広
+  obihiro: {
+    initial_fare: { distance_km: 1.4, yen: 750 },
+    additional_fare: { distance_m: 293, yen: 100 },
+    source: '北海道運輸局公示第61号（帯広地区）',
+    verified_date: '2026-09-13',
+  },
+  // 北見地区 → 知床/斜里（斜里圏）+ 網走
+  kitami: {
+    initial_fare: { distance_km: 1.4, yen: 750 },
+    additional_fare: { distance_m: 293, yen: 100 },
+    source: '北海道運輸局公示第61号（北見地区）',
+    verified_date: '2026-09-13',
+  },
+};
+
+// DESTINATIONS の name → 上記ゾーンキーの対応表（運賃適用地域の営業区域表に基づく）
+const TAXI_FARE_ZONE_BY_DEST = {
+  '札幌': 'sapporo_otaru',
+  '小樽': 'sapporo_otaru',
+  '千歳': 'chitose_sorachi_shiribeshi',
+  'ニセコ': 'chitose_sorachi_shiribeshi',
+  '積丹': 'chitose_sorachi_shiribeshi',
+  '旭川': 'asahikawa',
+  '稚内': 'asahikawa',
+  '富良野': 'asahikawa',
+  '美瑛': 'asahikawa',
+  '江差': 'hakodate_b',
+  '苫小牧': 'muroran',
+  '登別': 'muroran',
+  '洞爺湖': 'muroran',
+  '釧路': 'kushiro',
+  '摩周湖': 'kushiro',
+  '根室': 'kushiro',
+  '帯広': 'obihiro',
+  '網走': 'kitami',
+  '知床': 'kitami',
+};
+
 // 新幹線駅と市内拠点駅が離れている都市の連絡列車。
 // DESTINATIONS 側の connectionToCityStation がこのキーを指す。
 //
@@ -1356,7 +1458,8 @@ function lookupLocalTrain(departureText, shinkansenStation, dateStr) {
 // 目的地名からタクシー実運賃データを引く(未登録の目的地は null)
 function getTaxiFareData(destName) {
   if (destName === '函館') return LOCAL_TRANSIT_FARES.hakodate_taxi_fare;
-  return null;
+  const zoneKey = TAXI_FARE_ZONE_BY_DEST[destName];
+  return zoneKey ? HOKKAIDO_TAXI_FARE_ZONES[zoneKey] : null;
 }
 
 function getGoogleMapsUrl(name, lat, lng) {
@@ -1727,41 +1830,59 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     localTransfer = 20;
     localTransText = '🚖 連絡バス・タクシー等（約20分）';
   } else if (destName.includes('江差')) {
+    // 函館空港→江差：函館空港連絡バス（函館帝産バス）で函館駅前まで約20分、
+    // 函館バス610系統「函館・江差線」で函館駅前→江差ターミナルまで約148分。
+    // 乗り継ぎ待ちを含めた実際の所要は約2時間30分〜3時間程度（函館バス公式時刻表・函館タクシー公式で確認、要検証日2026-09-13）。
+    // 旧データの90分は実態の約半分で、大幅な過小評価だったため修正。
     destAirport = '函館空港';
-    localTransfer = 90;
-    localTransText = '🚌 バス・タクシー等（約90分）';
+    localTransfer = 180;
+    localTransText = '🚌 バス等（約180分）';
   } else if (destName.includes('旭川')) {
     destAirport = '旭川空港';
     localTransfer = 40;
     localTransText = '🚌 連絡バス等（約40分）';
   } else if (destName.includes('富良野')) {
+    // 旭川空港→富良野駅前：ふらのバス「快速ラベンダー号」約61分（2ソース一致）。要検証日2026-09-13
     destAirport = '旭川空港';
     localTransfer = 60;
     localTransText = '🚌 連絡バス等（約60分）';
   } else if (destName.includes('美瑛')) {
+    // 旭川空港→美瑛駅：ふらのバス「快速ラベンダー号」約16分（美瑛町観光協会公式・NAVITIME/ジョルダン各社時刻表で一致、要検証日2026-09-13）。
+    // 旧データは40分としていたが実際の2.5倍近い誤りだったため修正。
     destAirport = '旭川空港';
-    localTransfer = 40;
-    localTransText = '🚌 連絡バス等（約40分）';
+    localTransfer = 16;
+    localTransText = '🚌 連絡バス等（約16分）';
   } else if (destName.includes('網走')) {
     destAirport = '女満別空港';
     localTransfer = 30;
     localTransText = '🚌 連絡バス（約30分）';
   } else if (destName.includes('知床')) {
+    // 女満別空港→ウトロ温泉バスターミナル：知床エアポートライナーで約136分（2時間16分）・3,300円
+    // （斜里バス系列の運行情報で確認、要検証日2026-09-13）。旧データの100分は実態より短かったため修正。
+    // ⚠ この直行バスは冬季（流氷期）・夏季の季節限定運行で、通年運行ではない点は未反映。
     destAirport = '女満別空港';
-    localTransfer = 100;
-    localTransText = '🚌 知床エアポートライナー等（約100分）';
+    localTransfer = 136;
+    localTransText = '🚌 知床エアポートライナー等（約136分）';
   } else if (destName.includes('釧路')) {
     destAirport = 'たんちょう釧路空港';
     localTransfer = 45;
     localTransText = '🚌 連絡バス（約45分）';
   } else if (destName.includes('摩周湖')) {
+    // 釧路空港→摩周駅（弟子屈町）：公共交通では連絡バスで釧路駅まで約45分＋JR釧網線で摩周駅まで約75分＝
+    // 乗車時間だけで約120分、乗り継ぎ待ちを含め130〜150分程度（たびらい・弟子屈なび等で確認、要検証日2026-09-13）。
+    // ※車・タクシー直行なら弟子屈なび公式で「1時間強」との記載もあるが、本アプリは乗換案内前提のため
+    // 公共交通ベースの数値を採用。旧データの60分は車移動の値に近く、公共交通としては過小評価。
     destAirport = 'たんちょう釧路空港';
-    localTransfer = 60;
-    localTransText = '🚌 連絡バス等（約60分）';
+    localTransfer = 130;
+    localTransText = '🚌＋🚃 連絡バス・JR等（約130分）';
   } else if (destName.includes('根室')) {
+    // 釧路空港→根室駅：連絡バスで釧路駅まで約45分＋JR根室本線で根室駅まで約131〜162分＝
+    // 乗車時間だけで176〜207分、乗り継ぎ待ちを含めるとさらに長くなる。
+    // 別ルート（バス乗り継ぎのみ）では所要4時間29分（269分）との情報もあり（駅探・バス比較なび等で確認、要検証日2026-09-13）。
+    // 旧データの120分は実態の半分程度で大幅な過小評価だったため修正。
     destAirport = 'たんちょう釧路空港';
-    localTransfer = 120;
-    localTransText = '🚌 連絡バス等（約120分）';
+    localTransfer = 200;
+    localTransText = '🚌＋🚃 連絡バス・JR等（約200分）';
   } else if (destName.includes('帯広')) {
     destAirport = 'とかち帯広空港';
     localTransfer = 40;
@@ -1771,26 +1892,46 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     localTransfer = 30;
     localTransText = '🚌 連絡バス（約30分）';
   } else if (destName.includes('千歳')) {
-    localTransfer = 10;
-    localTransText = '🚕 タクシー等（約10分）';
+    // 新千歳空港駅→千歳駅：JR千歳線 直通7分・290円（駅探・trip.comの2ソース一致、要検証日2026-09-13）。
+    // 旧データは「タクシー等（約10分）」としていたが、実際は徒歩圏内の隣駅でJR直通の方が速く安い。
+    localTransfer = 7;
+    localTransText = '🚃 JR千歳線 等（約7分）';
   } else if (destName.includes('苫小牧')) {
-    localTransfer = 30;
-    localTransText = '🚌 連絡バス等（約30分）';
+    // 新千歳空港駅→苫小牧駅：JR（快速エアポート→南千歳乗換→千歳線/室蘭本線）約31〜38分・700円（駅探で確認、要検証日2026-09-13）。
+    // 道南バス直行便は実際には約71〜76分かかり「バス約30分」は誤り（乗り物種別を誤認していた）。
+    localTransfer = 35;
+    localTransText = '🚃 JR快速エアポート等（約35分）';
   } else if (destName.includes('小樽')) {
-    localTransfer = 90;
-    localTransText = '🚃 快速エアポート等（約90分）';
+    // 新千歳空港駅→小樽駅：JR快速エアポート直通、最速の特別快速で約73分・通常の快速で約80〜90分
+    // （JR北海道公式・複数まとめサイトで一致、要検証日2026-09-13）。旧データの90分は上限に近いやや長めの値だったため80分に修正。
+    localTransfer = 80;
+    localTransText = '🚃 快速エアポート等（約80分）';
   } else if (destName.includes('ニセコ')) {
+    // 新千歳空港⇔ニセコ直行バス（ニセコバス等）は冬季（12〜3月頃）中心の運行で約150〜180分・3,000〜4,000円
+    // （トラベリスト等の複数サイトで一致、要検証日2026-09-13）。
+    // ⚠ 夏季は直行バスがなく、JR（小樽・倶知安経由）で乗り継ぎ約3時間30分〜4時間かかる点は未反映。
     localTransfer = 150;
     localTransText = '🚌 高速バス等（約150分）';
   } else if (destName.includes('洞爺湖')) {
-    localTransfer = 150;
-    localTransText = '🚌 高速バス等（約150分）';
+    // 新千歳空港→洞爺湖温泉：JR特急（南千歳乗換）で洞爺駅まで約90分＋道南バス洞爺湖温泉まで約20分＝計約2時間
+    // （洞爺湖温泉観光協会公式で確認、要検証日2026-09-13）。
+    // 旧データは「高速バス等（約150分）」としていたが、実際は空港からの直行高速バスは無く
+    // 札幌乗り継ぎだと約4時間10分かかる。乗り物種別・所要時間とも誤りだったためJR経由に修正。
+    localTransfer = 120;
+    localTransText = '🚃 JR特急＋バス等（約120分）';
   } else if (destName.includes('登別')) {
+    // 新千歳空港駅→登別駅：JR（快速エアポート→南千歳乗換→特急北斗/すずらん）で乗車時間のみ約45分、
+    // 接続待ちを含めた実際の所要は約54〜85分と乗り継ぎにより幅がある（駅探で確認、要検証日2026-09-13）。
+    // 60分は実測レンジの下寄りに位置する妥当な代表値のため据え置き。
     localTransfer = 60;
     localTransText = '🚃 特急等（約60分）';
   } else if (destName.includes('積丹')) {
-    localTransfer = 150;
-    localTransText = '🚃 快速エアポート・バス等（約150分）';
+    // 新千歳空港→積丹（美国）：積丹に鉄道はなく、快速エアポートで札幌駅(約37分)→
+    // 函館本線で小樽駅(約40分)→路線バス積丹線で美国(約80分)の順に乗り継ぐ経路が実質唯一のルート。
+    // 乗車時間の合計だけで約157分、乗り換え待ちを含めると180〜200分程度（hondarent等の複数サイトで一致、要検証日2026-09-13）。
+    // 旧データの150分は乗り換え待ちを含まない値に近く、実態はやや長め。
+    localTransfer = 180;
+    localTransText = '🚃 快速エアポート・バス等（約180分）';
   }
 
   const REQUIRED_SECURE_TIME = 60; 
