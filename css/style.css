@@ -2027,9 +2027,13 @@ body {
 }
 
 @media (max-width: 600px) {
+  /* 2枚のカードを2列gridで横並びさせている（index.htmlのインラインstyle）が、
+     狭い画面では窮屈になるため1列に戻して縦積みにする。
+     grid-template-columns はインラインstyleで指定されており、
+     クラスセレクタだけでは上書きできないため !important が必要 */
   .header-partner-badges {
+    grid-template-columns: 1fr !important;
     width: 100%;
-    justify-content: center;
   }
   .header-partner-badge {
     width: 100%;
