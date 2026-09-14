@@ -3545,9 +3545,12 @@ function summarizeTimelineReliability(timeline) {
   );
 }
 
-function compareTransportRoutes(stationName, destName, departTimeStr = '10:00', departDateStr = null) {
+// airportIndex に候補のインデックスを渡すと、飛行機ルートをその出発空港で組み直す。
+// 省略時（null）は selectDepartureAirport() が決めた既定の候補を使うため、
+// 空港候補が1件しかない駅では渡しても渡さなくても結果は同じになる
+function compareTransportRoutes(stationName, destName, departTimeStr = '10:00', departDateStr = null, airportIndex = null) {
   const shinkansen = generateShinkansenTimeline(stationName, destName, departTimeStr, departDateStr);
-  const flight = generateFlightTimeline(stationName, destName, departTimeStr);
+  const flight = generateFlightTimeline(stationName, destName, departTimeStr, airportIndex);
 
   let recommended = 'flight';
   if (shinkansen && flight) {
