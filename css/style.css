@@ -2219,6 +2219,14 @@ a.header-partner-badge:hover {
   color: var(--color-primary, #2980b9);
   white-space: nowrap;
 }
+/* 待ち時間の分数を隠しても後続の時刻が翌日にまたがることがあるため、
+   「（翌日）」等を時刻の直前に強調表示し、利用者の誤解を防ぐ */
+.route-day-label {
+  font-weight: bold;
+  color: #b45309;
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
 .route-text { word-break: break-word; }
 /* 移動区間は場所イベントと別の要素として時刻の間に挟む */
 .route-edge {
@@ -2269,6 +2277,7 @@ a.header-partner-badge:hover {
   .route-node { color: #111111 !important; }
   .route-time { color: #14425f !important; }
   .route-edge { color: #333333 !important; border-left-color: #999999 !important; }
+  .route-day-label { color: #7a3e00 !important; font-weight: bold !important; }
 
   /* A4の印刷可能幅(約680px)は700px未満のため、上のスマホ用ブレークポイントを
      screen専用にしても、他の要因で.route-columnが崩れた場合に画像が
@@ -2304,6 +2313,7 @@ a.header-partner-badge:hover {
   #confirmed-content div.rl-legend-note          { color: #444444 !important; }
   #confirmed-content div.route-node              { color: #111111 !important; }
   #confirmed-content span.route-time             { color: #14425f !important; }
+  #confirmed-content span.route-day-label        { color: #7a3e00 !important; font-weight: bold !important; }
   #confirmed-content div.route-edge              { color: #333333 !important; border-left-color: #999999 !important; }
   #confirmed-content div.route-card              { background: #f9f9f9 !important; border-color: #bbbbbb !important; }
 }

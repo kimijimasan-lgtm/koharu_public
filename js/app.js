@@ -1272,7 +1272,11 @@ const App = {
     if (!route || !route.timeline || !route.timeline.length) return '';
     const rows = route.timeline.map(item => {
       if (item.type === 'node') {
-        return `<div class="route-node"><span class="route-time">${item.time || ''}</span><span class="route-text">${item.text}</span></div>`;
+        // dayLabel（「（翌日）」等）は出発日からの日またぎを示す。
+        // 待ち時間の分数を隠しても後続の時刻自体は翌日にまたがりうるため、
+        // 利用者が「今日中に着く」と誤解しないよう時刻の直前に明示する
+        const dayLabel = item.dayLabel ? `<span class="route-day-label">${item.dayLabel}</span>` : '';
+        return `<div class="route-node">${dayLabel}<span class="route-time">${item.time || ''}</span><span class="route-text">${item.text}</span></div>`;
       }
       return `
         <div class="route-edge">
