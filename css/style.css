@@ -2107,6 +2107,31 @@ a.header-partner-badge:hover {
 /* ============================================================
    しおりの交通ルートカード（行き / 帰り）
    ============================================================ */
+/* 1日目・3日目：左＝行程タイムライン／右＝ヤフー乗換案内の画像 の2カラム。
+   .container の最大幅が720pxしかなく、左300px+右320px+gapが収まりきらず
+   flex-wrapで縦積みに落ちていたため、右カラムをやや狭くしたgridに変更した。
+   700px以下（.container自体がこの幅を下回るビューポート）では1カラムに戻す */
+.day-section-split {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 20px;
+  align-items: start;
+}
+.day-section-timeline-col {
+  min-width: 0;
+}
+.day-section-split > .route-column {
+  width: 260px;
+}
+@media (max-width: 700px) {
+  .day-section-split {
+    grid-template-columns: 1fr;
+  }
+  .day-section-split > .route-column {
+    width: 100%;
+  }
+}
+
 .route-column {
   width: 320px;
   max-width: 100%;
@@ -2123,6 +2148,42 @@ a.header-partner-badge:hover {
   padding: 12px 14px;
   break-inside: avoid;
   page-break-inside: avoid;
+}
+
+/* ヤフー乗換案内の実画像がある場合、同じ内容のアプリ概算カードは
+   折りたたんで場所を取らないようにする。画像が無い日は唯一の行程情報
+   なので renderRouteFallback() 側で <details> にせず常時表示のままにする */
+.route-fallback {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.route-fallback > summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #777;
+  list-style: none;
+}
+.route-fallback > summary::-webkit-details-marker { display: none; }
+.route-fallback > summary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 0.75em;
+  transition: transform 0.15s ease;
+}
+.route-fallback[open] > summary::before { transform: rotate(90deg); }
+.route-fallback[open] > summary {
+  border-bottom: 1px solid #e0e0e0;
+}
+.route-fallback .route-card {
+  border: none;
+  border-radius: 0;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 /* カード幅が320pxと狭いため、見出しと所要時間は縦に積む。
    横並びにすると見出しが語句の途中で折り返されて読みにくくなる */
@@ -2203,6 +2264,17 @@ a.header-partner-badge:hover {
   .route-node { color: #111111 !important; }
   .route-time { color: #14425f !important; }
   .route-edge { color: #333333 !important; border-left-color: #999999 !important; }
+
+  /* ヤフー乗換案内の実画像と内容が重複するアプリ概算カードは、
+     折りたたんだまま（未展開）の場合は紙面では丸ごと非表示にする。
+     画面上でタップして開いた状態(＝ [open] 属性が付く)なら印刷にも反映する */
+  .route-fallback:not([open]) {
+    display: none !important;
+  }
+  .route-fallback[open] > summary {
+    color: #555555 !important;
+    font-weight: bold !important;
+  }
 }
 
 @media print {
