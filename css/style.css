@@ -1320,11 +1320,16 @@ body {
   }
   
   /* 印刷ページ連続レイアウト */
+  /* Chrome は flex コンテナをページ分割できないため、しおり全体を包む
+     この器が flex のままだと中身がページをまたげず、余白の原因になる。
+     block + margin に置き換える（gap 相当の間隔は隣接セレクタで再現） */
   .print-page-1, .print-page-2 {
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem !important;
+    display: block;
     margin-bottom: 1.5rem;
+  }
+  .print-page-1 > * + *,
+  .print-page-2 > * + * {
+    margin-top: 1.2rem;
   }
 
   /* しおりヘッダー：淡い青背景と濃いネイビー文字 */
@@ -1562,17 +1567,44 @@ body {
     border-color: #ffffff !important;
   }
 
-  /* 改ページ設定 — 意味的ブロック単位で分断を防止 */
+  /* 改ページ設定 — 意味的ブロック単位で分断を防止
+     ------------------------------------------------------------------
+     【重要】分断防止は「1ページに収まる大きさの単位」にだけ掛けること。
+     A4(margin 12mm/15mm)の印刷可能高さは約1030px。これより高い要素に
+     break-inside:avoid を付けると、その要素はどのページにも収まらず、
+     直前のページを大きく空白のまま残して次ページへ送られてしまう。
+     実際 .day-section は1日目1027px・3日目1444px あり、h4 の
+     break-after:avoid と結合して「レストラン欄の下が丸ごと空白」になっていた。
+     そのため .day-section / .spots-gourmet-card のような大きな器には掛けず、
+     中身（.timeline-item, リスト項目, 経路の各行）を単位に掛ける */
   .hotel-card,
   .cost-summary-card,
   .checklist-card,
-  .spots-gourmet-card,
   .print-header,
-  .timeline-item,
-  .day-section {
+  .timeline-item {
     page-break-inside: avoid !important;
     -webkit-column-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  /* 大きな器は分断を許可する（中身の単位で守る） */
+  .day-section,
+  .spots-gourmet-card {
+    page-break-inside: auto !important;
+    -webkit-column-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Chrome は flex コンテナをページ分割できず、中身が丸ごと次ページに送られる。
+     印刷では段組みをやめて縦積みにし、通常のブロックとして分割させる */
+  .day-section {
+    display: block !important;
+  }
+  .day-section > div {
+    min-width: 0 !important;
+  }
+  .day-section .route-column {
+    margin-top: 12px !important;
   }
 
   /* タイムライン内部要素の分断防止 */
@@ -1590,10 +1622,12 @@ body {
     -webkit-column-break-inside: avoid !important;
     break-inside: avoid !important;
   }
+  /* スポット/グルメの2列は項目数によってはページ高を超えるため、
+     列そのものではなく li 単位（上のルール）で分断を防ぐ */
   .spots-gourmet-card > div > div {
-    page-break-inside: avoid !important;
-    -webkit-column-break-inside: avoid !important;
-    break-inside: avoid !important;
+    page-break-inside: auto !important;
+    -webkit-column-break-inside: auto !important;
+    break-inside: auto !important;
   }
 
   /* チェックリスト: 各項目の分断防止 */
@@ -1622,8 +1656,34 @@ body {
     break-after: avoid !important;
   }
 
-  /* 乗換経路画像ブロックの分断防止 */
-  .day-section > div {
+  /* 交通ルート: カード全体ではなく1行ずつ分断を防ぐ。
+     カード単位(約500px)で守ると、ページ下部に来たときにその分だけ
+     空白が生まれるため、行単位にとどめる。
+     .route-card の break-inside:avoid（印刷以外でも効く指定）はここで解除する */
+  .route-card {
+    page-break-inside: auto !important;
+    -webkit-column-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  .route-node,
+  .route-edge,
+  .rl-caveat {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 経路カードの見出しがページ末尾に取り残されないようにする */
+  .route-card-header {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* 乗換経路のスクショは画像単位で分断を防ぐ（js/app.js 側でも
+     インライン指定済み。旧 .day-section > div 指定はタイムライン列
+     そのもの(551〜860px)まで分断不可にしていたため削除した） */
+  .day-section img {
     page-break-inside: avoid !important;
     -webkit-column-break-inside: avoid !important;
     break-inside: avoid !important;
@@ -2161,4 +2221,50 @@ a.header-partner-badge:hover {
   #confirmed-content span.route-time             { color: #14425f !important; }
   #confirmed-content div.route-edge              { color: #333333 !important; border-left-color: #999999 !important; }
   #confirmed-content div.route-card              { background: #f9f9f9 !important; border-color: #bbbbbb !important; }
+}
+
+/* ============================================================
+   ヤフー乗換データ未入力時の案内
+   ============================================================
+   到着/出発時刻が未入力のまま「しおり」に進もうとした場合に表示する。
+   アプリが既定値で補うと架空の時刻が実データとして印刷されてしまうため、
+   推測での自動生成はせず、ここで入力を促して先に進ませない */
+.yahoo-data-error {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border: 2px solid #c0392b;
+  border-left-width: 6px;
+  border-radius: 8px;
+  background: #fdf2f0;
+  color: #7b241c;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.yahoo-data-error-title {
+  margin: 0 0 10px 0;
+  font-weight: bold;
+  font-size: 1.05rem;
+  color: #a93226;
+}
+
+.yahoo-data-error ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.yahoo-data-error li + li {
+  margin-top: 6px;
+}
+
+.yahoo-data-error-note {
+  margin: 10px 0 0 0;
+  font-size: 0.85rem;
+  color: #96574e;
+}
+
+/* 未入力の時刻欄を赤枠で示す */
+input.input-missing {
+  border-color: #c0392b !important;
+  background: #fdf2f0;
 }
