@@ -503,7 +503,6 @@ const App = {
       transportHtml = `
         <div class="transport-comparison">
           <div class="comparison-title">💡 ${conclusionText}</div>
-          ${this.renderReliabilityLegend()}
           <div class="comparison-grid">
             ${shinHtml}
             ${fliHtml}
