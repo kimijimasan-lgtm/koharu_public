@@ -1988,6 +1988,14 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
 //
 // flightSchedule は実在する便のダイヤではなく「その空港におおむね存在する便数・時間帯」を
 // 模した仮の配列のため、フライトに関わる区間の信頼度は ESTIMATED とする。
+//
+// 【fallbackFlightTimeMin は表示してはいけない値】
+// この値は「出発空港だけ」を見た概算で、到着空港を一切考慮していない。
+// 例：青森空港発は行き先が新千歳でも女満別でも一律45分になってしまう。
+// 実際の所要時間は出発空港×到着空港の組み合わせで決まるため、この値は
+// 行程の時刻計算（totalMins・後続イベントの時刻）を成立させるためだけに使い、
+// 利用者に「約◯分」として提示してはならない。
+// 表示してよいのは FLIGHT_ROUTES で就航と所要時間を検証できた組み合わせのみ。
 const AIRPORT_ACCESS = [
   {
     stations: ['新青森', '青森', '八戸'],
@@ -1995,7 +2003,7 @@ const AIRPORT_ACCESS = [
     durationMin: 40,
     label: '🚌 リムジンバス等',
     flightSchedule: ['09:50', '11:45', '14:25', '19:40'],
-    overrideFlightTime: 45,
+    fallbackFlightTimeMin: 45,
     reliability: reliability(RELIABILITY.ESTIMATED, { note: 'リムジンバス所要は概算。実ダイヤ未確認' }),
   },
   {
@@ -2004,7 +2012,7 @@ const AIRPORT_ACCESS = [
     durationMin: 40,
     label: '🚌 リムジンバス等',
     flightSchedule: ['09:40', '19:00'],
-    overrideFlightTime: 55,
+    fallbackFlightTimeMin: 55,
     reliability: reliability(RELIABILITY.ESTIMATED, { note: 'リムジンバス所要は概算。実ダイヤ未確認' }),
   },
   {
@@ -2013,7 +2021,7 @@ const AIRPORT_ACCESS = [
     durationMin: 45,
     label: '🚌 特急バス等',
     flightSchedule: ['11:55', '15:20', '18:50'],
-    overrideFlightTime: 55,
+    fallbackFlightTimeMin: 55,
     reliability: reliability(RELIABILITY.ESTIMATED, { note: '特急バス所要は概算。実ダイヤ未確認' }),
   },
   {
@@ -2022,7 +2030,7 @@ const AIRPORT_ACCESS = [
     durationMin: 30,
     label: '🚃 仙台空港アクセス線',
     flightSchedule: ['08:30', '10:15', '12:00', '14:45', '17:30', '19:00'],
-    overrideFlightTime: 70,
+    fallbackFlightTimeMin: 70,
     reliability: reliability(RELIABILITY.ESTIMATED, { note: '仙台駅起点の所要。古川発は乗り継ぎ分が未反映' }),
   },
   {
@@ -2031,7 +2039,7 @@ const AIRPORT_ACCESS = [
     durationMin: 30,
     label: '🚌 シャトルバス',
     flightSchedule: ['08:45', '16:30'],
-    overrideFlightTime: 75,
+    fallbackFlightTimeMin: 75,
     reliability: reliability(RELIABILITY.ESTIMATED, { note: '山形駅起点の所要。米沢発は乗り継ぎ分が未反映' }),
   },
   {
@@ -2045,7 +2053,7 @@ const AIRPORT_ACCESS = [
           durationMin,
           label: '🚗 自家用車・高速バス等',
           flightSchedule: ['10:45', '14:00'],
-          overrideFlightTime: null,
+          fallbackFlightTimeMin: null,
           reliability: reliability(RELIABILITY.ESTIMATED, {
             note: '自家用車前提の概算。交通状況により大きく変動する',
           }),
@@ -2057,7 +2065,7 @@ const AIRPORT_ACCESS = [
         durationMin,
         label: '🚗 自家用車等',
         flightSchedule: ['10:30'],
-        overrideFlightTime: null,
+        fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.ESTIMATED, {
           note: '自家用車前提の概算。交通状況により大きく変動する',
         }),
@@ -2070,7 +2078,7 @@ const AIRPORT_ACCESS = [
     durationMin: 30,
     label: '🚌 連絡バス',
     flightSchedule: ['08:00', '10:30', '13:00', '16:00', '18:30'],
-    overrideFlightTime: 40,
+    fallbackFlightTimeMin: 40,
     reliability: reliability(RELIABILITY.ESTIMATED, { note: '道内発。最寄り空港・連絡バスとも概算' }),
   },
 ];
@@ -2081,7 +2089,7 @@ const AIRPORT_ACCESS_DEFAULT = {
   durationMin: 90,
   label: '🚃 在来線等',
   flightSchedule: ['08:00', '10:30', '13:00', '16:00', '18:30'],
-  overrideFlightTime: null,
+  fallbackFlightTimeMin: null,
   reliability: reliability(RELIABILITY.ESTIMATED, { note: '主要空港までの在来線所要を一律90分と仮定した値' }),
 };
 
@@ -2091,6 +2099,55 @@ function lookupAirportAccess(normStation, destName) {
     return entry.resolve ? entry.resolve(normStation, destName) : entry;
   }
   return AIRPORT_ACCESS_DEFAULT;
+}
+
+// ============================================================
+// 空港ペアごとの就航・所要時間（FLIGHT_ROUTES）
+// ============================================================
+// キーは '出発空港-到着空港'。AIRPORT_ACCESS の airport と
+// AIRPORT_LOCAL_TRANSIT の airport をそのまま連結した文字列で引く。
+//
+// 【なぜこのテーブルが必要か】
+// 従来のフライト所要時間は AIRPORT_ACCESS の出発空港ごとの固定値だけで決まり、
+// 到着空港を見ていなかった。そのため「福島空港 発 → 女満別空港 着 ／
+// フライト約80分」のように、実在しない直行便の所要時間を断定表示していた
+// （2026-09-14 発覚。航空会社名・便数を断定していた問題と同じ根っこ）。
+// 就航の有無は出発空港×到着空港の組み合わせごとに決まるため、
+// 検証済みの組み合わせをここに登録し、未登録のペアは所要時間を表示しない。
+//
+// 【登録のルール】
+// - 一次資料（航空会社公式時刻表等）で直行便の実在と所要時間を確認できた
+//   組み合わせだけを登録する。推測で埋めないこと
+// - reliability には source と verifiedDate を必ず添える
+// - 乗り継ぎが必要な組み合わせは durationMin を書かず、connectionRequired: true
+//   とし、caveat に乗り継ぎ地を書く（所要時間の断定を避ける）
+// - CLAUDE.md の規定どおり、航空会社名・便数はここにも書かない
+//
+// 公開版は未検証のため意図的に空。空でも lookupFlightRoute() が null を返し、
+// 「所要時間は要確認」表示＋概算計算へフォールバックする設計になっている。
+//
+// 登録例（形式の参考。架空の空港名）:
+//   'サンプル南空港-サンプル北空港': {
+//     durationMin: 95,
+//     reliability: reliability(RELIABILITY.VERIFIED, {
+//       source: '◯◯航空 公式時刻表',
+//       verifiedDate: 'YYYY-MM-DD',
+//     }),
+//   },
+const FLIGHT_ROUTES = {};
+
+// 登録があればその定義を返す（未登録なら null）。
+// 乗り継ぎ前提の登録も返すので、所要時間を表示してよいかは
+// isFlightDurationDisplayable() で必ず判定すること
+function lookupFlightRoute(fromAirport, toAirport) {
+  if (!fromAirport || !toAirport) return null;
+  return FLIGHT_ROUTES[`${fromAirport}-${toAirport}`] || null;
+}
+
+// 「約◯分」と断定表示してよい組み合わせかを判定する。
+// 未登録・所要時間未記入・乗り継ぎ前提のいずれかなら false
+function isFlightDurationDisplayable(route) {
+  return !!(route && route.durationMin != null && !route.connectionRequired);
 }
 
 // ============================================================
@@ -2331,13 +2388,21 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   const airportTransferTime = access.durationMin;
   const airportTransText = `${access.label}（約${access.durationMin}分）`;
   const flightSchedule = access.flightSchedule;
-  const overrideFlightTime = access.overrideFlightTime;
-
-  const flightTime = overrideFlightTime ? overrideFlightTime : (destName.includes('函館') ? 70 : 80);
   const local = lookupAirportLocalTransit(destName);
   const localTransfer = local.durationMin;
   const localTransText = `${local.label}（約${local.durationMin}分）`;
   const destAirport = local.airport;
+
+  // ── フライト区間の所要時間 ──
+  // 出発空港×到着空港の組み合わせで就航を検証できているかを FLIGHT_ROUTES で引く。
+  // 検証済みならその所要時間を表示してよい。未検証なら、時刻計算には概算値を
+  // 使い続けるが「約◯分」という断定表示はしない（access.fallbackFlightTimeMin は
+  // 出発空港だけを見た値で、到着空港を考慮していないため事実として提示できない）
+  const flightRoute = lookupFlightRoute(airport, destAirport);
+  const flightTimeVerified = isFlightDurationDisplayable(flightRoute);
+  const flightTime = flightTimeVerified
+    ? flightRoute.durationMin
+    : (access.fallbackFlightTimeMin || (destName.includes('函館') ? 70 : 80));
 
 
   const REQUIRED_SECURE_TIME = 60;
@@ -2396,7 +2461,22 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   }
   pushNode(t, `${airport} 発${flightNote}`);
 
-  pushEdge(`✈️ フライト（約${flightTime}分）`, flightReliability, flightTime);
+  // 検証済みの空港ペアだけ「約◯分」を出す。未検証のペアでは所要時間を伏せる。
+  // 時刻計算には概算値（flightTime）を引き続き使い、表示だけ非断定的にする
+  // （航空会社名・便数のときと同じ方針。行程の時刻がずれると後続イベントが
+  //   全部崩れるため、計算そのものは変えない）
+  if (flightTimeVerified) {
+    pushEdge(`✈️ フライト（約${flightTime}分）`, flightRoute.reliability || flightReliability, flightTime);
+  } else {
+    pushEdge(
+      `✈️ フライト（所要時間は要確認）`,
+      reliability(RELIABILITY.ESTIMATED, {
+        note: `${airport}から${destAirport}への直行便の有無・所要時間を検証できていないため、時間は伏せています`,
+        caveat: `${airport}→${destAirport}は直行便が無く乗り継ぎになる場合があります。所要時間が大きく変わるため、実際の便を必ずご確認ください`,
+      }),
+      flightTime
+    );
+  }
   t = addMins(t, flightTime);
   totalMins += flightTime;
   pushNode(t, `${destAirport} 着`);
@@ -2406,7 +2486,14 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   totalMins += localTransfer;
   pushNode(t, `${destName.replace('北海道', '')} 着`);
 
-  return { time: totalMins, timeline, totalMins, reliabilityLevel: summarizeTimelineReliability(timeline) };
+  return {
+    time: totalMins, timeline, totalMins,
+    reliabilityLevel: summarizeTimelineReliability(timeline),
+    // フライト区間が未検証のとき、合計所要時間もその概算値の上に乗っている。
+    // 「約6時間6分」のような合計を事実として出さないよう、表示側に伝える
+    hasUnverifiedFlightLeg: !flightTimeVerified,
+    flightPair: { from: airport, to: destAirport },
+  };
 }
 
 // 往路のタイムラインを「地点の列」と「移動区間の列」に分解する。
@@ -2507,6 +2594,9 @@ function reverseRouteTimeline(route, departTimeStr) {
     reliabilityLevel: summarizeTimelineReliability(timeline),
     // この行程が往路の反転で作られたことを、表示側が利用者に明示できるようにする
     isReversedFromOutbound: true,
+    // 往路のフライト区間が未検証なら復路も同じ概算値の上に乗っている。引き継ぐ
+    hasUnverifiedFlightLeg: !!route.hasUnverifiedFlightLeg,
+    flightPair: route.flightPair || null,
   };
 }
 

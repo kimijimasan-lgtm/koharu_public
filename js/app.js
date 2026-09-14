@@ -404,9 +404,16 @@ const App = {
                 return m === 0 ? h + '時間' : h + '時間' + m + '分';
             };
             const sTime = routeInfo.shinkansen ? '新幹線は約' + formatHours(routeInfo.shinkansen.time) : '';
-            const fTime = routeInfo.flight ? '飛行機は約' + formatHours(routeInfo.flight.time) : '';
+            // 飛行機側はフライト所要時間が未検証の場合、この合計自体が目安である
+            const fUnverified = routeInfo.flight && routeInfo.flight.hasUnverifiedFlightLeg;
+            const fTime = routeInfo.flight
+              ? '飛行機は約' + formatHours(routeInfo.flight.time) + (fUnverified ? '（目安）' : '')
+              : '';
             const joinT = sTime && fTime ? '、' : '';
-            alert('ご指定のルートは ' + sTime + joinT + fTime + ' かかるため、片道5時間（300分）を超えてしまいます。\n「疲れない旅」の基準を満たさないため、出発地または目的地を変更してください。');
+            const fNote = fUnverified
+              ? '\n※飛行機側は直行便の有無・所要時間が未検証のため、合計は目安です。'
+              : '';
+            alert('ご指定のルートは ' + sTime + joinT + fTime + ' かかるため、片道5時間（300分）を超えてしまいます。' + fNote + '\n「疲れない旅」の基準を満たさないため、出発地または目的地を変更してください。');
             return false;
         }
     }
@@ -453,12 +460,20 @@ const App = {
         </div>
       ` : '';
 
+      // フライト区間が未検証のとき、合計時間はその概算値の上に乗っている。
+      // 「約6時間6分」を確定値として読ませないよう、合計の隣に注記を出す
+      const fliUnverified = fli && fli.hasUnverifiedFlightLeg;
+      const fliTimeNote = fliUnverified
+        ? `<div class="compare-time-note">※フライトの所要時間が未検証のため、合計は目安です</div>`
+        : '';
+
       const fliHtml = (fli) ? `
         <div class="compare-item ${comparison.recommended === 'flight' ? 'recommended' : ''}">
           <div class="compare-header">
             <strong>✈️ 飛行機</strong>
-            <span class="compare-time">約 ${formatTime(fli.time)}</span>
+            <span class="compare-time">約 ${formatTime(fli.time)}${fliUnverified ? '<span class="compare-time-mark">※</span>' : ''}</span>
           </div>
+          ${fliTimeNote}
           <div class="timeline-container">
             ${renderTimeline(fli.timeline)}
           </div>
@@ -488,7 +503,7 @@ const App = {
         }
 
         if (shin.time > 300 && fli.time > 300) {
-            conclusionText = `⚠️ どちらも5時間を超えますが、比較するなら<br>${reason}。<br><span style="font-size: 0.9em; color: #d32f2f;">※片道5時間超えのため出発地または目的地の変更をご検討ください</span>`;
+            conclusionText = `⚠️ どちらも5時間を超えますが、比較するなら<br>${reason}`;
         } else if (shin.time > 300) {
             conclusionText = `✈️ 新幹線は5時間を超える（約${shinT}）ため、【飛行機】推奨`;
         } else if (fli.time > 300) {
@@ -496,13 +511,73 @@ const App = {
         } else {
             conclusionText = reason;
         }
+
+        // 比較の土台になっている飛行機側の合計が未検証のフライト時間を含む場合、
+        // 「所要時間が短いため」という結論も未検証の値に依存している。
+        // 推奨そのものは変えず（行程の時刻計算を動かさないため）、根拠の弱さを明示する
+        if (fliUnverified) {
+          const pair = fli.flightPair;
+          const pairText = pair ? `${pair.from}→${pair.to}` : '利用区間';
+          conclusionText += `<br><span style="font-size: 0.9em; color: #b45309;">※${pairText}の直行便の有無・所要時間が未検証のため、飛行機側の合計は目安です。乗り継ぎになる場合は所要時間が変わります</span>`;
+        }
       } else {
          conclusionText = comparison.recommended === 'shinkansen' ? '🚄 【新幹線】推奨' : '✈️ 【飛行機】推奨';
       }
 
+      // ── 片道5時間超の警告バナー ──
+      // app.js の5時間ゲート（station.includes('駅') の分岐）は
+      // PREFECTURE_STATIONS の駅名に「駅」の字が無いため実際には発火せず、
+      // 5時間超の目的地も選択できてしまう（この挙動は意図的に維持する方針）。
+      // そのため利用者への歯止めはこの警告表示だけになる。
+      // 小さな注記では見落とされるため、バナーとしてはっきり出す。
+      // あわせて、表示している所要時間が概算・未検証区間を含む積み上げであり
+      // 「これ以上短くなることはまず無い」ことを明示する
+      const overLimitWarning = (() => {
+        const rec = comparison[comparison.recommended];
+        if (!rec || rec.time <= 300) return '';
+
+        const overMin = rec.time - 300;
+        // 超過分は1時間未満になることもあるため「0時間10分」にならない書き方にする
+        const overText = overMin >= 60 ? formatHoursStr(overMin) : `${overMin}分`;
+        const recLabel = comparison.recommended === 'shinkansen' ? '新幹線ルート' : '飛行機ルート';
+        const bothOver = shin && fli && shin.time > 300 && fli.time > 300;
+
+        // 「夕方〜夜に着く」等を決め打ちで書くと5時間ちょうど付近のルートで
+        // 事実と食い違う。行程の最終ノードから実際の到着時刻を取って提示する
+        const recNodes = (rec.timeline || []).filter(i => i.type === 'node' && i.time);
+        const lastNode = recNodes[recNodes.length - 1];
+        const arriveText = lastNode
+          ? `この行程だと <strong>${departTimeStr} 出発 → ${lastNode.time} 到着</strong>${lastNode.dayLabel ? `<strong>${lastNode.dayLabel}</strong>` : ''}で、初日は移動が中心になります。`
+          : '初日は移動が中心になります。';
+
+        // 未検証のフライト区間を含むかどうかで、注意の具体性を変える
+        const pair = rec.flightPair;
+        const unverifiedNote = rec.hasUnverifiedFlightLeg
+          ? `とくに <strong>${pair ? `${pair.from}→${pair.to}` : 'フライト区間'}</strong> は直行便の有無すら未検証です。乗り継ぎが必要な場合、ここだけで数時間増えることがあります。`
+          : '';
+
+        return `
+          <div class="over-limit-warning" role="alert">
+            <div class="olw-head">
+              <span class="olw-icon" aria-hidden="true">⚠️</span>
+              <span class="olw-head-text">片道 約${formatHoursStr(rec.time)}：「疲れない旅」の目安（片道5時間）を <strong>${overText}</strong> 超えています</span>
+            </div>
+            <ul class="olw-body">
+              <li>${bothOver
+                    ? `新幹線・飛行機の<strong>どちらも5時間を超えます</strong>（新幹線 約${formatHoursStr(shin.time)} / 飛行機 約${formatHoursStr(fli.time)}）。`
+                    : `最短の${recLabel}でも約${formatHoursStr(rec.time)}かかります。`}</li>
+              <li><strong>実際の所要時間はさらに長くなる可能性があります。</strong>表示しているのは乗り換え・待ち時間を含む概算の積み上げで、未検証の区間を含みます。${unverifiedNote}</li>
+              <li>${arriveText}2泊3日では現地で過ごせる時間がその分短くなります。</li>
+              <li><strong>出発地または目的地の変更を強くおすすめします。</strong>それでもこの行程で進める場合は、各区間の実際の時刻を必ずご自身でご確認ください。</li>
+            </ul>
+          </div>
+        `;
+      })();
+
       transportHtml = `
         <div class="transport-comparison">
           <div class="comparison-title">💡 ${conclusionText}</div>
+          ${overLimitWarning}
           <div class="comparison-grid">
             ${shinHtml}
             ${fliHtml}
@@ -1299,12 +1374,21 @@ const App = {
         ? `<div class="rl-caveat">※ 到着時刻は入力された乗換案内の時刻です。出発時刻と途中の待ち時間は、そこからアプリの模擬ダイヤで逆算した目安です。実際の列車はえきねっと等でご確認ください。</div>`
         : `<div class="rl-caveat">※ 発着時刻はアプリの模擬ダイヤによる目安です。実際の列車はえきねっと等でご確認ください。</div>`;
 
+    // フライト区間の所要時間が未検証のとき、この合計もその概算値を含んでいる。
+    // しおりは印刷して持ち歩くものなので、合計の近くに本文として明記する
+    const unverifiedFlightNote = route.hasUnverifiedFlightLeg
+      ? `<div class="rl-caveat">※ ${
+          route.flightPair ? `${route.flightPair.from}→${route.flightPair.to}の` : ''
+        }直行便の有無・所要時間が未検証のため、上の合計時間は目安です。乗り継ぎになる場合は大きく変わります。航空会社の公式時刻表で必ずご確認ください。</div>`
+      : '';
+
     return `
       <div class="route-card">
         <div class="route-card-header">
           <span>${heading}</span>
           <span class="route-card-total">所要 約${durText}</span>
         </div>
+        ${unverifiedFlightNote}
         ${reversedNote}
         ${rows}
       </div>
