@@ -1308,6 +1308,21 @@ const App = {
     `;
   },
 
+  // ヤフー乗換案内の実画像が貼られている場合、アプリ生成の概算タイムラインは
+  // 同じ内容を重複して縦に並べることになるため、折りたたみ表示にする。
+  // 画像が無い場合はこのカードが唯一の行程情報なので、常に開いたまま表示する
+  renderRouteFallback(route, heading, hasImage) {
+    const cardHtml = this.renderRouteTimeline(route, heading);
+    if (!cardHtml) return '';
+    if (!hasImage) return cardHtml;
+    return `
+      <details class="route-fallback">
+        <summary>${heading}（アプリ概算・タップで表示）</summary>
+        ${cardHtml}
+      </details>
+    `;
+  },
+
   renderTimeline(events) {
     let html = '<div class="timeline">';
     events.forEach(e => {
@@ -1427,7 +1442,9 @@ const App = {
     // Prepend home departure based on uploaded images
     day1Events.push({ time: '', title: '自宅・出発地を出発', type: 'transport', icon: '🏠' });
     day1Events.push({
-      type: 'transfer', title: '行きのルート（右の「行きの交通ルート」を参照）', icon: '🚄', duration: null,
+      type: 'transfer',
+      title: img1Src ? '行きのルート（右の乗換経路の画像を参照）' : '行きのルート（右の「行きの交通ルート」を参照）',
+      icon: '🚄', duration: null,
       reliability: outboundRoute && outboundRoute.reliabilityLevel
         ? reliability(outboundRoute.reliabilityLevel, { note: '区間ごとの確からしさは右の交通ルートをご覧ください' })
         : null,
@@ -1527,7 +1544,9 @@ const App = {
     day3Events.push({ time: this.minToTime(depMin), title: `${dest.cityStation || dest.station} 出発`, type: 'transport', icon: '🚄' });
     
     day3Events.push({
-      type: 'transfer', title: '帰りのルート（右の「帰りの交通ルート」を参照）', icon: '🚄', duration: null,
+      type: 'transfer',
+      title: img3Src ? '帰りのルート（右の乗換経路の画像を参照）' : '帰りのルート（右の「帰りの交通ルート」を参照）',
+      icon: '🚄', duration: null,
       reliability: returnRoute && returnRoute.reliabilityLevel
         ? reliability(returnRoute.reliabilityLevel, { note: '区間ごとの確からしさは右の交通ルートをご覧ください' })
         : null,
@@ -1642,12 +1661,12 @@ const App = {
         ${this.renderReliabilityLegend()}
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 ${dest.name}へ到着</h4>
-        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
-          <div style="flex: 1; min-width: 300px;">
+        <div class="day-section day-section-split" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <div class="day-section-timeline-col">
             ${this.renderTimeline(day1Events)}
           </div>
           <div class="route-column">
-            ${this.renderRouteTimeline(outboundRoute, '🚄 行きの交通ルート')}
+            ${this.renderRouteFallback(outboundRoute, '🚄 行きの交通ルート', !!img1Src)}
             ${img1Src ? `<div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 行きの乗換経路（実際の検索結果）</h5><img src="${img1Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div>` : ''}
           </div>
         </div>
@@ -1658,12 +1677,12 @@ const App = {
         </div>
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【3日目】 ${dest.name}を出発</h4>
-        <div class="day-section" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
-          <div style="flex: 1; min-width: 300px;">
+        <div class="day-section day-section-split" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <div class="day-section-timeline-col">
             ${this.renderTimeline(day3Events)}
           </div>
           <div class="route-column">
-            ${this.renderRouteTimeline(returnRoute, '🚄 帰りの交通ルート')}
+            ${this.renderRouteFallback(returnRoute, '🚄 帰りの交通ルート', !!img3Src)}
             ${img3Src ? `<div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路（実際の検索結果）</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div>` : ''}
           </div>
         </div>
