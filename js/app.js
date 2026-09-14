@@ -103,6 +103,17 @@ const App = {
     document.getElementById('btn-back-yahoo').addEventListener('click', () => this.showStep('hotels'));
     document.getElementById('btn-back-to-yahoo-from-confirmed').addEventListener('click', () => this.showStep('yahoo-data'));
     document.getElementById('btn-generate-final').addEventListener('click', () => this.generateFinalItinerary());
+
+    // 時刻を入力し直したら、未入力エラーの表示と赤枠をその場で解除する
+    ['hakodate-arrival-time', 'hakodate-departure-time'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        if (el.value.trim()) el.classList.remove('input-missing');
+        if (this.validateYahooData().ok) this.clearYahooDataError();
+      });
+    });
+
     const btnBack = document.getElementById('btn-back-to-input');
     if (btnBack) {
       btnBack.addEventListener('click', () => this.showStep('input'));
@@ -277,6 +288,66 @@ const App = {
     });
     const destNameEl = document.getElementById('yahoo-data-dest-name');
     if (destNameEl) destNameEl.textContent = dest.name;
+  },
+
+  // 「ヤフー乗換データの連携」画面の入力チェック。
+  // 到着/出発時刻は行程の起点そのものなので必須。未入力を既定値で補うと、
+  // 利用者が調べていない架空の時刻が「しおり」に印刷されてしまう。
+  // スクショ画像は裏取り用の添付であり、無くても行程は組めるため必須にはしない。
+  validateYahooData() {
+    const arrEl = document.getElementById('hakodate-arrival-time');
+    const depEl = document.getElementById('hakodate-departure-time');
+    const arrival = arrEl ? arrEl.value.trim() : '';
+    const departure = depEl ? depEl.value.trim() : '';
+
+    const destKey = this.resolveDestination(this.state.inputs.destination);
+    const dest = destKey ? DESTINATIONS[destKey] : null;
+    const stationName = dest ? (dest.cityStation || dest.station) : '目的地の駅';
+
+    const messages = [];
+    if (!arrival) {
+      messages.push(`ヤフー乗換データ（行き）が未入力のため、行きの交通ルートを表示できません。乗換案内アプリで調べた「${stationName}への到着時刻」を入力してください。`);
+    }
+    if (!departure) {
+      messages.push(`ヤフー乗換データ（帰り）が未入力のため、帰りの交通ルートを表示できません。乗換案内アプリで調べた「${stationName}からの出発時刻」を入力してください。`);
+    }
+
+    return { ok: messages.length === 0, messages, arrival, departure };
+  },
+
+  showYahooDataError(messages) {
+    const box = document.getElementById('yahoo-data-error');
+    if (!box) return;
+    box.innerHTML = `
+      <p class="yahoo-data-error-title">⚠️ 入力が足りないため「しおり」を作成できません</p>
+      <ul>${messages.map(m => `<li>${m}</li>`).join('')}</ul>
+      <p class="yahoo-data-error-note">アプリが架空の時刻を補うと、実際の時刻表と見分けがつかなくなるため、推測での自動生成は行いません。</p>
+    `;
+    box.hidden = false;
+
+    // 未入力の欄を赤枠にして、どこを直せばよいか一目で分かるようにする
+    ['hakodate-arrival-time', 'hakodate-departure-time'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('input-missing', !el.value.trim());
+    });
+
+    const firstEmpty = ['hakodate-arrival-time', 'hakodate-departure-time']
+      .map((id) => document.getElementById(id))
+      .find((el) => el && !el.value.trim());
+    if (firstEmpty) firstEmpty.focus({ preventScroll: true });
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+
+  clearYahooDataError() {
+    const box = document.getElementById('yahoo-data-error');
+    if (box) {
+      box.hidden = true;
+      box.innerHTML = '';
+    }
+    ['hakodate-arrival-time', 'hakodate-departure-time'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('input-missing');
+    });
   },
 
   collectInputs() {
@@ -1217,9 +1288,13 @@ const App = {
     const durText = h > 0 ? `${h}時間${m > 0 ? m + '分' : ''}` : `${m}分`;
 
     // 往路を反転して作った行程は、その旨をはっきり書く（利用者が裏取りの必要性を判断できるように）
+    // 往路も発車時刻自体はアプリの模擬ダイヤなので、同様に本文へ明記する。
+    // 印刷時は title 属性が読めないため、バッジのツールチップだけでは足りない
     const reversedNote = route.isReversedFromOutbound
       ? `<div class="rl-caveat">※ この復路は往路の所要時間を逆順に並べて算出した目安です。乗り換え・搭乗の待ち時間は実際のダイヤで変わります。</div>`
-      : '';
+      : route.isAnchoredToArrival
+        ? `<div class="rl-caveat">※ 到着時刻は入力された乗換案内の時刻です。出発時刻と途中の待ち時間は、そこからアプリの模擬ダイヤで逆算した目安です。実際の列車はえきねっと等でご確認ください。</div>`
+        : `<div class="rl-caveat">※ 発着時刻はアプリの模擬ダイヤによる目安です。実際の列車はえきねっと等でご確認ください。</div>`;
 
     return `
       <div class="route-card">
@@ -1291,10 +1366,19 @@ const App = {
     const dest = DESTINATIONS[destKey];
     const inputs = this.state.inputs;
     
-    // Get inputted local arrival/departure times
-    const arrInput = document.getElementById('hakodate-arrival-time').value || '14:00';
-    const depInput = document.getElementById('hakodate-departure-time').value || '13:00';
-    
+    // 乗換アプリで調べた実際の到着/出発時刻。ここが未入力のまま行程を組むと
+    // 架空の時刻が実データのように印刷されてしまうため、既定値では補わない
+    const yahooData = this.validateYahooData();
+    if (!yahooData.ok) {
+      this.showYahooDataError(yahooData.messages);
+      this.showStep('yahoo-data');
+      return;
+    }
+    this.clearYahooDataError();
+
+    const arrInput = yahooData.arrival;
+    const depInput = yahooData.departure;
+
     // Get images
     const img1El = document.getElementById('preview-1');
     const img3El = document.getElementById('preview-3');
@@ -1324,12 +1408,15 @@ const App = {
     // 以前は「右の経路図を参照」というプレースホルダのみで、
     // 生成済みのタイムラインはこの画面に一切出ていなかった
     const itineraryStation = this.getSelectedStationName();
+    // 往路は模擬ダイヤで組んだあと、入力された到着時刻(arrInput)に終点を合わせる。
+    // そうしないと同じしおりの中で1日目のタイムラインと往路カードの到着時刻が食い違う
     const outboundRoute = itineraryStation
       ? (() => {
           const cmp = compareTransportRoutes(
             itineraryStation, dest.name, inputs.departureTime || '10:00', inputs.departureDate || null
           );
-          return cmp[cmp.recommended] || null;
+          const route = cmp[cmp.recommended] || null;
+          return route ? anchorRouteTimelineArrival(route, arrInput) : null;
         })()
       : null;
     // 復路は往路の反転で作る。generateShinkansenTimeline 等は「出発地→目的地」専用で、

@@ -2477,6 +2477,40 @@ function reverseRouteTimeline(route, departTimeStr) {
   };
 }
 
+// 往路の行程を、利用者が乗換アプリで調べた「目的地への到着時刻」に合わせて平行移動する。
+//
+// 往路の絶対時刻はアプリの模擬ダイヤ由来なので、そのままだと
+// 「1日目のタイムライン＝入力した到着時刻」「右の往路カード＝模擬ダイヤの到着時刻」
+// という食い違いが同じしおりの中に並んでしまう（実測で2時間15分ずれた）。
+// 所要時間の内訳はそのままに、実データである到着時刻に終点を合わせる。
+function anchorRouteTimelineArrival(route, arrivalTimeStr) {
+  if (!route || !route.timeline || !route.timeline.length || !arrivalTimeStr) return route;
+
+  const nodes = route.timeline.filter(i => i.type === 'node' && i.time);
+  if (!nodes.length) return route;
+
+  const lastNode = nodes[nodes.length - 1];
+  const deltaMin = diffMinsSigned(lastNode.time, arrivalTimeStr);
+  if (deltaMin === 0) return route;
+
+  return {
+    ...route,
+    timeline: route.timeline.map(i => (
+      i.type === 'node' && i.time ? { ...i, time: addMins(i.time, deltaMin) } : i
+    )),
+    // 出発時刻は到着時刻から逆算した値であることを表示側に伝える
+    isAnchoredToArrival: true,
+  };
+}
+
+// addMins と対になる符号付きの差分（終点合わせの平行移動量に使う）。
+// diffMins は待ち時間用に常に正へ丸めるため、ここでは別に用意する
+function diffMinsSigned(fromStr, toStr) {
+  const [fh, fm] = fromStr.split(':').map(Number);
+  const [th, tm] = toStr.split(':').map(Number);
+  return (th * 60 + tm) - (fh * 60 + fm);
+}
+
 // タイムライン中の移動区間から、行程全体として最も低い信頼度を求める
 function summarizeTimelineReliability(timeline) {
   return worstReliabilityLevel(
