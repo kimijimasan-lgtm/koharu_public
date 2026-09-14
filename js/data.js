@@ -1727,7 +1727,7 @@ function findNextDeparture(currentTimeStr, schedules) {
 // (1410分)経過した場合に「まだ0日目」と誤判定してしまう
 // （実際には11:00+23.5時間＝翌日10:30で、時計は既に日をまたいでいる）。
 // 出発時刻の「時計上の位置」を起点に加算しないと日またぎを正しく検出できない。
-// 搭乗待ちが極端に長い模擬ダイヤの場合、後続の時刻表示がいつの間にか
+// 待ち時間や乗り継ぎが積み上がると、後続の時刻表示がいつの間にか
 // 日をまたいでいることがあり、分数を隠すだけでは利用者が「今日中に着く」と
 // 誤解しかねないため、「◯◯空港 着」等の地点名の直前に付けて明示する
 function dayCrossingLabel(startTimeStr, totalMinsAtNode) {
@@ -1984,10 +1984,39 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
 // ============================================================
 // 以前は generateFlightTimeline() 内の if/else 連鎖に所要時間・文言が直書きされており、
 // 出典が構造化されていなかった。ここにテーブルとして外出しし、reliability を必ず持たせる。
-// ※ stations の判定順は元の if/else と同じ。配列の順序を入れ替えないこと。
 //
-// flightSchedule は実在する便のダイヤではなく「その空港におおむね存在する便数・時間帯」を
-// 模した仮の配列のため、フライトに関わる区間の信頼度は ESTIMATED とする。
+// 【1駅＝複数の空港候補（2026-09-15 の構造変更）】
+// 以前は1駅につき1空港しか持てず、「東京駅から羽田と成田のどちらが速いか」を
+// 比較する余地が構造的に無かった。また定義の無い15駅（水戸・つくば・小山・高崎・
+// 前橋・大宮・熊谷・千葉・船橋・東京・品川・上野・横浜・新横浜・小田原）は
+// 「羽田空港(または主要空港)へ一律90分」という既定値に落ちており、実測との差が
+// 最大70分（品川は実際 約20分）あった。
+// そこで各項目を airports: [候補, 候補, ...] の配列に変更し、駅ごとに複数の
+// 出発空港・複数のアクセス手段を持てるようにした。
+//
+// 【airports 配列の並び順＝既定の優先順位】
+// selectDepartureAirport() は、FLIGHT_ROUTES で就航を検証できた候補が無いときは
+// 配列の先頭をそのまま既定にする。したがって並び順は「人が実用性で判断した順」であり、
+// 次の基準で並べること：
+//   1. 首都圏の駅は羽田空港を先頭にする。到着側が道内7空港に分散するため、
+//      乗り換え無しで行ける可能性が最も高い
+//   2. 同じ空港へ複数の手段があるときは所要時間の短い方を上に置く
+//   3. 運休・減便リスクのある路線は先頭に置かない
+//      （高崎・前橋〜羽田空港の高速バスは運休便がありうるため不採用）
+//   4. アクセスが近いだけの空港を先頭にしない。就航が未検証なら第2候補以降に置く
+//      （水戸→茨城空港40分は最短だが、そこから北海道へ飛べるかは未検証）
+//
+// 【preferForDest】
+// 目的地名に含まれる語で既定候補を差し替えるためのフィールド。
+// 以前 resolve() という関数でやっていた「函館行きだけ仙台空港」という分岐を、
+// 関数ではなく構造化データとして表現し直したもの。
+//
+// 【flightSchedule は廃止した（2026-09-15）】
+// 以前は候補ごとに「その空港におおむね存在する便数・時間帯」を模した仮のダイヤ配列を
+// 持たせ、そこから搭乗待ちを計算していた。だがこの架空の待ちが合計所要時間を支配し、
+// ここに正確なアクセス時間を入れても合計に反映されないという本末転倒が起きていた。
+// 便の時刻も「検証できたものだけを使う」方針に統一し、実ダイヤは FLIGHT_ROUTES の
+// schedule に登録する形へ移した。この表は便の時刻を一切持たない。
 //
 // 【fallbackFlightTimeMin は表示してはいけない値】
 // この値は「出発空港だけ」を見た概算で、到着空港を一切考慮していない。
@@ -1996,109 +2025,936 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
 // 行程の時刻計算（totalMins・後続イベントの時刻）を成立させるためだけに使い、
 // 利用者に「約◯分」として提示してはならない。
 // 表示してよいのは FLIGHT_ROUTES で就航と所要時間を検証できた組み合わせのみ。
+//
+// 【この表に書いてよいこと・いけないこと】
+// ここに書くのは「出発駅 → 出発空港」のアクセスだけ。
+// 「その空港から北海道のどこへ飛べるか」は FLIGHT_ROUTES の担当であり、
+// CLAUDE.md の規定どおり航空会社名・便数はここにも書かない。
+
 const AIRPORT_ACCESS = [
+  // ────────────────────────────────
+  // 青森県
+  // ────────────────────────────────
   {
-    stations: ['新青森', '青森', '八戸'],
-    airport: '青森空港(または三沢空港)',
-    durationMin: 40,
-    label: '🚌 リムジンバス等',
-    flightSchedule: ['09:50', '11:45', '14:25', '19:40'],
-    fallbackFlightTimeMin: 45,
-    reliability: reliability(RELIABILITY.ESTIMATED, { note: 'リムジンバス所要は概算。実ダイヤ未確認' }),
+    // 旧データは新青森・青森・八戸を1項目にまとめ「青森空港(または三沢空港) 40分」と
+    // していたが、八戸から青森空港までは約100kmあり40分では到達しない。駅ごとに分割した
+    stations: ['青森'],
+    airports: [
+      {
+        airport: '青森空港',
+        durationMin: 35,
+        label: '🚌 空港連絡バス',
+        via: null,
+        mode: 'bus',
+        fare: 980,
+        fallbackFlightTimeMin: 45,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JRバス東北 青森駅−青森空港線／青森空港ビル 公式アクセス',
+          verifiedDate: '2026-09-15',
+          note: '青森駅前からの乗車時間。道路状況により変動する',
+        }),
+      },
+    ],
   },
+  {
+    stations: ['新青森'],
+    airports: [
+      {
+        airport: '青森空港',
+        durationMin: 50,
+        label: '🚃 奥羽本線・空港連絡バス',
+        via: '青森駅 乗換',
+        mode: 'bus',
+        fallbackFlightTimeMin: 45,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 奥羽本線（新青森−青森 約6分）＋JRバス東北 青森駅−青森空港線（35分）',
+          verifiedDate: '2026-09-15',
+          note: '新青森→青森 約6分 ＋ 連絡バス35分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['八戸'],
+    airports: [
+      {
+        // 旧データはここを青森空港40分としていた（地理的に成立しない）
+        airport: '三沢空港',
+        durationMin: 55,
+        label: '🚌 三沢空港連絡バス',
+        via: null,
+        mode: 'bus',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '八戸市 公式「三沢空港連絡バスをご利用ください」／十和田観光電鉄 八戸〜三沢空港線',
+          verifiedDate: '2026-09-15',
+          note: '航空機の発着に合わせた運行のため、便によって時刻が変わる',
+        }),
+      },
+      {
+        airport: '青森空港',
+        durationMin: 85,
+        label: '🚄 新幹線・空港連絡バス',
+        via: '新青森・青森駅 乗換',
+        mode: 'bus',
+        fallbackFlightTimeMin: 45,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '八戸→新青森 約30分 ＋ 新青森→青森空港 50分 で算出した概算。乗換時刻は未確認',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 岩手県
+  // ────────────────────────────────
+  {
+    stations: ['盛岡'],
+    airports: [
+      {
+        airport: 'いわて花巻空港',
+        durationMin: 45,
+        label: '🚌 空港連絡バス',
+        via: null,
+        mode: 'bus',
+        fallbackFlightTimeMin: 55,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '岩手県交通 花巻空港線／いわて花巻空港 公式アクセス',
+          verifiedDate: '2026-09-15',
+          note: '盛岡駅前（東口）からの乗車時間',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['一ノ関'],
+    airports: [
+      {
+        // 旧データは盛岡と同じ45分だったが、45分は盛岡駅起点の値
+        airport: 'いわて花巻空港',
+        durationMin: 60,
+        label: '🚃 東北本線・空港連絡',
+        via: '花巻・花巻空港駅 経由',
+        mode: 'bus',
+        fallbackFlightTimeMin: 55,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'いわて花巻空港 公式アクセス（一ノ関駅から約60分）',
+          verifiedDate: '2026-09-15',
+        }),
+      },
+      {
+        airport: '仙台空港',
+        durationMin: 65,
+        label: '🚄 新幹線・仙台空港アクセス線',
+        via: '仙台駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: 70,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 東北新幹線（一ノ関−仙台 約30分）＋仙台空港鉄道 公式（仙台−仙台空港 快速17分／普通25分）',
+          verifiedDate: '2026-09-15',
+          note: '新幹線約30分 ＋ アクセス線25分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 宮城県
+  // ────────────────────────────────
+  {
+    stations: ['仙台'],
+    airports: [
+      {
+        airport: '仙台空港',
+        durationMin: 25,
+        label: '🚃 仙台空港アクセス線',
+        via: null,
+        mode: 'rail',
+        fallbackFlightTimeMin: 70,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '仙台空港鉄道 公式（仙台駅−仙台空港駅 快速17分／普通25分）',
+          verifiedDate: '2026-09-15',
+          note: '各駅停車の25分を採用（快速なら17分）',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['古川'],
+    airports: [
+      {
+        // 旧データは仙台と同じ30分。note に「古川発は乗り継ぎ分が未反映」と
+        // 自認していたが数値は未修正だったため、ここで実態に合わせる
+        airport: '仙台空港',
+        durationMin: 60,
+        label: '🚄 新幹線・仙台空港アクセス線',
+        via: '仙台駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: 70,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 東北新幹線（古川−仙台 約13分）＋仙台空港鉄道 公式（25分）',
+          verifiedDate: '2026-09-15',
+          note: '新幹線約13分 ＋ アクセス線25分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 秋田県
+  // ────────────────────────────────
   {
     stations: ['秋田'],
-    airport: '秋田空港',
-    durationMin: 40,
-    label: '🚌 リムジンバス等',
-    flightSchedule: ['09:40', '19:00'],
-    fallbackFlightTimeMin: 55,
-    reliability: reliability(RELIABILITY.ESTIMATED, { note: 'リムジンバス所要は概算。実ダイヤ未確認' }),
+    airports: [
+      {
+        airport: '秋田空港',
+        durationMin: 40,
+        label: '🚌 リムジンバス',
+        via: null,
+        mode: 'bus',
+        fallbackFlightTimeMin: 55,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '秋田中央交通 秋田空港リムジンバス',
+          verifiedDate: '2026-09-15',
+          note: '秋田駅西口からの乗車時間。道路状況により変動する',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 山形県
+  // ────────────────────────────────
+  {
+    stations: ['山形'],
+    airports: [
+      {
+        airport: '山形空港',
+        durationMin: 35,
+        label: '🚌 空港シャトル',
+        via: null,
+        mode: 'bus',
+        fare: 1300,
+        fallbackFlightTimeMin: 75,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '山形空港 公式「交通アクセス／空港シャトル」（山形駅前−山形空港 約35分・1,300円）',
+          verifiedDate: '2026-09-15',
+        }),
+      },
+    ],
   },
   {
-    stations: ['盛岡', '一ノ関'],
-    airport: 'いわて花巻空港',
-    durationMin: 45,
-    label: '🚌 特急バス等',
-    flightSchedule: ['11:55', '15:20', '18:50'],
-    fallbackFlightTimeMin: 55,
-    reliability: reliability(RELIABILITY.ESTIMATED, { note: '特急バス所要は概算。実ダイヤ未確認' }),
+    stations: ['米沢'],
+    airports: [
+      {
+        // 旧データは山形と同じ30分だったが、米沢から山形空港への直通バスは存在しない
+        airport: '山形空港',
+        durationMin: 80,
+        label: '🚃 奥羽本線・空港シャトル',
+        via: '山形駅 乗換',
+        mode: 'bus',
+        fallbackFlightTimeMin: 75,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 奥羽本線（米沢−山形 約45分）＋山形空港 公式 空港シャトル（35分）',
+          verifiedDate: '2026-09-15',
+          note: '米沢から山形空港への直通バスは無く、山形駅での乗り継ぎが必要',
+        }),
+      },
+    ],
   },
+
+  // ────────────────────────────────
+  // 福島県（自家用車前提の区間。旧 resolve() を候補配列へ展開した）
+  // ────────────────────────────────
   {
-    stations: ['仙台', '古川'],
-    airport: '仙台空港',
-    durationMin: 30,
-    label: '🚃 仙台空港アクセス線',
-    flightSchedule: ['08:30', '10:15', '12:00', '14:45', '17:30', '19:00'],
-    fallbackFlightTimeMin: 70,
-    reliability: reliability(RELIABILITY.ESTIMATED, { note: '仙台駅起点の所要。古川発は乗り継ぎ分が未反映' }),
-  },
-  {
-    stations: ['山形', '米沢'],
-    airport: '山形空港',
-    durationMin: 30,
-    label: '🚌 シャトルバス',
-    flightSchedule: ['08:45', '16:30'],
-    fallbackFlightTimeMin: 75,
-    reliability: reliability(RELIABILITY.ESTIMATED, { note: '山形駅起点の所要。米沢発は乗り継ぎ分が未反映' }),
-  },
-  {
-    // 目的地が函館かどうかで利用空港が変わる区間。resolve() で分岐させる
-    stations: ['那須塩原', '宇都宮', '郡山', '福島', '白石蔵王', '新白河', '白河'],
-    resolve: (normStation, destName) => {
-      if (destName.includes('函館')) {
-        const durationMin = normStation === '宇都宮' ? 120 : 90;
-        return {
-          airport: '仙台空港',
-          durationMin,
-          label: '🚗 自家用車・高速バス等',
-          flightSchedule: ['10:45', '14:00'],
-          fallbackFlightTimeMin: null,
-          reliability: reliability(RELIABILITY.ESTIMATED, {
-            note: '自家用車前提の概算。交通状況により大きく変動する',
-          }),
-        };
-      }
-      const durationMin = ['那須塩原', '宇都宮'].includes(normStation) ? 90 : 60;
-      return {
+    stations: ['福島', '白石蔵王'],
+    airports: [
+      {
         airport: '福島空港',
-        durationMin,
+        durationMin: 60,
         label: '🚗 自家用車等',
-        flightSchedule: ['10:30'],
+        via: null,
+        mode: 'car',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.ESTIMATED, {
           note: '自家用車前提の概算。交通状況により大きく変動する',
         }),
-      };
-    },
+      },
+      {
+        // 旧 resolve() の「函館行きだけ仙台空港」を preferForDest で表現し直したもの
+        airport: '仙台空港',
+        durationMin: 90,
+        label: '🚗 自家用車・高速バス等',
+        via: null,
+        mode: 'car',
+        preferForDest: ['函館'],
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '自家用車前提の概算。交通状況により大きく変動する',
+        }),
+      },
+    ],
   },
   {
-    stations: ['札幌', '函館', '新函館北斗', '旭川', '帯広', '釧路', '網走', '稚内'],
-    airport: '丘珠空港(または最寄り空港)',
-    durationMin: 30,
-    label: '🚌 連絡バス',
-    flightSchedule: ['08:00', '10:30', '13:00', '16:00', '18:30'],
-    fallbackFlightTimeMin: 40,
-    reliability: reliability(RELIABILITY.ESTIMATED, { note: '道内発。最寄り空港・連絡バスとも概算' }),
+    stations: ['郡山', '新白河', '白河'],
+    airports: [
+      {
+        airport: '福島空港',
+        durationMin: 60,
+        label: '🚗 自家用車等',
+        via: null,
+        mode: 'car',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '自家用車前提の概算。交通状況により大きく変動する',
+        }),
+      },
+      {
+        airport: '仙台空港',
+        durationMin: 90,
+        label: '🚗 自家用車・高速バス等',
+        via: null,
+        mode: 'car',
+        preferForDest: ['函館'],
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '自家用車前提の概算。交通状況により大きく変動する',
+        }),
+      },
+    ],
   },
+
+  // ────────────────────────────────
+  // 栃木県
+  // ────────────────────────────────
+  {
+    stations: ['宇都宮'],
+    airports: [
+      {
+        airport: '福島空港',
+        durationMin: 90,
+        label: '🚗 自家用車等',
+        via: null,
+        mode: 'car',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '自家用車前提の概算。交通状況により大きく変動する',
+        }),
+      },
+      {
+        airport: '仙台空港',
+        durationMin: 120,
+        label: '🚗 自家用車・高速バス等',
+        via: null,
+        mode: 'car',
+        preferForDest: ['函館'],
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '自家用車前提の概算。交通状況により大きく変動する',
+        }),
+      },
+      {
+        airport: '羽田空港',
+        durationMin: 90,
+        label: '🚄 新幹線・東京モノレール等',
+        via: '東京駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 東北新幹線（宇都宮−東京 約50分）＋東京モノレール 公式（浜松町−第3ターミナル 空港快速13分）',
+          verifiedDate: '2026-09-15',
+          note: '新幹線約50分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['那須塩原'],
+    airports: [
+      {
+        airport: '福島空港',
+        durationMin: 90,
+        label: '🚗 自家用車等',
+        via: null,
+        mode: 'car',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '自家用車前提の概算。交通状況により大きく変動する',
+        }),
+      },
+      {
+        airport: '仙台空港',
+        durationMin: 90,
+        label: '🚗 自家用車・高速バス等',
+        via: null,
+        mode: 'car',
+        preferForDest: ['函館'],
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '自家用車前提の概算。交通状況により大きく変動する',
+        }),
+      },
+      {
+        airport: '羽田空港',
+        durationMin: 110,
+        label: '🚄 新幹線・東京モノレール等',
+        via: '東京駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 東北新幹線（那須塩原−東京 約70分）＋東京モノレール 公式（空港快速13分）',
+          verifiedDate: '2026-09-15',
+          note: '新幹線約70分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['小山'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 85,
+        label: '🚄 新幹線・東京モノレール等',
+        via: '東京駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 東北新幹線（小山−東京 約43分）＋東京モノレール 公式（空港快速13分）',
+          verifiedDate: '2026-09-15',
+          note: '新幹線約43分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 茨城県
+  // ────────────────────────────────
+  {
+    stations: ['水戸'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 115,
+        label: '🚃 特急ひたち・東京モノレール等',
+        via: '東京駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 特急ひたち（水戸−東京 約75分）＋東京モノレール 公式（空港快速13分）',
+          verifiedDate: '2026-09-15',
+          note: '特急約75分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+      {
+        airport: '茨城空港',
+        durationMin: 40,
+        label: '🚌 空港連絡バス',
+        via: null,
+        mode: 'bus',
+        fare: 1500,
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '茨城交通 公式「茨城空港線」（水戸駅南口−茨城空港 40分・1,500円）',
+          verifiedDate: '2026-09-15',
+          note: 'アクセスは最短だが、目的地への就航があるかは別途 FLIGHT_ROUTES での検証が必要',
+        }),
+      },
+      {
+        airport: '成田空港',
+        durationMin: 135,
+        label: '🚌 高速バス（予約制）',
+        via: null,
+        mode: 'bus',
+        fare: 3800,
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '関東鉄道 公式「勝田・水戸〜成田空港線」（水戸駅南口発・3,800円）',
+          verifiedDate: '2026-09-15',
+          caveat: '成田空港行きは全便予約制です。事前予約が必要です',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['つくば'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 95,
+        label: '🚃 つくばエクスプレス・東京モノレール等',
+        via: '秋葉原・浜松町 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'つくばエクスプレス（つくば−秋葉原 快速45分）＋東京モノレール 公式（空港快速13分）',
+          verifiedDate: '2026-09-15',
+          note: 'TX快速45分 ＋ 秋葉原→浜松町・モノレール 約30分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+      {
+        airport: '成田空港',
+        durationMin: 100,
+        label: '🚌 高速バス（予約制）',
+        via: null,
+        mode: 'bus',
+        fare: 2400,
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '関東鉄道 公式「土浦・つくば〜成田空港線」（つくばセンター発・2,400円）',
+          verifiedDate: '2026-09-15',
+          caveat: '予約制の高速バスです。事前予約が必要です',
+        }),
+      },
+      // 茨城空港〜つくば線は関東鉄道公式で「当面の間、運休」のため候補に入れない
+    ],
+  },
+
+  // ────────────────────────────────
+  // 群馬県
+  // ────────────────────────────────
+  {
+    stations: ['高崎'],
+    airports: [
+      {
+        // 前橋・高崎〜羽田空港の高速バスは145〜245分かかるうえ運休便がありうるため、
+        // 鉄道経由を既定にしている
+        airport: '羽田空港',
+        durationMin: 95,
+        label: '🚄 新幹線・東京モノレール等',
+        via: '東京駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 上越新幹線（高崎−東京 約55分）＋東京モノレール 公式（空港快速13分）',
+          verifiedDate: '2026-09-15',
+          note: '新幹線約55分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['前橋'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 115,
+        label: '🚃 両毛線・新幹線・東京モノレール等',
+        via: '高崎・東京駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 両毛線（前橋−高崎 約16分）＋上越新幹線（約55分）＋東京モノレール 公式',
+          verifiedDate: '2026-09-15',
+          note: '両毛線約16分 ＋ 新幹線約55分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 埼玉県
+  // ────────────────────────────────
+  {
+    stations: ['大宮'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 60,
+        label: '🚃 JR・東京モノレール等',
+        via: '浜松町 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 上野東京ライン・京浜東北線（大宮−浜松町 約40分）＋東京モノレール 公式（空港快速13分）',
+          verifiedDate: '2026-09-15',
+          note: 'JR約40分 ＋ モノレール13分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+      {
+        airport: '羽田空港',
+        durationMin: 90,
+        label: '🚌 空港連絡バス',
+        via: null,
+        mode: 'bus',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '東京空港交通 公式「大宮・羽田空港線」（大宮駅西口発・標準所要65〜110分。西武バス／国際興業バスと共同運行）',
+          verifiedDate: '2026-09-15',
+          note: '公式の標準所要65〜110分の中央値。乗り換え無しで行けるが渋滞の影響を受ける',
+        }),
+      },
+      // 成田エクスプレスの大宮駅発着は廃止済みのため、成田空港は候補に入れない
+    ],
+  },
+  {
+    stations: ['熊谷'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 80,
+        label: '🚄 新幹線・東京モノレール等',
+        via: '東京駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 上越新幹線（熊谷−東京 約38分）＋東京モノレール 公式（空港快速13分）',
+          verifiedDate: '2026-09-15',
+          note: '新幹線約38分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+      {
+        airport: '羽田空港',
+        durationMin: 150,
+        label: '🚌 空港連絡バス',
+        via: null,
+        mode: 'bus',
+        fare: 3300,
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '東京空港交通 公式「熊谷・坂戸・羽田空港線」（熊谷駅南口発・3,300円）',
+          verifiedDate: '2026-09-15',
+          note: '乗り換え無しで行けるが、鉄道の倍近い所要時間になる',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 千葉県
+  // ────────────────────────────────
+  {
+    stations: ['千葉'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 80,
+        label: '🚌 リムジンバス',
+        via: null,
+        mode: 'bus',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '京成バス 公式「羽田空港〜千葉中央駅・千葉駅ほか」／東京空港交通 幕張・千葉エリア線（千葉駅西口発）',
+          verifiedDate: '2026-09-15',
+          note: '乗り換え無しで行ける。道路状況により変動する',
+        }),
+      },
+      {
+        airport: '成田空港',
+        durationMin: 44,
+        label: '🚃 JR快速エアポート成田',
+        via: null,
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 総武本線・成田線 快速エアポート成田（千葉−成田空港 約44分）',
+          verifiedDate: '2026-09-15',
+          note: 'アクセスは羽田より短いが、目的地への就航があるかは別途 FLIGHT_ROUTES での検証が必要',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['船橋'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 60,
+        label: '🚌 空港連絡バス',
+        via: null,
+        mode: 'bus',
+        fare: 1400,
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '京成バス 公式「羽田空港〜船橋駅・西船橋駅」（船橋駅南口発・1,400円。京浜急行バスと共同運行）',
+          verifiedDate: '2026-09-15',
+          note: '公式時刻表の実績（約55〜62分）から採った代表値',
+        }),
+      },
+      {
+        airport: '成田空港',
+        durationMin: 50,
+        label: '🚃 JR・京成本線',
+        via: null,
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 総武本線・成田線／京成電鉄 京成本線（船橋−成田空港 約45〜50分）',
+          verifiedDate: '2026-09-15',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 東京都
+  // ────────────────────────────────
+  {
+    stations: ['東京'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 30,
+        label: '🚃 山手線・東京モノレール',
+        via: '浜松町 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '東京モノレール 公式（浜松町−羽田空港第3ターミナル 空港快速13分）＋JR東日本 山手線（東京−浜松町 約5分）',
+          verifiedDate: '2026-09-15',
+          note: '山手線約5分 ＋ モノレール13分 ＋ 乗換の余裕を含めた合計。京急経由でもほぼ同じ',
+        }),
+      },
+      {
+        airport: '成田空港',
+        durationMin: 55,
+        label: '🚃 成田エクスプレス',
+        via: null,
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 特急「成田エクスプレス」時刻表（東京−成田空港 約55分）',
+          verifiedDate: '2026-09-15',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['品川'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 20,
+        label: '🚃 京急本線',
+        via: null,
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '京浜急行電鉄 公式「電車でアクセス｜羽田空港へ行く」（品川−羽田空港第1・第2ターミナル 14分）',
+          verifiedDate: '2026-09-15',
+          note: '公式の乗車時間14分 ＋ ホーム移動・待ちの余裕を含めた合計',
+        }),
+      },
+      {
+        airport: '成田空港',
+        durationMin: 65,
+        label: '🚃 成田エクスプレス',
+        via: null,
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 特急「成田エクスプレス」時刻表（品川−成田空港 約65分）',
+          verifiedDate: '2026-09-15',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['上野'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 40,
+        label: '🚃 山手線・東京モノレール',
+        via: '浜松町 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '東京モノレール 公式（空港快速13分）＋JR東日本 山手線（上野−浜松町 約19分）',
+          verifiedDate: '2026-09-15',
+          note: '山手線約19分 ＋ モノレール13分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+      {
+        airport: '成田空港',
+        durationMin: 45,
+        label: '🚃 京成スカイライナー',
+        via: '京成上野駅',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '京成電鉄 公式「スカイライナーのご案内」（日暮里−空港第2ビル 最短36分）',
+          verifiedDate: '2026-09-15',
+          note: 'JR上野駅から京成上野駅までの徒歩を含めた合計',
+        }),
+      },
+    ],
+  },
+
+  // ────────────────────────────────
+  // 神奈川県
+  // ────────────────────────────────
+  {
+    stations: ['横浜'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 30,
+        label: '🚃 京急本線',
+        via: null,
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '京浜急行電鉄 公式「電車でアクセス｜羽田空港へ行く」（横浜−羽田空港 28分）',
+          verifiedDate: '2026-09-15',
+          note: '公式の乗車時間28分にホーム移動の余裕を加えた値',
+        }),
+      },
+      {
+        airport: '羽田空港',
+        durationMin: 35,
+        label: '🚌 YCATリムジンバス',
+        via: '横浜シティ・エア・ターミナル',
+        mode: 'bus',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'YCAT 公式「YCAT⇒羽田空港」（第1ターミナル約24分・第3ターミナル約41分。京浜急行バス運行）',
+          verifiedDate: '2026-09-15',
+          note: 'ターミナルにより24〜41分。渋滞時は大きく延びる',
+        }),
+      },
+      {
+        airport: '成田空港',
+        durationMin: 95,
+        label: '🚃 成田エクスプレス',
+        via: null,
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 特急「成田エクスプレス」時刻表（横浜−成田空港 約90分）／YCAT 公式 成田線',
+          verifiedDate: '2026-09-15',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['新横浜'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 45,
+        label: '🚃 横浜線・京急本線',
+        via: '横浜駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東日本 横浜線（新横浜−横浜 約11分）＋京浜急行電鉄 公式（横浜−羽田空港 28分）',
+          verifiedDate: '2026-09-15',
+          note: '横浜線約11分 ＋ 京急28分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+      {
+        airport: '羽田空港',
+        durationMin: 70,
+        label: '🚌 空港連絡バス',
+        via: null,
+        mode: 'bus',
+        fare: 1000,
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: '東急バス 公式「センター北・センター南・新横浜駅−羽田空港」（新横浜駅発 約60〜80分・1,000円）',
+          verifiedDate: '2026-09-15',
+          note: '公式の約60〜80分の中央値。乗り換え無しで行ける',
+        }),
+      },
+    ],
+  },
+  {
+    stations: ['小田原'],
+    airports: [
+      {
+        airport: '羽田空港',
+        durationMin: 50,
+        label: '🚄 新幹線・京急本線',
+        via: '品川駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.RESEARCHED, {
+          source: 'JR東海 東海道新幹線（小田原−品川 約30分）＋京浜急行電鉄 公式（品川−羽田空港 14分）',
+          verifiedDate: '2026-09-15',
+          note: '新幹線約30分 ＋ 京急14分 ＋ 乗換の余裕を含めた合計',
+        }),
+      },
+      {
+        airport: '羽田空港',
+        durationMin: 120,
+        label: '🚃 東海道線・京急本線',
+        via: '品川駅 乗換',
+        mode: 'rail',
+        fallbackFlightTimeMin: null,
+        reliability: reliability(RELIABILITY.ESTIMATED, {
+          note: '新幹線を使わない在来線のみのルート。実ダイヤ未確認の概算',
+        }),
+      },
+    ],
+  },
+
+  // 旧データにあった道内発8駅（札幌・函館・新函館北斗・旭川・帯広・釧路・網走・稚内）の
+  // 項目は削除した。理由は3つ：
+  //   1. 「丘珠空港へ連絡バス30分」が地理的に成立しない（新函館北斗→丘珠は数百km）
+  //   2. 8駅とも PREFECTURE_STATIONS に無く、利用者が選択できない到達不能データだった
+  //   3. index.html に「北海道内発は対象外」と明記されている
+  // 将来 道内発や新函館北斗経由のハイブリッドルートを作る際は、
+  // その時点で検証済みのデータとして作り直すこと
 ];
 
-// どのテーブル項目にも当たらない出発地に使う既定値
+// どの項目にも当たらない出発地に使う既定値。
+// 現在は選択可能な29駅すべてが上の表に定義済みのため通常は到達しないが、
+// 駅を追加したときの安全網として残している
 const AIRPORT_ACCESS_DEFAULT = {
   airport: '羽田空港(または主要空港)',
   durationMin: 90,
   label: '🚃 在来線等',
-  flightSchedule: ['08:00', '10:30', '13:00', '16:00', '18:30'],
+  via: null,
+  mode: 'rail',
   fallbackFlightTimeMin: null,
   reliability: reliability(RELIABILITY.ESTIMATED, { note: '主要空港までの在来線所要を一律90分と仮定した値' }),
 };
 
-function lookupAirportAccess(normStation, destName) {
+// 出発駅に対応する候補配列を返す（定義が無ければ既定値1件の配列）
+function lookupAirportAccessCandidates(normStation) {
   for (const entry of AIRPORT_ACCESS) {
-    if (!entry.stations.includes(normStation)) continue;
-    return entry.resolve ? entry.resolve(normStation, destName) : entry;
+    if (entry.stations.includes(normStation)) return entry.airports;
   }
-  return AIRPORT_ACCESS_DEFAULT;
+  return [AIRPORT_ACCESS_DEFAULT];
+}
+
+// 候補の中から既定で表示する1件を決める。
+//
+// 1. FLIGHT_ROUTES で就航と所要時間を検証できている候補があれば、
+//    その中で「駅→空港アクセス ＋ フライト」の合計が最短のものを選ぶ
+//    （空港→目的地のローカル交通は到着空港が同じなら定数なので比較に影響しない）
+// 2. 検証済みが1件も無ければ preferForDest の一致を見る
+//    （旧 resolve() の「函館行きだけ仙台空港」を引き継ぐための分岐）
+// 3. それも無ければ配列の先頭（＝人が実用性で判断した第1候補）
+//
+// 公開版は FLIGHT_ROUTES が空のため常に 2→3 の経路を通る。
+// データを入れた分だけ賢くなる、という段階的な設計にしてある
+function selectDepartureAirport(candidates, destAirport, destName) {
+  if (!candidates || !candidates.length) return AIRPORT_ACCESS_DEFAULT;
+
+  const verified = candidates.filter(
+    (c) => isFlightDurationDisplayable(lookupFlightRoute(c.airport, destAirport))
+  );
+  if (verified.length) {
+    const totalOf = (c) => c.durationMin + lookupFlightRoute(c.airport, destAirport).durationMin;
+    return verified.reduce((best, c) => (totalOf(c) < totalOf(best) ? c : best));
+  }
+
+  const preferred = candidates.find(
+    (c) => destName && (c.preferForDest || []).some((keyword) => destName.includes(keyword))
+  );
+  return preferred || candidates[0];
+}
+
+// 既存の呼び出し互換のための薄いラッパ。
+// 戻り値の形（airport / durationMin / label /
+// fallbackFlightTimeMin / reliability）は構造変更前と同じ
+function lookupAirportAccess(normStation, destName) {
+  const candidates = lookupAirportAccessCandidates(normStation);
+  const local = lookupAirportLocalTransit(destName);
+  return selectDepartureAirport(candidates, local && local.airport, destName);
 }
 
 // ============================================================
@@ -2123,12 +2979,23 @@ function lookupAirportAccess(normStation, destName) {
 //   とし、caveat に乗り継ぎ地を書く（所要時間の断定を避ける）
 // - CLAUDE.md の規定どおり、航空会社名・便数はここにも書かない
 //
+// 【schedule（任意）… 検証済みの出発時刻】
+// 公式時刻表で実際の出発時刻まで確認できた区間だけ、schedule に時刻の配列を書ける。
+// 登録があるときだけ generateFlightTimeline() が「次の便までの待ち」を計算する。
+// 登録が無い区間では便の時刻を推測せず、保安検査・搭乗手続きの標準余裕（60分）だけを
+// 積む。かつて空港ごとの模擬ダイヤ（1日5便などの架空の配列）から待ちを算出していたが、
+// 架空の分数が合計所要時間を支配し、出発駅→空港の正確なアクセス時間が合計に
+// 反映されなくなっていたため廃止した（2026-09-15）。
+// schedule も「時刻を書く＝その便があると断定する」ことになるので、
+// 一次資料で確認できないかぎり書かないこと。書かなくても行程は成立する。
+//
 // 公開版は未検証のため意図的に空。空でも lookupFlightRoute() が null を返し、
-// 「所要時間は要確認」表示＋概算計算へフォールバックする設計になっている。
+// 「所要時間は要確認」表示＋標準余裕60分の計算へフォールバックする設計になっている。
 //
 // 登録例（形式の参考。架空の空港名）:
 //   'サンプル南空港-サンプル北空港': {
 //     durationMin: 95,
+//     schedule: ['08:15', '12:40', '18:05'],  // 任意。確認できた区間だけ
 //     reliability: reliability(RELIABILITY.VERIFIED, {
 //       source: '◯◯航空 公式時刻表',
 //       verifiedDate: 'YYYY-MM-DD',
@@ -2378,16 +3245,23 @@ function lookupAirportLocalTransit(destName) {
   return AIRPORT_LOCAL_TRANSIT_DEFAULT;
 }
 
-function generateFlightTimeline(stationName, destName, departTimeStr) {
+// airportIndex に候補のインデックスを渡すと、その出発空港で行程を作る。
+// 省略時（null）は selectDepartureAirport() が決めた既定の候補を使う。
+// Phase 2 の「この空港で見る」による切り替え用に受け口だけ先に用意してある
+function generateFlightTimeline(stationName, destName, departTimeStr, airportIndex = null) {
   const normStation = stationName.replace(/駅$/, '');
 
   // 出発地 → 空港（AIRPORT_ACCESS）と 到着空港 → 目的地（AIRPORT_LOCAL_TRANSIT）は
   // どちらもテーブル引き。分岐の順序に依存するため、配列の順序を変えないこと
-  const access = lookupAirportAccess(normStation, destName);
+  const airportCandidates = lookupAirportAccessCandidates(normStation);
+  const localForSelect = lookupAirportLocalTransit(destName);
+  const access =
+    (airportIndex != null && airportCandidates[airportIndex]) ||
+    selectDepartureAirport(airportCandidates, localForSelect && localForSelect.airport, destName);
+  const selectedAirportIndex = airportCandidates.indexOf(access);
   const airport = access.airport;
   const airportTransferTime = access.durationMin;
   const airportTransText = `${access.label}（約${access.durationMin}分）`;
-  const flightSchedule = access.flightSchedule;
   const local = lookupAirportLocalTransit(destName);
   const localTransfer = local.durationMin;
   const localTransText = `${local.label}（約${local.durationMin}分）`;
@@ -2418,9 +3292,9 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   // durationMin は復路の逆算に使う。移動以外の注意書き行は null のままにする
   const pushEdge = (text, rl = null, durationMin = null) => timeline.push({ type: 'edge', text, reliability: rl, durationMin });
 
-  // フライトの便は実ダイヤではなく模擬ダイヤのため、搭乗待ち・フライト自体は常に ESTIMATED
+  // 検証済みのダイヤが無い区間のフライト関連は常に ESTIMATED
   const flightReliability = reliability(RELIABILITY.ESTIMATED, {
-    note: '便の時刻はアプリの模擬ダイヤです。実際の運航ダイヤは航空会社サイトでご確認ください',
+    note: '実際の運航ダイヤは航空会社サイトでご確認ください',
   });
 
   pushNode(t, `${normStation}（ご自宅周辺） 発`);
@@ -2429,36 +3303,62 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   totalMins += airportTransferTime;
   pushNode(t, `${airport} 着`);
 
+  // ── 搭乗までの待ち ──
+  //
+  // 【なぜ模擬ダイヤを使うのをやめたか（2026-09-15）】
+  // 以前は空港ごとの模擬ダイヤ（1日5便などの架空の配列）から「次の便」を選び、
+  // その便までの差分を待ち時間として合計に積んでいた。問題が2つあった：
+  //   1. 架空の便数に基づく分数を、行程上の実時間として提示していた
+  //      （航空会社名・便数を断定しない方針と矛盾する）
+  //   2. この架空の待ちが合計所要時間の中で支配的になり、出発駅→空港のアクセスを
+  //      いくら正確にしても合計に反映されなかった。
+  //      例）品川（羽田まで20分）と大宮（羽田まで60分）がどちらも合計4時間30分になり、
+  //          アクセスの40分差が「次の模擬便までの待ち」に吸収されて消えていた
+  //
+  // そこで、便の時刻も「検証できたものだけを使う」方針に統一した：
+  //   - FLIGHT_ROUTES にダイヤ（schedule）を登録できた区間 … 実際の次便までの待ちを計算する
+  //   - 未登録の区間 … 保安検査・搭乗手続きに必要な標準的な余裕時間（60分）だけを積む
+  // 後者は特定の便に依存しない普遍的な所要のため、合計に入れても事実に反しない。
+  const verifiedSchedule =
+    flightRoute && Array.isArray(flightRoute.schedule) && flightRoute.schedule.length
+      ? flightRoute.schedule
+      : null;
   const readyToFly = addMins(t, REQUIRED_SECURE_TIME);
-  let flightDepart = findNextDeparture(readyToFly, flightSchedule);
-  
+  const flightDepart = verifiedSchedule ? findNextDeparture(readyToFly, verifiedSchedule) : readyToFly;
+  const waitTime = Math.max(diffMins(t, flightDepart), REQUIRED_SECURE_TIME);
+
   // 就航路線・航空会社・便数は目的地空港ごとに実際の時刻表を確認していない。
   // 以前は空港名だけで「福島空港→ANA 1日1便」のように断定していたが、
   // 実際には福島空港から女満別空港への直行便は存在せず、事実と異なる
   // 具体的な情報（架空の航空会社・便数）を表示していた。
   // 出発空港と到着空港の組み合わせごとに直行便の有無を検証できていない以上、
-  // 特定の航空会社名・便数は一切書かず、必ず利用者自身の確認を促す表現にする
-  const flightNote = ' ※直行便の有無・便数は要確認（乗り継ぎとなる場合があります）';
+  // 特定の航空会社名・便数は一切書かず、必ず利用者自身の確認を促す表現にする。
+  //
+  // なお、ダイヤ未登録の区間では「◯◯空港 発 HH:MM」の時刻は実在する便の発車時刻ではなく
+  // 「保安検査を終えて搭乗できる最短時刻」である。それを毎回この行に書き足すと
+  // ノードの文字数が跳ね上がって行程が読みにくくなるため、ここには書かず、
+  // 比較カード上部の本文（app.js の compare-time-note・結論文・しおりの注記）で
+  // 「合計は空港到着の60分後に搭乗できた場合の最短の目安」と明示している
+  const flightNote = verifiedSchedule
+    ? ' ※実際の運航ダイヤは航空会社サイトでご確認ください'
+    : ' ※直行便の有無・便数・時刻は要確認（乗り継ぎとなる場合があります）';
 
-  let waitTime = diffMins(t, flightDepart);
-  if (waitTime > 0) {
-    // 待ち時間は「保安検査等の一般的な余裕時間(60分)」＋「次の模擬便までの差分」の合計。
-    // 後者は架空の便数設定（例：福島空港は1日1便という仮定）に依存するため、
-    // 180分（既存の「大幅な待ち」判定と同じ閾値）以上になった場合は、
-    // その架空の分数をそのまま事実であるかのように出さない。
-    // ただし totalMins には引き続き加算し、後続の「◯◯空港 発」等の時刻計算には使う
-    // （時刻計算自体は変えず、表示だけを非断定的にする）
-    if (waitTime >= 180) {
-      pushEdge(
-        '🛂 搭乗手続き・待ち（本アプリの模擬ダイヤでは大幅な待ちが生じますが、実際の便数はもっと多い可能性があります。正確な時刻は要確認）',
-        flightReliability, waitTime
-      );
-    } else {
-      pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`, flightReliability, waitTime);
-    }
-    t = addMins(t, waitTime);
-    totalMins += waitTime;
+  if (verifiedSchedule) {
+    pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`, flightRoute.reliability || flightReliability, waitTime);
+  } else {
+    pushEdge(
+      // decomposeRouteTimeline() は「待ち」を含む区間だけを待ち時間として扱い、
+      // 復路の反転でその地点に紐づけ直す。文言から「待ち」を外すと移動区間として
+      // 数えられ、地点数と移動数が合わなくなって復路の生成が失敗するので外さないこと
+      `🛂 搭乗手続き・保安検査の待ち（約${REQUIRED_SECURE_TIME}分）`,
+      reliability(RELIABILITY.ESTIMATED, {
+        note: '特定の便を前提とせず、保安検査・搭乗手続きに必要な標準的な余裕時間として見込んだ値です。実際の便によってはさらに待ち時間が生じます',
+      }),
+      waitTime
+    );
   }
+  t = addMins(t, waitTime);
+  totalMins += waitTime;
   pushNode(t, `${airport} 発${flightNote}`);
 
   // 検証済みの空港ペアだけ「約◯分」を出す。未検証のペアでは所要時間を伏せる。
@@ -2493,6 +3393,10 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
     // 「約6時間6分」のような合計を事実として出さないよう、表示側に伝える
     hasUnverifiedFlightLeg: !flightTimeVerified,
     flightPair: { from: airport, to: destAirport },
+    // Phase 2（案DのUI：ほかの空港のサマリ＋切り替え）が使う情報。
+    // Phase 1 の時点では表示側が参照していないため、見た目は変わらない
+    airportCandidates,
+    selectedAirportIndex,
   };
 }
 
