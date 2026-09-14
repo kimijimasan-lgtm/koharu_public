@@ -1862,6 +1862,15 @@ body {
   font-size: 1.1rem;
   font-weight: bold;
   color: var(--text-color);
+  /* 「約 6時間6分」が「約 6時間」「6分」に割れないようにする */
+  white-space: nowrap;
+}
+/* 出発空港の候補が複数ある駅で、いまどの空港を経由する行程かを示す1行。
+   候補1件の駅では app.js 側でこの要素ごと出力しない */
+.compare-via {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  margin: -8px 0 8px;
 }
 /* ============================================================
    片道5時間超の警告バナー
@@ -1930,6 +1939,111 @@ body {
   line-height: 1.4;
   margin: -6px 0 10px;
 }
+/* ============================================================
+   出発空港の候補が複数ある駅の「ほかの空港も見る」（案D）
+   ============================================================
+   候補が1件しかない駅では app.js 側でこのブロックごと出力しないため、
+   大多数の駅では従来と同じ見た目のまま。複数ある駅だけ1行増える。
+   中身は1行サマリに絞り、フルのタイムラインは選択中の候補しか描かない
+   （2カラムの「新幹線 vs 飛行機」という比較軸を壊さないため） */
+.airport-alt {
+  margin-top: 12px;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
+}
+.airport-alt > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: var(--secondary-color);
+  list-style: revert; /* 既定の三角マーカーを出して開閉できることを示す */
+}
+.airport-alt-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+.airport-alt-row {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--color-bg-sub, #f7fafc);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+.airport-alt-row:last-child {
+  margin-bottom: 0;
+}
+.aar-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.aar-airport {
+  font-weight: bold;
+  font-size: 0.92rem;
+}
+.aar-total {
+  font-weight: bold;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+.aar-sub {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-light);
+}
+/* 検証済みと見分けがつくよう、未検証の候補には文字で印を付ける（色だけに頼らない） */
+.aar-flag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 5px;
+  border: 1px solid #b45309;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: #b45309;
+  white-space: nowrap;
+}
+.airport-alt-pick {
+  display: block;
+  margin: 8px 0 0 auto;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--secondary-color);
+  background: #fff;
+  border: 1px solid var(--secondary-color);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.airport-alt-pick:hover {
+  background: #ebf8ff;
+}
+/* 印刷時は「選べる」操作が意味を持たないので切替ボタンを隠し、
+   色に頼らず枠線だけで読めるようにする。
+   折りたたみは閉じていれば見出し1行しか出ないので、開いていた場合に
+   候補の枠がページ境界で割れないことだけ担保する */
+@media print {
+  .airport-alt-pick {
+    display: none;
+  }
+  .airport-alt > summary {
+    color: #000;
+  }
+  .airport-alt-row {
+    background: #fff;
+    border: 1px solid #000;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .aar-flag {
+    color: #000;
+    border-color: #000;
+  }
+}
+
 .compare-details {
   list-style: none;
   padding: 0;

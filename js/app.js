@@ -15,6 +15,9 @@ const App = {
       luggagePattern: 'A',
     },
     selectedHotel: null,
+    // 比較カードで利用者が選んだ出発空港。{ station, dest, index } の形で持ち、
+    // 出発駅か目的地が変わったら（＝候補の顔ぶれが変わったら）無視して既定に戻す
+    selectedDepartureAirport: null,
     itineraries: [],
     confirmedPlan: null,
     // 実ダイヤから選ばれた便のパターン名（'朝便' 等）。実ダイヤ未整備の区間では null のまま
@@ -157,6 +160,19 @@ const App = {
       this.saveInputsToStorage();
       this.updateDestinationInfo();
       this.refreshTrainChoices();
+    });
+
+    // 比較カードの「この空港で見る」。カードは updateDestinationInfo() で
+    // 毎回作り直されるため、ボタン個別ではなく親要素への委譲で受ける
+    document.getElementById('destination-info')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.airport-alt-pick');
+      if (!btn) return;
+      this.state.selectedDepartureAirport = {
+        station: this.getSelectedStationName(),
+        dest: btn.dataset.dest || '',
+        index: Number(btn.dataset.airportIndex),
+      };
+      this.updateDestinationInfo();
     });
   },
 
@@ -424,7 +440,13 @@ const App = {
     if (stationName && dest.name) {
       const departTimeStr = document.getElementById('departure-time').value || '10:00';
       const departDateStr = document.getElementById('departure-date')?.value || null;
-      const comparison = compareTransportRoutes(stationName, dest.name, departTimeStr, departDateStr);
+      // 利用者が「この空港で見る」で選んだ候補があれば、それで飛行機ルートを組む。
+      // ただし出発駅・目的地が変わると候補の顔ぶれ自体が変わり、同じ番号が
+      // まったく別の空港を指してしまうため、その場合は選択を捨てて既定に戻す
+      const picked = this.state.selectedDepartureAirport;
+      const airportIndex =
+        picked && picked.station === stationName && picked.dest === dest.name ? picked.index : null;
+      const comparison = compareTransportRoutes(stationName, dest.name, departTimeStr, departDateStr, airportIndex);
       // Save recommended transport mode for reuse in hotel step
       this.state.recommendedTransport = comparison.recommended;
       
@@ -467,16 +489,72 @@ const App = {
         ? `<div class="compare-time-note">※フライトの所要時間・便の時刻が未検証のため、合計は最短の目安です（空港到着の60分後に搭乗できた場合）</div>`
         : '';
 
+      // ── 出発空港が複数ある駅の「ほかの空港も見る」（案D） ──
+      // 候補が1件しかない駅（大多数）ではこのブロックごと出さないため、
+      // 見た目は従来どおり。複数ある駅だけ折りたたみが1行増える。
+      // 折りたたみの中は1行サマリだけにして、フルのタイムラインは
+      // 選択中の1候補しか描かない（縦に伸ばさないため）。
+      const candidates = (fli && fli.airportCandidates) || [];
+      const selectedIdx = fli ? fli.selectedAirportIndex : -1;
+
+      const altHtml = (fli && candidates.length > 1) ? (() => {
+        // 候補には「別の空港」だけでなく「同じ空港への別ルート」も入る
+        // （例：横浜→羽田は京急30分とYCATリムジン35分の2通り）。
+        // 「ほかの空港も見る」とだけ書くと同じ空港名が並んで混乱するため、
+        // 同じ空港の候補が含まれるかどうかで見出しと行の表記を変える
+        const selAirport = candidates[selectedIdx] ? candidates[selectedIdx].airport : '';
+        const hasSameAirportAlt = candidates.some((c, i) => i !== selectedIdx && c.airport === selAirport);
+
+        const rows = candidates.map((cand, i) => {
+          if (i === selectedIdx) return '';
+          // 候補ごとの合計は、その空港で行程を組み直さないと出せない。
+          // 候補は多くても3件なので、ここで都度生成してよい
+          const altRoute = generateFlightTimeline(stationName, dest.name, departTimeStr, i);
+          const viaText = cand.via ? `（${this.escapeHtml(cand.via)}）` : '';
+          const fareText = cand.fare ? ` / ${cand.fare.toLocaleString()}円` : '';
+          const unverified = altRoute && altRoute.hasUnverifiedFlightLeg;
+          return `
+            <li class="airport-alt-row">
+              <div class="aar-main">
+                <span class="aar-airport">${this.escapeHtml(cand.airport)} 経由${cand.airport === selAirport ? '（別の行き方）' : ''}</span>
+                <span class="aar-total">合計 約 ${formatTime(altRoute.time)}${unverified ? '<span class="compare-time-mark">※</span>' : ''}</span>
+              </div>
+              <div class="aar-sub">
+                ${this.escapeHtml(cand.label)} 約${cand.durationMin}分${viaText}${fareText}
+                ${unverified ? '<span class="aar-flag">直行便の有無＝要確認</span>' : ''}
+              </div>
+              ${this.renderReliabilityCaveat(cand.reliability)}
+              <button type="button" class="airport-alt-pick" data-airport-index="${i}" data-dest="${this.escapeHtml(dest.name)}">この空港で見る</button>
+            </li>`;
+        }).join('');
+
+        return `
+          <details class="airport-alt">
+            <summary>${hasSameAirportAlt ? 'ほかの空港・行き方も見る' : 'ほかの空港も見る'}（${candidates.length - 1}件）</summary>
+            <ul class="airport-alt-list">${rows}</ul>
+          </details>`;
+      })() : '';
+
+      // 候補が複数ある駅でだけ、どの空港を経由する行程なのかを示す。
+      // 見出しの <strong> の中に入れると「飛行機（福島」「空港 経由）」のように
+      // 所要時間との間で不自然に折り返すため、見出しの下に独立した1行として出す。
+      // 候補1件の駅ではこの行ごと出さないので、従来どおり「✈️ 飛行機」のまま
+      const fliVia = (fli && candidates.length > 1)
+        ? `<div class="compare-via">${this.escapeHtml(candidates[selectedIdx] ? candidates[selectedIdx].airport : '')} 経由</div>`
+        : '';
+
       const fliHtml = (fli) ? `
         <div class="compare-item ${comparison.recommended === 'flight' ? 'recommended' : ''}">
           <div class="compare-header">
             <strong>✈️ 飛行機</strong>
             <span class="compare-time">約 ${formatTime(fli.time)}${fliUnverified ? '<span class="compare-time-mark">※</span>' : ''}</span>
           </div>
+          ${fliVia}
           ${fliTimeNote}
           <div class="timeline-container">
             ${renderTimeline(fli.timeline)}
           </div>
+          ${altHtml}
         </div>
       ` : '';
 
