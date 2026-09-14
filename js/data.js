@@ -1713,12 +1713,30 @@ function diffMins(startStr, endStr) {
 // 現在時刻以降の直近の出発時刻を探す（モックダイヤ）
 function findNextDeparture(currentTimeStr, schedules) {
   const currentTotal = currentTimeStr.split(':').map(Number).reduce((h, m) => h * 60 + m);
-  
+
   for (let s of schedules) {
     const sTotal = s.split(':').map(Number).reduce((h, m) => h * 60 + m);
     if (sTotal >= currentTotal) return s;
   }
   return schedules[0]; // その日に無い場合は翌日の始発
+}
+
+// 出発時刻（時計上の時刻）と、そこからの累計経過分数（totalMins）をもとに、
+// その地点が出発日から何日後かを表すラベルを返す。
+// 経過分数だけで「1440分＝1日」と判定すると、例えば11:00発で23.5時間
+// (1410分)経過した場合に「まだ0日目」と誤判定してしまう
+// （実際には11:00+23.5時間＝翌日10:30で、時計は既に日をまたいでいる）。
+// 出発時刻の「時計上の位置」を起点に加算しないと日またぎを正しく検出できない。
+// 搭乗待ちが極端に長い模擬ダイヤの場合、後続の時刻表示がいつの間にか
+// 日をまたいでいることがあり、分数を隠すだけでは利用者が「今日中に着く」と
+// 誤解しかねないため、「◯◯空港 着」等の地点名の直前に付けて明示する
+function dayCrossingLabel(startTimeStr, totalMinsAtNode) {
+  const [startH, startM] = startTimeStr.split(':').map(Number);
+  const absoluteMinutes = startH * 60 + startM + totalMinsAtNode;
+  const dayIndex = Math.floor(absoluteMinutes / 1440);
+  if (dayIndex <= 0) return '';
+  if (dayIndex === 1) return '（翌日）';
+  return `（${dayIndex}日後）`;
 }
 
 // 毎時決まった分に出発するパターンの生成
@@ -2327,7 +2345,10 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
 
   let t = departTimeStr;
   let timeline = [];
-  const pushNode = (time, text) => timeline.push({ type: 'node', time, text });
+  // dayLabel は totalMins（出発からの累計経過分）から算出する。
+  // pushNode 呼び出し時点の totalMins を見るため、直前の totalMins += を
+  // 済ませてから呼ぶこと（この関数内の既存の呼び出し順はすでにそうなっている）
+  const pushNode = (time, text) => timeline.push({ type: 'node', time, text, dayLabel: dayCrossingLabel(departTimeStr, totalMins) });
   // 移動区間には必ず reliability を添える。省略した区間は「目安」扱いになる
   // durationMin は復路の逆算に使う。移動以外の注意書き行は null のままにする
   const pushEdge = (text, rl = null, durationMin = null) => timeline.push({ type: 'edge', text, reliability: rl, durationMin });
@@ -2356,11 +2377,20 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
 
   let waitTime = diffMins(t, flightDepart);
   if (waitTime > 0) {
+    // 待ち時間は「保安検査等の一般的な余裕時間(60分)」＋「次の模擬便までの差分」の合計。
+    // 後者は架空の便数設定（例：福島空港は1日1便という仮定）に依存するため、
+    // 180分（既存の「大幅な待ち」判定と同じ閾値）以上になった場合は、
+    // その架空の分数をそのまま事実であるかのように出さない。
+    // ただし totalMins には引き続き加算し、後続の「◯◯空港 発」等の時刻計算には使う
+    // （時刻計算自体は変えず、表示だけを非断定的にする）
     if (waitTime >= 180) {
-      // これは警告文であって移動区間ではないため、信頼度バッジは付けない
-      pushEdge(`⚠️ ご注意：ご希望時刻に近い便がないため、大幅な待ち時間が発生しています`);
+      pushEdge(
+        '🛂 搭乗手続き・待ち（本アプリの模擬ダイヤでは大幅な待ちが生じますが、実際の便数はもっと多い可能性があります。正確な時刻は要確認）',
+        flightReliability, waitTime
+      );
+    } else {
+      pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`, flightReliability, waitTime);
     }
-    pushEdge(`🛂 搭乗手続き・待ち（約${waitTime}分）`, flightReliability, waitTime);
     t = addMins(t, waitTime);
     totalMins += waitTime;
   }
@@ -2444,7 +2474,7 @@ function reverseRouteTimeline(route, departTimeStr) {
   revPlaces.forEach((place, idx) => {
     const isFirst = idx === 0;
     const isLast = idx === revPlaces.length - 1;
-    timeline.push({ type: 'node', time: t, text: `${place} ${isFirst ? '発' : '着'}` });
+    timeline.push({ type: 'node', time: t, text: `${place} ${isFirst ? '発' : '着'}`, dayLabel: dayCrossingLabel(departTimeStr, totalMins) });
 
     if (isLast) return;
 
@@ -2455,7 +2485,7 @@ function reverseRouteTimeline(route, departTimeStr) {
       timeline.push({ type: 'edge', text: wait.text, durationMin: wait.durationMin, reliability: waitRl });
       t = addMins(t, wait.durationMin);
       totalMins += wait.durationMin;
-      timeline.push({ type: 'node', time: t, text: `${place} 発` });
+      timeline.push({ type: 'node', time: t, text: `${place} 発`, dayLabel: dayCrossingLabel(departTimeStr, totalMins) });
     } else if (isFirst && wait) {
       // 出発地点での待ち（往路の「駅での待ち」に相当）はそのまま先頭に置く
       timeline.push({ type: 'edge', text: wait.text, durationMin: wait.durationMin, reliability: waitRl });
