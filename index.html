@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>こはる 北海道編 — 疲れない旅プランナー</title>
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=6">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
 
   <style>
@@ -264,19 +264,25 @@
         
         <div class="arrival-departure-input" style="background:white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
           <h3 style="margin-top:0; font-size: 1.1rem; color: var(--color-primary); border-bottom: 2px solid #eef2f9; padding-bottom: 10px;">⏰ 乗換アプリで調べた「<span id="yahoo-data-station-name-1">函館駅</span>」の到着/出発時間を教えてください</h3>
-          <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">※この時間をもとに、<span id="yahoo-data-dest-name">函館</span>での正確な滞在スケジュールを自動生成します。</p>
+          <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">※この時間をもとに、<span id="yahoo-data-dest-name">函館</span>での正確な滞在スケジュールを自動生成します。<strong style="color:#c0392b;">両方とも入力が必須です。</strong></p>
 
+          <!-- 初期値は意図的に空にしている。既定値(旧: 14:00 / 13:00)を入れると、
+               利用者が何も入力していないのに入力済みに見え、架空の時刻で行程が
+               組まれてしまうため（未入力を検出できるようにする） -->
           <div style="display:flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
             <div style="flex:1; min-width: 200px;">
-              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">行き：<span id="yahoo-data-station-name-2">函館駅</span>への到着時刻</label>
-              <input type="time" id="hakodate-arrival-time" value="14:00" style="width:100%; padding: 12px; font-size:1.4rem; border-radius: 8px; border:2px solid #ccc; text-align:center;">
+              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">行き：<span id="yahoo-data-station-name-2">函館駅</span>への到着時刻 <span style="color:#c0392b;">※必須</span></label>
+              <input type="time" id="hakodate-arrival-time" required style="width:100%; padding: 12px; font-size:1.4rem; border-radius: 8px; border:2px solid #ccc; text-align:center;">
             </div>
             <div style="flex:1; min-width: 200px;">
-              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">帰り：<span id="yahoo-data-station-name-3">函館駅</span>からの出発時刻</label>
-              <input type="time" id="hakodate-departure-time" value="13:00" style="width:100%; padding: 12px; font-size:1.4rem; border-radius: 8px; border:2px solid #ccc; text-align:center;">
+              <label style="font-weight:bold; color:#444; display:block; margin-bottom:5px;">帰り：<span id="yahoo-data-station-name-3">函館駅</span>からの出発時刻 <span style="color:#c0392b;">※必須</span></label>
+              <input type="time" id="hakodate-departure-time" required style="width:100%; padding: 12px; font-size:1.4rem; border-radius: 8px; border:2px solid #ccc; text-align:center;">
             </div>
           </div>
         </div>
+
+        <!-- 未入力のままで「しおり」に進もうとしたときの案内。JS から表示制御する -->
+        <div id="yahoo-data-error" class="yahoo-data-error no-print" role="alert" aria-live="assertive" hidden></div>
 
         <div class="itinerary-actions" style="margin-top: 30px;">
           <button type="button" id="btn-back-yahoo" class="btn btn-ghost">← 宿を選び直す</button>
@@ -326,8 +332,8 @@
 
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" defer></script>
-  <script src="js/data.js?v=4"></script>
-  <script src="js/app.js?v=4"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 
   <!-- OCR Modal -->
   <div id="ocr-modal" class="ocr-modal-backdrop" style="display:none;">
