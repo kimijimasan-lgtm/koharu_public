@@ -2268,27 +2268,6 @@ a.header-partner-badge:hover {
   border-radius: 0 4px 4px 0;
 }
 
-/* 凡例 */
-.rl-legend {
-  margin: 0 0 18px 0;
-  padding: 12px 14px;
-  background: #fbfbfb;
-  border: 1px solid #e3e3e3;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  line-height: 2;
-  color: #444;
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-.rl-legend .rl-badge { margin-left: 10px; }
-.rl-legend-note {
-  margin-top: 6px;
-  font-size: 0.8rem;
-  line-height: 1.6;
-  color: #666;
-}
-
 /* ============================================================
    しおりの交通ルートカード（行き / 帰り）
    ============================================================ */
@@ -2447,12 +2426,6 @@ a.header-partner-badge:hover {
     break-inside: avoid;
     page-break-inside: avoid;
   }
-  .rl-legend {
-    color: #222222 !important;
-    background: #fbfbfb !important;
-    border-color: #bbbbbb !important;
-  }
-  .rl-legend-note { color: #444444 !important; }
   .route-card {
     background: #f9f9f9 !important;
     border-color: #bbbbbb !important;
@@ -2494,8 +2467,6 @@ a.header-partner-badge:hover {
   #confirmed-content span.rl-badge.rl-researched { color: #7a4f00 !important; border-color: #7a4f00 !important; background: #fff6e5 !important; }
   #confirmed-content span.rl-badge.rl-estimated  { color: #333333 !important; border-color: #666666 !important; background: #f2f2f2 !important; }
   #confirmed-content div.rl-caveat               { color: #5c3d00 !important; background: #fff9ed !important; border-left-color: #7a4f00 !important; }
-  #confirmed-content div.rl-legend               { color: #222222 !important; background: #fbfbfb !important; border-color: #bbbbbb !important; }
-  #confirmed-content div.rl-legend-note          { color: #444444 !important; }
   #confirmed-content div.route-node              { color: #111111 !important; }
   #confirmed-content span.route-time             { color: #14425f !important; }
   #confirmed-content span.route-day-label        { color: #7a3e00 !important; font-weight: bold !important; }
