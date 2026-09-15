@@ -54,45 +54,41 @@
       <form id="form-input">
         <!-- 公開版：自宅住所欄は削除（個人情報保護のため） -->
 
-        <div class="form-row" style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 0.5rem;">
-          <div style="flex: 1;">
-            <label class="form-label" for="destination">旅行先エリア</label>
-            <select id="destination" class="form-input form-select" required style="cursor: pointer; appearance: auto;">
-              <option value="" disabled selected>選択してください</option>
-              <option value="札幌">北海道・札幌</option>
-              <option value="函館">北海道・函館</option>
-              <option value="旭川">北海道・旭川</option>
-              <option value="帯広">北海道・帯広</option>
-              <option value="釧路">北海道・釧路</option>
-              <option value="網走">北海道・網走</option>
-              <option value="稚内">北海道・稚内</option>
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; column-gap: 1rem; margin-bottom: 0.5rem;">
+          <label class="form-label" for="destination" style="grid-column: 1; grid-row: 1; align-self: end;">旅行先エリア</label>
+          <label class="form-label" style="grid-column: 2; grid-row: 1; align-self: end;">出発駅（このページの下部で出発県などを選んでください）</label>
+          <select id="destination" class="form-input form-select" required style="grid-column: 1; grid-row: 2; cursor: pointer; appearance: auto;">
+            <option value="" disabled selected>選択してください</option>
+            <option value="札幌">北海道・札幌</option>
+            <option value="函館">北海道・函館</option>
+            <option value="旭川">北海道・旭川</option>
+            <option value="帯広">北海道・帯広</option>
+            <option value="釧路">北海道・釧路</option>
+            <option value="網走">北海道・網走</option>
+            <option value="稚内">北海道・稚内</option>
 
 
-              <option value="千歳">北海道・千歳</option>
-              <option value="苫小牧">北海道・苫小牧</option>
-              <option value="小樽">北海道・小樽</option>
-              <option value="ニセコ">北海道・ニセコ</option>
-              <option value="洞爺湖">北海道・洞爺湖</option>
-              <option value="登別">北海道・登別</option>
-              <option value="積丹">北海道・積丹</option>
-              <option value="江差">北海道・江差</option>
-              <option value="富良野">北海道・富良野</option>
-              <option value="美瑛">北海道・美瑛</option>
-              <option value="摩周湖">北海道・摩周湖（弟子屈）</option>
-              <option value="知床">北海道・知床</option>
-              <option value="根室">北海道・根室</option>
+            <option value="千歳">北海道・千歳</option>
+            <option value="苫小牧">北海道・苫小牧</option>
+            <option value="小樽">北海道・小樽</option>
+            <option value="ニセコ">北海道・ニセコ</option>
+            <option value="洞爺湖">北海道・洞爺湖</option>
+            <option value="登別">北海道・登別</option>
+            <option value="積丹">北海道・積丹</option>
+            <option value="江差">北海道・江差</option>
+            <option value="富良野">北海道・富良野</option>
+            <option value="美瑛">北海道・美瑛</option>
+            <option value="摩周湖">北海道・摩周湖（弟子屈）</option>
+            <option value="知床">北海道・知床</option>
+            <option value="根室">北海道・根室</option>
 
+          </select>
+          <div style="grid-column: 2; grid-row: 2; position: relative;">
+            <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); pointer-events: none; z-index: 1;">📍</span>
+            <select id="top-station-select" class="form-input" style="padding-left: 2.25rem; font-weight: bold; color: var(--color-primary); cursor: pointer; appearance: auto; background-color: var(--color-bg-sub);">
+              <option value="" disabled selected>未登録</option>
+              <option value="" disabled>↓お住まいの地域を画面下部で登録してください</option>
             </select>
-          </div>
-          <div style="flex: 1;">
-            <label class="form-label">出発駅（このページの下部で出発県などを選んでください）</label>
-            <div style="position: relative;">
-              <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); pointer-events: none; z-index: 1;">📍</span>
-              <select id="top-station-select" class="form-input" style="padding-left: 2.25rem; font-weight: bold; color: var(--color-primary); cursor: pointer; appearance: auto; background-color: var(--color-bg-sub);">
-                <option value="" disabled selected>未登録</option>
-                <option value="" disabled>↓お住まいの地域を画面下部で登録してください</option>
-              </select>
-            </div>
           </div>
         </div>
         <div id="destination-info" style="margin-bottom: 1.5rem;"></div>
