@@ -1404,19 +1404,6 @@ const App = {
     return `<div class="rl-caveat">※ ${this.escapeHtml(rl.caveat)}</div>`;
   },
 
-  // 信頼度の凡例（しおりのスケジュール見出し直下に1回だけ出す）
-  renderReliabilityLegend() {
-    return `
-      <div class="rl-legend">
-        <strong>データの見かた：</strong>
-        <span class="rl-badge rl-verified">確定</span> 公式時刻表・公示運賃で確認済み
-        <span class="rl-badge rl-researched">概算</span> 複数ソースで確認した実測の代表値
-        <span class="rl-badge rl-estimated">目安</span> アプリの自動計算（実ダイヤ未確認）
-        <div class="rl-legend-note">「概算」「目安」の時刻・料金は実際の乗換案内で必ずご確認ください。⚠ が付く項目には季節運行など重要な注意があります。</div>
-      </div>
-    `;
-  },
-
   // 交通ルート（generateShinkansenTimeline / generateFlightTimeline の結果）を
   // しおり用に描画する。比較画面と違い、印刷して持ち歩く前提なので
   // バッジと注意書きを必ず一緒に出す
@@ -1823,7 +1810,6 @@ const App = {
         ${ticketSection}
         ${reservationSection}
         <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
-        ${this.renderReliabilityLegend()}
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 ${dest.name}へ到着</h4>
         <div class="day-section day-section-split" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
