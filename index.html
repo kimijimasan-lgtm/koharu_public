@@ -421,6 +421,18 @@
   </div>
 
 
+  <!-- シニア向け：改札での切符の出し方ガイド（中身は app.js が行程にあわせて差し込む） -->
+  <div id="ticket-guide-modal" class="modal no-print" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 3000; align-items: center; justify-content: center;">
+    <div class="modal-backdrop" id="ticket-guide-modal-backdrop" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6);"></div>
+    <div class="modal-content" style="position: relative; background: white; padding: 25px; border-radius: 12px; max-width: 620px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+      <h2 id="ticket-guide-title" style="font-size: 1.3rem; margin: 0 0 1rem 0; color: var(--color-primary); line-break: strict; text-wrap: balance;">🎫 行きの切符の出し方</h2>
+      <div id="ticket-guide-body"></div>
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button type="button" class="btn btn-primary" id="ticket-guide-modal-close" style="width: 100%;">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PDF Generation Loading Overlay -->
   <div id="pdf-loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:sans-serif;">
     <div style="font-size: 3rem; margin-bottom: 20px; animation: spin 1s linear infinite;">⏳</div>

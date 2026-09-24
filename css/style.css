@@ -2519,3 +2519,126 @@ input.input-missing {
   border-color: #c0392b !important;
   background: #fdf2f0;
 }
+
+/* ============================================================
+   シニア向け：改札での切符の出し方ガイド（モーダル）
+   ============================================================
+   本文は文節の途中で切れやすく、最終行が数文字だけ残る「孤立行」が
+   出やすいため、折り返しの指定をここにまとめる。
+   インラインの style では幅ごとの調整ができないので、クラスで持つこと */
+
+.tg-lead,
+.tg-step p,
+.tg-section p {
+  line-break: strict;
+  text-wrap: pretty;
+  /* 文節の途中で改行せず、最終行に文節がまるごと残るようにする。
+     これで「ださい。」のような数文字だけの孤立行が出にくくなる。
+     Safari など未対応のブラウザでは無視されるだけで、崩れはしない */
+  word-break: auto-phrase;
+  margin: 0;
+}
+
+.tg-heading,
+.tg-step-title,
+.tg-section h4 {
+  line-break: strict;
+  text-wrap: balance;
+}
+
+.tg-lead {
+  margin-bottom: 14px;
+  font-size: 0.92rem;
+  color: #666;
+  line-height: 1.7;
+}
+
+.tg-heading {
+  font-size: 1.1rem;
+  margin: 0 0 10px 0;
+  color: var(--color-primary);
+  border-bottom: 2px solid #eee;
+  padding-bottom: 6px;
+}
+
+.tg-heading + .tg-step,
+.tg-heading-sections {
+  margin-top: 0;
+}
+
+.tg-heading-sections {
+  margin-top: 22px;
+}
+
+.tg-step {
+  border: 1px solid #e0e6ef;
+  border-left: 4px solid var(--color-primary);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: #fbfcfe;
+}
+
+.tg-step-title {
+  margin: 0 0 6px 0;
+  font-weight: bold;
+  font-size: 1.02rem;
+  color: var(--color-primary);
+}
+
+/* 「入れる切符」「結果」は短いので、行を均して最終行だけが
+   極端に短くなるのを防ぐ */
+.tg-step p {
+  font-size: 0.97rem;
+  line-height: 1.7;
+  text-wrap: balance;
+}
+
+.tg-step p + p {
+  margin-top: 4px;
+}
+
+.tg-section {
+  margin-bottom: 16px;
+}
+
+.tg-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 1.02rem;
+  color: #444;
+}
+
+.tg-section p {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #333;
+  letter-spacing: -0.02em;
+}
+
+/* スマホ幅では1行に入る文字数が足りず孤立行が出るため、
+   余白と字間を詰めて実測で1行あたりの文字数を稼ぐ */
+@media (max-width: 430px) {
+  #ticket-guide-modal .modal-content {
+    padding: 16px 14px;
+  }
+  .tg-step {
+    padding: 10px 11px;
+  }
+  .tg-step p,
+  .tg-section p {
+    letter-spacing: -0.02em;
+  }
+  .tg-step p {
+    font-size: 0.95rem;
+  }
+  .tg-section p {
+    font-size: 0.94rem;
+  }
+}
+
+/* 語のかたまり。この中では改行させないことで、
+   「言葉の途中での改行」と「最終行が数文字だけ残る孤立行」の両方を防ぐ。
+   app.js の tgNoOrphanTail() が Intl.Segmenter で区切って付ける */
+.tg-w {
+  display: inline-block;
+}
