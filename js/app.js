@@ -2309,38 +2309,166 @@ const App = {
   },
 
 
+  // ============================================================
+  // 「PDFファイルで保存する」の描画倍率
+  // ============================================================
+  // このボタンは window.print() とは別経路で、html2pdf（html2canvas）が
+  // しおり全体を1枚の巨大な画像に描き直してからPDFに貼っている。
+  // ブラウザにはキャンバスの大きさに上限があり、超えると例外ではなく
+  // 「真っ白なキャンバス」が返るため、中身のない白紙のPDFが出来てしまう。
+  //
+  // 実測（A4内寸719px幅で組み直したときのしおりの高さ）:
+  //   PC表示  6,458〜8,188px → 倍率2倍で 18.5〜23.5Mpx / 一辺 最大16,376px
+  //   スマホ表示        10,344px → 倍率2倍で 29.7Mpx     / 一辺    20,688px
+  // iOS Safari は総画素が 16,777,216 を超えると白紙を返す。
+  // 一辺 16,384px で頭打ちになる環境もある。つまり倍率2固定では、
+  // どの行程でも上限を超えていた（PCのChromeは上限が高いので表に出なかった）。
+  //
+  // そこで、実際に組み上がった器の寸法から、上限を下回る中で
+  // いちばん大きい倍率を選ぶ。
+  //
+  // 面積の上限を 12,000,000px にしているのは、iOS の上限(16,777,216px)の
+  // 7割程度に抑えるため。上限ぎりぎり(16,000,000px)で実測したところ、
+  // PC版Chromeでも4回に1回は白紙になった。12,000,000px では4回とも成功。
+  // 一辺の上限 16,384px は、主要ブラウザが扱えるテクスチャの最大値。
+  PDF_MAX_CANVAS_AREA: 12000000,
+  PDF_MAX_CANVAS_SIDE: 16384,
+
+  pickPdfScale(width, height) {
+    // 測れなかったときは、どの端末でも確実に通る低めの倍率にしておく
+    if (!width || !height) return 1;
+    const byArea = Math.sqrt(this.PDF_MAX_CANVAS_AREA / (width * height));
+    const bySide = this.PDF_MAX_CANVAS_SIDE / Math.max(width, height);
+    // 上は2倍まで（それ以上は容量が増えるだけ）。
+    // 下は0.8倍まで（これ以上落とすと紙で読めなくなるため、
+    // 極端に長い行程では上限を割り切って画質を優先する）
+    return Math.max(0.8, Math.min(2, byArea, bySide));
+  },
+
+  // 出来上がったキャンバスが白紙かどうかを確かめる。
+  // html2canvas は描画に失敗しても例外を投げず、白いだけのキャンバスを
+  // 返してくる。ここで見ておかないと、中身の無いPDFがそのまま保存される
+  isCanvasBlank(canvas) {
+    if (!canvas || !canvas.width || !canvas.height) return true;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return true;
+    // 全画素を見ると重いので、縦に等間隔で横一列ずつ走査する
+    const LINES = 24;
+    for (let i = 0; i < LINES; i++) {
+      const y = Math.min(canvas.height - 1, Math.floor(canvas.height * i / LINES));
+      let data;
+      try {
+        data = ctx.getImageData(0, y, canvas.width, 1).data;
+      } catch (e) {
+        // 読み取れない場合は判定できないので、白紙ではない扱いにする
+        return false;
+      }
+      for (let p = 0; p < data.length; p += 4) {
+        if (data[p] < 245 || data[p + 1] < 245 || data[p + 2] < 245) return false;
+      }
+    }
+    return true;
+  },
+
+  // html2pdf の器を、紙に出す形に整える。
+  // 戻り値は、この器の寸法から決めた描画倍率
+  preparePdfContainer(container, scaleHint) {
+    if (!container) return scaleHint;
+
+    // 印刷専用ブロック（切符の出し方ガイド）を器ごと取り除く。
+    //
+    // このブロックは画面用CSSでは display:none なので、html2canvas が
+    // 描くことはない。ところが html2pdf のページ送り処理は、描く前に
+    // CSS の break-before:page を見て「次のページに送る」ための空白
+    // （<div style="height:1046px">）を、その要素の直前に差し込む。
+    // 結果、中身が無いまま1ページ分まるごと白紙になってしまう。
+    //
+    // 差し込まれた空白はガイド本体の兄弟なので、ガイドだけを消しても
+    // 残る。入れ物ごと外すこと。
+    const guide = container.querySelector('#print-ticket-guide');
+    if (guide) guide.remove();
+    container.querySelectorAll('.print-only').forEach(node => node.remove());
+
+    // 画面専用のボタン類（no-print）は html2canvas が描かない設定にして
+    // あるが、器の中では場所だけを取り続けるため、その分が紙の末尾に
+    // 空白ページとして残る。器から取り除いて詰める
+    container.querySelectorAll('.no-print').forEach(node => node.remove());
+
+    // 画面では下部の固定ボタンに隠れないよう大きな余白を取っているが、
+    // 紙では不要なので詰める
+    const inner = container.querySelector('.container');
+    if (inner) inner.style.paddingBottom = '0px';
+
+    return this.pickPdfScale(container.offsetWidth, container.scrollHeight);
+  },
+
   bindDirectPdfButton() {
     const btnPdf = document.getElementById('btn-direct-pdf');
     if (!btnPdf) return;
-    
+
     btnPdf.addEventListener('click', async () => {
       const overlay = document.getElementById('pdf-loading-overlay');
       if (overlay) overlay.style.display = 'flex';
-      
-      // wait a bit for the overlay to render
+
+      // 待ち表示が実際に描かれるまで少し待つ
       await new Promise(resolve => setTimeout(resolve, 50));
-      
+
       try {
         const element = document.getElementById('step-confirmed');
-        const opt = {
-          margin:       [10, 10, 10, 10], // top, left, bottom, right in mm
-          filename:     'こはる_旅のしおり.pdf',
-          image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { 
-            scale: 2, 
-            useCORS: true,
-            ignoreElements: (el) => {
-              // Ignore elements with 'no-print' class
-              if (el.classList && el.classList.contains('no-print')) {
-                return true;
-              }
-              return false;
-            }
-          },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        const baseHtml2canvas = {
+          useCORS: true,
+          ignoreElements: (el) => {
+            // 画面専用の要素（no-print）はPDFに入れない
+            return !!(el.classList && el.classList.contains('no-print'));
+          }
         };
-        
-        await html2pdf().set(opt).from(element).save();
+        const opt = {
+          margin:   [10, 10, 10, 10], // 上・左・下・右（mm）
+          filename: 'こはる_旅のしおり.pdf',
+          image:    { type: 'jpeg', quality: 0.98 },
+          jsPDF:    { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // html2canvas は、上限に収まる大きさでも一定の割合で白紙を返すことが
+        // ある（実測で18回中2回）。原因を外から制御できないため、
+        // 出来上がりを確かめて、白紙なら倍率を落としてやり直す。
+        // 倍率を下げるのは、失敗がキャンバスの大きさ由来だった場合に効かせるため
+        const RETRY_SCALE = [1, 0.8, 0.65];
+        let saved = false;
+
+        for (let attempt = 0; attempt < RETRY_SCALE.length && !saved; attempt++) {
+          const worker = html2pdf()
+            .set(Object.assign({}, opt, { html2canvas: Object.assign({ scale: 2 }, baseHtml2canvas) }))
+            .from(element);
+
+          // 画像化の前に、html2pdf が組み立てた器の寸法を測って倍率を決める。
+          // 器はA4の内寸（約719px幅）で組み直されるので、画面幅ではなく
+          // ここで測った実寸を使わないと正しい倍率にならない
+          let scale = 1;
+          try {
+            await worker.toContainer();
+            scale = this.preparePdfContainer(await worker.get('container'), 1);
+          } catch (e) {
+            // 器を測れなかった場合も、白紙になるくらいなら粗くても出す
+            console.warn('PDFの描画倍率を測れなかったため既定値を使います:', e);
+          }
+          worker.set({
+            html2canvas: Object.assign({ scale: scale * RETRY_SCALE[attempt] }, baseHtml2canvas)
+          });
+
+          await worker.toCanvas();
+          if (this.isCanvasBlank(await worker.get('canvas'))) {
+            console.warn(`PDFの描画が白紙になったため作り直します（${attempt + 1}回目）`);
+            continue;
+          }
+          await worker.save();
+          saved = true;
+        }
+
+        if (!saved) {
+          alert('PDFの作成に失敗しました。' + String.fromCharCode(10) +
+            'お手数ですが「🖨️ 印刷する」を押して、送信先で「PDFに保存」をお選びください。');
+        }
       } catch (error) {
         console.error("PDF生成中にエラーが発生しました:", error);
         alert("PDFの作成に失敗しました。");
