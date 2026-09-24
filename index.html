@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>こはる 北海道編 — 疲れない旅プランナー</title>
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=8">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
 
   <style>
@@ -17,6 +17,9 @@
   </style>
 </head>
 <body>
+
+  <!-- 共有リンク（?data=）から復元したときのお知らせ。JS から表示制御する -->
+  <div id="restore-notice" class="restore-notice no-print" role="status" hidden></div>
 
   <!-- ======================== -->
   <!-- Step: Input              -->
@@ -281,6 +284,17 @@
         <!-- 未入力のままで「しおり」に進もうとしたときの案内。JS から表示制御する -->
         <div id="yahoo-data-error" class="yahoo-data-error no-print" role="alert" aria-live="assertive" hidden></div>
 
+        <!-- 開発者確認用：入力内容をURLにして、スマホで同じ行程を開く（画像は含まない） -->
+        <div class="dev-link-box no-print">
+          <button type="button" class="btn btn-secondary btn-dev-link">📱 スマホ用リンクを作る</button>
+          <div class="dev-link-panel" hidden>
+            <p class="dev-link-note"><span class="ph">開発者確認用の</span><span class="ph">暫定機能です。</span><span class="ph">入力内容だけを</span><span class="ph">リンクにします。</span><span class="ph">スクショ画像は</span><span class="ph">含まれないため、</span><span class="ph">開いた先で</span><span class="ph">貼り直してください。</span></p>
+            <textarea class="dev-link-out" readonly rows="4"></textarea>
+            <p class="dev-link-meta" role="status"></p>
+            <button type="button" class="btn btn-primary btn-dev-link-copy">📋 コピーする</button>
+          </div>
+        </div>
+
         <div class="itinerary-actions" style="margin-top: 30px;">
           <button type="button" id="btn-back-yahoo" class="btn btn-ghost">← 宿を選び直す</button>
           <button type="button" id="btn-generate-final" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 20px; box-shadow: 0 4px 15px rgba(255,107,107,0.3); white-space: nowrap;">✨ これで「しおり」を完成させる</button>
@@ -298,8 +312,18 @@
           <button type="button" class="btn btn-primary" onclick="window.print()" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">🖨️ 印刷する</button>
           <button type="button" id="btn-direct-pdf" class="btn btn-primary" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15); background-color: #e67e22; border-color: #d35400;">📄 PDFファイルで保存する</button>
           <button type="button" id="btn-back-to-yahoo-from-confirmed" class="btn btn-secondary" style="font-size: 1rem; padding: 10px; user-select: none;">🔙 前のページに戻る（画像を貼り直す）</button>
+          <!-- 開発者確認用：入力内容をURLにして、スマホで同じ行程を開く（画像は含まない） -->
+          <div class="dev-link-box">
+            <button type="button" class="btn btn-secondary btn-dev-link" style="font-size: 1rem; padding: 10px; user-select: none;">📱 スマホ用リンクを作る</button>
+            <div class="dev-link-panel" hidden>
+              <p class="dev-link-note"><span class="ph">開発者確認用の</span><span class="ph">暫定機能です。</span><span class="ph">入力内容だけを</span><span class="ph">リンクにします。</span><span class="ph">スクショ画像は</span><span class="ph">含まれないため、</span><span class="ph">開いた先で</span><span class="ph">貼り直してください。</span></p>
+              <textarea class="dev-link-out" readonly rows="4"></textarea>
+              <p class="dev-link-meta" role="status"></p>
+              <button type="button" class="btn btn-primary btn-dev-link-copy">📋 コピーする</button>
+            </div>
+          </div>
         </div>
-        
+
         <div class="no-print" style="margin-bottom: 20px;">
           <button type="button" id="btn-howto-open" style="width: 100%; background: #fff5f5; color: #d9534f; border: 2px solid #d9534f; padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; box-shadow: 0 4px 6px rgba(217, 83, 79, 0.1); font-weight: bold; font-size: 0.95rem; line-height: 1.5;">
             👉 📖 このアプリの使い方と印刷手順を読む
@@ -332,8 +356,9 @@
 
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" defer></script>
+  <script src="js/vendor/lz-string.min.js"></script>
   <script src="js/data.js?v=6"></script>
-  <script src="js/app.js?v=6"></script>
+  <script src="js/app.js?v=9"></script>
 
   <!-- OCR Modal -->
   <div id="ocr-modal" class="ocr-modal-backdrop" style="display:none;">
