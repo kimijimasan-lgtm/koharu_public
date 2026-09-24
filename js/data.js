@@ -1773,7 +1773,16 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
   const pushNode = (time, text) => timeline.push({ type: 'node', time, text });
   // 移動区間には必ず reliability を添える。省略した区間は「目安」扱いになる
   // durationMin は復路の逆算に使う。移動以外の注意書き行は null のままにする
-  const pushEdge = (text, rl = null, durationMin = null) => timeline.push({ type: 'edge', text, reliability: rl, durationMin });
+  //
+  // segment は「何に乗る区間か」を構造化して持たせるためのもの（buildTicketGuide が使う）。
+  // 表示文言（'🚄 はやぶさ（約159分）'）から列車名を正規表現で切り出すと、
+  // 文言を変えるたびに壊れるため、列車の種別・名称はここでデータとして持つ。
+  //   kind: 'shinkansen' | 'limitedExpress' | 'local'
+  //   trainName: 切符の券名に使う列車名（'はやぶさ' など）
+  //   generic: 列車名が特定できず「新幹線」等の総称を入れている場合 true
+  // 待ち時間・注意書きなど、列車に乗らない行には付けない（null のまま）
+  const pushEdge = (text, rl = null, durationMin = null, segment = null) =>
+    timeline.push({ type: 'edge', text, reliability: rl, durationMin, segment });
 
   // 仮想ダイヤ（公開版は実ダイヤを持たないため、待ち時間はすべて ESTIMATED）
   const yamabikoSchedule = generateHourlySchedule([12]); // 毎時12分
@@ -1793,7 +1802,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
     pushEdge(
       `\u{1F686} ${localLeg.line} ${localLeg.type}（約${localLeg.duration_min}分）`,
       localLeg.reliability,
-      localLeg.duration_min
+      localLeg.duration_min,
+      { kind: 'local', trainName: `${localLeg.line} ${localLeg.type}`, generic: false }
     );
     totalMins += localLeg.duration_min;
     const arrTime = addMins(depTime, localLeg.duration_min);
@@ -1825,7 +1835,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
       totalMins += stationWait;
     }
     // 道内発の特急。所要は区間ごとの固定値のため ESTIMATED
-    pushEdge(`🚃 特急等（約${dur}分）`, reliability(RELIABILITY.ESTIMATED, { note: '道内特急の所要は概算値です' }), dur);
+    pushEdge(`🚃 特急等（約${dur}分）`, reliability(RELIABILITY.ESTIMATED, { note: '道内特急の所要は概算値です' }), dur,
+      { kind: 'limitedExpress', trainName: '特急', generic: true });
     t = addMins(t, dur);
     totalMins += dur;
     pushNode(t, `${destName.replace('北海道', '')} 着`);
@@ -1849,7 +1860,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
       }
       
       // toSendai の固定マップ由来の所要時間
-      pushEdge(`🚄 やまびこ・なすの等（約${dur1}分）`, reliability(RELIABILITY.ESTIMATED, { note: '仙台までの所要は概算値です' }), dur1);
+      pushEdge(`🚄 やまびこ・なすの等（約${dur1}分）`, reliability(RELIABILITY.ESTIMATED, { note: '仙台までの所要は概算値です' }), dur1,
+        { kind: 'shinkansen', trainName: 'やまびこ・なすの', generic: false });
       t = addMins(t, dur1);
       totalMins += dur1;
       pushNode(t, `仙台駅 着`);
@@ -1862,7 +1874,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
       totalMins += wait;
       pushNode(t, `仙台駅 発`);
       
-      pushEdge(`🚄 はやぶさ（約${dur2}分）`, travelTimeReliability('仙台-函館'), dur2);
+      pushEdge(`🚄 はやぶさ（約${dur2}分）`, travelTimeReliability('仙台-函館'), dur2,
+        { kind: 'shinkansen', trainName: 'はやぶさ', generic: false });
       t = addMins(t, dur2);
       totalMins += dur2;
       pushNode(t, `新函館北斗駅 着`);
@@ -1882,7 +1895,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
       }
       
       // toOmiya の固定マップ由来の所要時間
-      pushEdge(`🚄 なすの等（約${dur1}分）`, reliability(RELIABILITY.ESTIMATED, { note: '大宮までの所要は概算値です' }), dur1);
+      pushEdge(`🚄 なすの等（約${dur1}分）`, reliability(RELIABILITY.ESTIMATED, { note: '大宮までの所要は概算値です' }), dur1,
+        { kind: 'shinkansen', trainName: 'なすの', generic: false });
       t = addMins(t, dur1);
       totalMins += dur1;
       pushNode(t, `大宮駅 着`);
@@ -1895,7 +1909,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
       totalMins += wait;
       pushNode(t, `大宮駅 発`);
       
-      pushEdge(`🚄 はやぶさ（約${dur2}分）`, travelTimeReliability('大宮-函館'), dur2);
+      pushEdge(`🚄 はやぶさ（約${dur2}分）`, travelTimeReliability('大宮-函館'), dur2,
+        { kind: 'shinkansen', trainName: 'はやぶさ', generic: false });
       t = addMins(t, dur2);
       totalMins += dur2;
       pushNode(t, `新函館北斗駅 着`);
@@ -1911,7 +1926,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
         t = addMins(t, stationWait);
         totalMins += stationWait;
       }
-      pushEdge(`🚄 はやぶさ等（約${dur}分）`, travelTimeReliability(`${normStation}-函館`), dur);
+      pushEdge(`🚄 はやぶさ等（約${dur}分）`, travelTimeReliability(`${normStation}-函館`), dur,
+        { kind: 'shinkansen', trainName: 'はやぶさ', generic: false });
       t = addMins(t, dur);
       totalMins += dur;
       pushNode(t, `新函館北斗駅 着`);
@@ -1953,7 +1969,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
     
     pushNode(t, `新函館北斗駅 発`);
     // plus は目的地ごとの固定値。実ダイヤ未確認
-    pushEdge(`🚃 特急北斗等（約${plus}分）`, reliability(RELIABILITY.ESTIMATED, { note: '新函館北斗から先の所要は概算値です' }), plus);
+    pushEdge(`🚃 特急北斗等（約${plus}分）`, reliability(RELIABILITY.ESTIMATED, { note: '新函館北斗から先の所要は概算値です' }), plus,
+      { kind: 'limitedExpress', trainName: '特急北斗', generic: false });
     t = addMins(t, plus);
     totalMins += plus;
     pushNode(t, `${destName.replace('北海道', '')} 着`);
@@ -1970,7 +1987,8 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
       t = addMins(t, stationWait);
       totalMins += stationWait;
     }
-    pushEdge(`🚄 新幹線（約${dur}分）`, travelTimeReliability(`${normStation}-${destName}`), dur);
+    pushEdge(`🚄 新幹線（約${dur}分）`, travelTimeReliability(`${normStation}-${destName}`), dur,
+      { kind: 'shinkansen', trainName: '新幹線', generic: true });
     t = addMins(t, dur);
     totalMins += dur;
     pushNode(t, `${destName.replace('北海道', '')} 着`);
@@ -3486,6 +3504,9 @@ function reverseRouteTimeline(route, departTimeStr) {
 
     timeline.push({
       type: 'edge', text: move.text, durationMin: move.durationMin, reliability: move.reliability,
+      // 「何に乗る区間か」は往復で変わらないので、復路にもそのまま引き継ぐ。
+      // これが無いと復路側の切符ガイド（buildTicketGuide）が区間を認識できない
+      segment: move.segment || null,
     });
     t = addMins(t, move.durationMin);
     totalMins += move.durationMin;
@@ -3536,6 +3557,93 @@ function diffMinsSigned(fromStr, toStr) {
   const [fh, fm] = fromStr.split(':').map(Number);
   const [th, tm] = toStr.split(':').map(Number);
   return (th * 60 + tm) - (fh * 60 + fm);
+}
+
+// ============================================================
+// シニア旅行者向け：改札での切符の出し方ガイド用の構造データ
+// ============================================================
+// 行程のタイムラインから「どの駅の改札で、どの切符を何枚入れるか」を組み立てるための
+// 骨組みだけを返す。案内の文章そのものは表示側（app.js）が持つ。
+// ここで返すのは駅名・列車名・乗り継ぎの構造だけなので、文言を変えても壊れない。
+//
+// 新幹線区間を含まない行程（飛行機ルート、道内完結の在来特急のみ等）は null を返す。
+// 表示側はそのときボタン自体を出さない（存在しない改札の通り方を書かないため）。
+function buildTicketGuide(route) {
+  if (!route || !route.timeline || !route.timeline.length) return null;
+
+  // 駅名の末尾に「駅」が無ければ補う。
+  // 新幹線の乗降駅・乗り継ぎ駅にだけ使うこと。行程の終点は「知床」「洞爺湖」のように
+  // 駅ではない地名が入りうるため、そこに「駅」を付けると実在しない駅名を作ってしまう
+  const withStationSuffix = (name) => {
+    if (!name) return name;
+    return /駅$/.test(name) ? name : `${name}駅`;
+  };
+
+  // node（地点）と edge（移動）を突き合わせ、「どの駅からどの駅まで、何に乗るか」の列にする。
+  // segment を持たない edge（待ち時間・注意書き）は読み飛ばす
+  const legs = [];
+  let lastPlace = null;
+  for (const item of route.timeline) {
+    if (item.type === 'node') {
+      // 「◯◯駅 発」「◯◯ 着 ※…」などから地点名だけを取り出す（decomposeRouteTimeline と同じ扱い）
+      const place = item.text.replace(/\s(発|着).*$/, '');
+      const open = legs[legs.length - 1];
+      if (open && !open.toStation) open.toStation = place;
+      lastPlace = place;
+      continue;
+    }
+    if (item.type !== 'edge' || !item.segment) continue;
+    legs.push({ ...item.segment, fromStation: lastPlace, toStation: null });
+  }
+
+  const kinds = legs.map(l => l.kind);
+  const firstShinkansen = kinds.indexOf('shinkansen');
+  const lastShinkansen = kinds.lastIndexOf('shinkansen');
+  if (firstShinkansen === -1) return null;
+
+  const shinkansenLegs = legs.slice(firstShinkansen, lastShinkansen + 1);
+  // 新幹線と新幹線の間に在来線が挟まる行程は、このガイドの想定外。
+  // 無理に当てはめず null を返す（改札の通り方を捏造しないこと）
+  if (shinkansenLegs.some(l => l.kind !== 'shinkansen')) return null;
+  if (shinkansenLegs.some(l => !l.fromStation || !l.toStation)) return null;
+
+  const beforeLegs = legs.slice(0, firstShinkansen);
+  const afterLegs = legs.slice(lastShinkansen + 1);
+
+  return {
+    // 行程全体の最初に乗る地点（在来線区間があればその駅、無ければ新幹線の乗車駅）。
+    // 復路の起点は「知床」等の駅でない地名になりうるので、そのままの表記で返す
+    startStation: legs[0].fromStation,
+    // 新幹線の改札に入る駅（ここで初めて特急券が必要になる）
+    entryStation: withStationSuffix(shinkansenLegs[0].fromStation),
+    // 新幹線を降りる駅
+    exitStation: withStationSuffix(shinkansenLegs[shinkansenLegs.length - 1].toStation),
+    // 利用する新幹線を順番に並べたもの
+    trains: shinkansenLegs.map(l => ({
+      name: l.trainName,
+      generic: !!l.generic,
+      from: withStationSuffix(l.fromStation),
+      to: withStationSuffix(l.toStation),
+    })),
+    // 改札を通らない新幹線どうしの乗り継ぎ
+    transfers: shinkansenLegs.slice(1).map((l, i) => ({
+      station: withStationSuffix(l.fromStation),
+      fromTrain: shinkansenLegs[i].trainName,
+      fromTrainGeneric: !!shinkansenLegs[i].generic,
+      toTrain: l.trainName,
+      toTrainGeneric: !!l.generic,
+    })),
+    // 新幹線に乗る前／降りた後の在来線・在来特急区間。
+    // 端点は駅でない地名になりうるので、駅名の補完はしない
+    beforeLegs: beforeLegs.map(l => ({
+      kind: l.kind, trainName: l.trainName, generic: !!l.generic,
+      from: l.fromStation, to: l.toStation,
+    })),
+    afterLegs: afterLegs.map(l => ({
+      kind: l.kind, trainName: l.trainName, generic: !!l.generic,
+      from: l.fromStation, to: l.toStation,
+    })),
+  };
 }
 
 // タイムライン中の移動区間から、行程全体として最も低い信頼度を求める
