@@ -33,6 +33,8 @@ const App = {
     this.updateStationChoiceLabels();
     this.refreshTrainChoices();
     this.showStep('input');
+    this.bindShareLinkButtons();
+    this.restoreFromShareLink().catch((e) => console.error('共有リンクの復元に失敗:', e));
   },
 
   bindEvents() {
@@ -210,8 +212,9 @@ const App = {
     }
   },
 
-  saveInputsToStorage() {
-    const data = {
+  // 「旅の条件」フォームの現在値を、state を書き換えずに読み出す
+  snapshotInputs() {
+    return {
       userPrefecture: document.getElementById('user-prefecture')?.value,
       topStation: document.getElementById('top-station-select')?.value,
       destination: document.getElementById('destination').value,
@@ -221,9 +224,221 @@ const App = {
       luggagePattern: document.querySelector('input[name="luggage"]:checked')?.value || 'A',
       trainChoice: { ...this.state.trainChoice },
     };
+  },
+
+  saveInputsToStorage() {
+    const data = this.snapshotInputs();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {}
+  },
+
+  // ============================================================
+  // 開発者確認用：行程データをURLで引き継ぐ（暫定機能）
+  // ============================================================
+  // 認証・決済・サーバー保存は使わない。入力内容だけをJSON→圧縮→URLの
+  // ?data= に埋め込む。ヤフー乗換案内のスクショ画像は数MBあり、URLに
+  // 入れると長大になるため対象外（開いた先で貼り直してもらう）
+
+  // 共有リンクのデータ形式のバージョン。形式を変えたら上げる
+  SHARE_LINK_VERSION: 1,
+  // これより長い ?data= は不正・想定外として読み込まない
+  SHARE_LINK_MAX_LENGTH: 20000,
+
+  // 現在の入力内容から共有URLを作る。作れない場合は Error を投げる
+  buildShareUrl() {
+    if (typeof LZString === 'undefined') {
+      throw new Error('圧縮ライブラリ(lz-string)が読み込めていません');
+    }
+    const hotel = this.state.selectedHotel;
+    if (!hotel) throw new Error('宿がまだ選択されていません');
+
+    const payload = {
+      v: this.SHARE_LINK_VERSION,
+      inputs: this.snapshotInputs(),
+      airport: this.state.selectedDepartureAirport || null,
+      // 候補の宿はIDだけ持てばよい。自分で指定した宿だけ中身を持つ
+      hotel: hotel.id === 'custom'
+        ? { id: 'custom', name: hotel.name, taxi: hotel.taxiFromCityStation, url: hotel.customUrl || null }
+        : { id: hotel.id },
+      arrival: document.getElementById('hakodate-arrival-time')?.value || '',
+      departure: document.getElementById('hakodate-departure-time')?.value || '',
+    };
+    const packed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+    const base = window.location.href.split('#')[0].split('?')[0];
+    return `${base}?data=${packed}`;
+  },
+
+  // ?data= の中身を取り出して検証する。不正なら null（例外は投げない）
+  parseShareData(packed) {
+    try {
+      if (!packed || packed.length > this.SHARE_LINK_MAX_LENGTH) return null;
+      if (typeof LZString === 'undefined') return null;
+      const json = LZString.decompressFromEncodedURIComponent(packed);
+      if (!json) return null;
+      const p = JSON.parse(json);
+      if (!p || p.v !== this.SHARE_LINK_VERSION || !p.inputs || typeof p.inputs !== 'object') return null;
+
+      const str = (v, max = 60) => (typeof v === 'string' ? v.slice(0, max) : '');
+      const time = (v) => (typeof v === 'string' && /^\d{2}:\d{2}$/.test(v) ? v : '');
+      const date = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
+      const tc = p.inputs.trainChoice || {};
+      const choice = (v) => (typeof v === 'string' ? v.slice(0, 40) : null);
+
+      const inputs = {
+        userPrefecture: str(p.inputs.userPrefecture),
+        topStation: str(p.inputs.topStation),
+        destination: str(p.inputs.destination),
+        departureTime: time(p.inputs.departureTime),
+        departureDate: date(p.inputs.departureDate),
+        returnTime: time(p.inputs.returnTime),
+        luggagePattern: str(p.inputs.luggagePattern, 4) || 'A',
+        trainChoice: { outbound: choice(tc.outbound), inbound: choice(tc.inbound) },
+      };
+      if (!this.resolveDestination(inputs.destination)) return null;
+
+      const ap = p.airport;
+      const airport = ap && typeof ap === 'object' && Number.isInteger(ap.index)
+        ? { station: str(ap.station), dest: str(ap.dest), index: ap.index }
+        : null;
+
+      const h = p.hotel && typeof p.hotel === 'object' ? p.hotel : {};
+      // 宿名・URLは画面のHTMLに埋め込まれるため、タグや引用符になる文字は除く
+      const plain = (v, max) => str(v, max).replace(/[<>"'&`]/g, '');
+      const url = typeof h.url === 'string' && /^https?:\/\/[^\s<>"'`]+$/.test(h.url) ? h.url.slice(0, 500) : null;
+      const hotel = h.id === 'custom'
+        ? { id: 'custom', name: plain(h.name, 60), taxi: Math.min(Math.max(parseInt(h.taxi, 10) || 0, 0), 120), url }
+        : { id: str(String(h.id ?? ''), 60) };
+
+      return { inputs, airport, hotel, arrival: time(p.arrival), departure: time(p.departure) };
+    } catch (e) {
+      return null;
+    }
+  },
+
+  // 復元した宿情報から selectedHotel を作る。見つからなければ null
+  resolveSharedHotel(destKey, h) {
+    if (h.id === 'custom') {
+      if (!h.name || h.taxi < 1) return null;
+      return {
+        id: 'custom',
+        name: h.name,
+        type: 'ユーザー指定',
+        features: h.url ? [`<a href="${h.url}" target="_blank" rel="noopener" style="color:#2980b9;">ホテル詳細ページ</a>`] : [],
+        taxiFromCityStation: h.taxi,
+        area: 'ユーザー指定',
+        pricePerNight: 0,
+        dinnerIncluded: false,
+        breakfastIncluded: false,
+        customUrl: h.url || null,
+      };
+    }
+    return (DESTINATIONS[destKey].hotels || []).find((x) => String(x.id) === h.id) || null;
+  },
+
+  // ?data= 付きで開かれたら、同じ行程を復元して確定画面まで進める
+  async restoreFromShareLink() {
+    let packed = null;
+    try {
+      packed = new URLSearchParams(window.location.search).get('data');
+    } catch (e) {}
+    if (!packed) return;
+
+    const data = this.parseShareData(packed);
+    if (!data) {
+      this.showRestoreNotice('共有リンクの|データを読み込めませんでした。|リンクが途中で|切れていないか|確認してください。', true);
+      return;
+    }
+
+    this.state.selectedDepartureAirport = data.airport;
+    this.applyInputsToForm(data.inputs);
+
+    const destKey = this.resolveDestination(data.inputs.destination);
+    const arrEl = document.getElementById('hakodate-arrival-time');
+    const depEl = document.getElementById('hakodate-departure-time');
+    if (arrEl) arrEl.value = data.arrival;
+    if (depEl) depEl.value = data.departure;
+
+    const hotel = this.resolveSharedHotel(destKey, data.hotel);
+    if (!hotel) {
+      // 宿が今のデータに無い場合は、宿選びからやり直してもらう
+      if (this.generateHotelCandidates()) this.showStep('hotels');
+      this.showRestoreNotice('宿の情報を|復元できませんでした。|宿を選び直してください。', true);
+      return;
+    }
+    this.state.selectedHotel = hotel;
+
+    if (data.arrival && data.departure) {
+      await this.generateFinalItinerary();
+      this.showRestoreNotice('リンクから|行程を復元しました。|スクショ画像は|含まれません。|必要なら|「前のページに戻る」から|貼り直してください。');
+    } else {
+      // 時刻が未入力のリンクは、確定できないのでヤフーデータ入力画面で止める
+      this.showStep('yahoo-data');
+    }
+  },
+
+  // '|' 区切りの文言を、文節ごとに折り返さない <span class="ph"> に変換する。
+  // 日本語は文字単位で改行されるため、文節の途中で切れたり1〜2文字だけの
+  // 最終行（孤立行）ができたりするのを防ぐ。入力はコード内の固定文言のみ
+  phrasesHtml(text) {
+    return text.split('|').map((t) => `<span class="ph">${t}</span>`).join('');
+  },
+
+  // 復元結果のお知らせを、いま表示中の画面の上部に出す
+  showRestoreNotice(message, isError = false) {
+    const box = document.getElementById('restore-notice');
+    if (!box) return;
+    box.innerHTML = this.phrasesHtml(message);
+    box.classList.toggle('restore-notice-error', isError);
+    box.hidden = false;
+  },
+
+  // 「このリンクをスマホで開く」ボタン群の動作（ヤフー入力画面・確定画面の両方に置く）
+  bindShareLinkButtons() {
+    document.querySelectorAll('.dev-link-box').forEach((box) => {
+      const openBtn = box.querySelector('.btn-dev-link');
+      const panel = box.querySelector('.dev-link-panel');
+      const out = box.querySelector('.dev-link-out');
+      const meta = box.querySelector('.dev-link-meta');
+      const copyBtn = box.querySelector('.btn-dev-link-copy');
+
+      const copy = async () => {
+        out.focus();
+        out.select();
+        try {
+          await navigator.clipboard.writeText(out.value);
+          return true;
+        } catch (e) {
+          // clipboard API が使えない環境（http等）では旧来の方法で試す
+          try { return document.execCommand('copy'); } catch (e2) { return false; }
+        }
+      };
+
+      // 結果メッセージは文節ごとに折り返さない形で表示する（phrasesHtml参照）
+      const say = (text) => { meta.innerHTML = this.phrasesHtml(text); };
+      const copiedMsg = (len) => `コピーしました。|（${len}文字）|スマホに送って|開いてください。`;
+      const failedMsg = (len) => `自動コピーが|できなかったため、|上の枠を長押しして|コピーしてください。|（${len}文字）`;
+
+      openBtn.addEventListener('click', async () => {
+        let url;
+        try {
+          url = this.buildShareUrl();
+        } catch (e) {
+          panel.hidden = false;
+          out.value = '';
+          // e.message はコード内の固定文言のみ（利用者の入力は含まない）
+          say(`リンクを作れませんでした：|${e.message}`);
+          return;
+        }
+        out.value = url;
+        panel.hidden = false;
+        say((await copy()) ? copiedMsg(url.length) : failedMsg(url.length));
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        say((await copy()) ? copiedMsg(out.value.length) : failedMsg(out.value.length));
+      });
+    });
   },
 
   loadSavedInputs() {
