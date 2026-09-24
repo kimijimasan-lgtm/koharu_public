@@ -1870,6 +1870,7 @@ const App = {
 
     this.updatePrintScreenshotsLayout();
     this.bindTicketGuideButtons();
+    this.renderTicketGuidePrint();
     this.showStep('confirmed');
     window.scrollTo(0,0);
   },
@@ -2158,6 +2159,94 @@ const App = {
         </div>
       </div>
     `;
+  },
+
+  // ============================================================
+  // 印刷用：切符の出し方ガイドを最後の1ページにまとめる
+  // ============================================================
+  // 画面ではモーダルで「行き」「帰り」を1つずつ読むが、紙ではそれができない。
+  // そこで印刷のときだけ、同じ内容を最後のページに左右2カラムで並べる。
+  // 段組みに flex / grid を使うと、段組みコンテナをページ分割できない環境で
+  // 中身が丸ごと次ページへ送られるため、css 側は table / table-cell で組む
+  // （.day-section-split と同じ理由。css/style.css の .tgp-* を参照）
+
+  // A4 縦・余白 12mm/15mm（@page の指定）の印刷可能範囲を 96dpi のpxに換算した値。
+  // 幅 210 - 15*2 = 180mm ≒ 680px ／ 高さ 297 - 12*2 = 273mm ≒ 1032px
+  PRINT_PAGE_WIDTH_PX: 680,
+  PRINT_PAGE_HEIGHT_PX: 1032,
+
+  renderTicketGuidePrint() {
+    const container = document.getElementById('print-ticket-guide');
+    if (!container) return null;
+    container.innerHTML = '';
+
+    const guides = this.ticketGuideHtml || {};
+    const cols = [];
+    if (guides.outbound) cols.push({ label: '行き', html: guides.outbound });
+    if (guides.return) cols.push({ label: '帰り', html: guides.return });
+    // 新幹線を使わない行程（飛行機ルート等）では案内できる改札が無いので何も出さない
+    if (!cols.length) return null;
+
+    const single = cols.length === 1 ? ' is-single' : '';
+    const section = document.createElement('section');
+    section.className = 'tgp print-only';
+    section.id = 'print-ticket-guide-section';
+    section.innerHTML = `
+      <h2 class="tgp-title">🎫 改札での切符の出し方</h2>
+      <p class="tgp-note">${this.tgNoOrphanTail('どの改札で、どの切符を何枚入れるのかの案内です。迷ったときは、改札口の端にある駅員さんの窓口で、切符をまとめて見せてください。')}</p>
+      <div class="tgp-inner${single}">
+        ${cols.map(c => `
+          <div class="tgp-col">
+            <div class="tgp-col-head">${c.label}</div>
+            ${c.html}
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    // 文字サイズを決めてから本来の場所へ入れる。
+    // 先に container へ入れて測ると、この時点では #step-confirmed がまだ
+    // 非表示（showStep 前）で高さが0になり、必ず最大サイズが選ばれてしまう
+    const fit = this.fitTicketGuidePrint(section);
+    container.appendChild(section);
+    return fit;
+  },
+
+  // 行程によって案内の分量が変わる（実測で片側 737〜1190文字）。
+  // 文字サイズを固定すると長い行程で2ページに割れてしまうため、
+  // 印刷可能範囲と同じ幅で高さを実測し、1ページに収まる中で
+  // 最大の文字サイズを選ぶ。
+  // 測定は body 直下の画面外で行う。しおりの表示状態に左右されず、
+  // かつ .tgp-* の寸法をすべて絶対値（--tgp-fs 由来）にしてあるため、
+  // ここで測った高さがそのまま紙の高さになる
+  fitTicketGuidePrint(section) {
+    if (!section) return null;
+
+    // 大きい順に試し、最初に収まったものを採用する。
+    // 下限の 6.5pt でも収まらない場合はそのまま使い、呼び出し側に知らせる
+    const SIZES = [10, 9.5, 9, 8.5, 8, 7.5, 7, 6.5];
+    // 端数・改ページ位置の丸めぶんを引いた高さを上限にする
+    const budget = this.PRINT_PAGE_HEIGHT_PX - 22;
+
+    section.classList.add('tgp-measuring');
+    section.style.width = this.PRINT_PAGE_WIDTH_PX + 'px';
+    document.body.appendChild(section);
+
+    let chosen = SIZES[SIZES.length - 1];
+    let height = 0;
+    for (const size of SIZES) {
+      section.style.setProperty('--tgp-fs', size + 'pt');
+      height = section.offsetHeight;
+      chosen = size;
+      if (height <= budget) break;
+    }
+
+    section.remove();
+    section.classList.remove('tgp-measuring');
+    section.style.width = '';
+    section.style.setProperty('--tgp-fs', chosen + 'pt');
+
+    return { fontSizePt: chosen, heightPx: height, budgetPx: budget, fits: height <= budget };
   },
 
   // しおりを描画し直すたびにボタンは作り直されるので、そのつど貼り直す

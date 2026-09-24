@@ -905,6 +905,22 @@ body {
 .timeline-title {
   font-size: 1.05rem;
   font-weight: 600;
+  /* 1日目・3日目のタイムラインは右に乗換案内の画像が並ぶぶん列が狭く
+     （画面・印刷とも約400px）、「ホテルに戻り荷物をピックアップ」のような
+     長い見出しが語の途中で折り返されてしまう。
+     auto-phrase は未対応ブラウザでは無視されるだけなので、
+     strict と pretty を併用して行頭の小書きかな・句読点も防ぐ */
+  line-break: strict;
+  word-break: auto-phrase;
+  text-wrap: pretty;
+}
+
+/* 移動区間のラベル（「タクシー等で移動」等）も同じ狭い列に入るため揃える */
+.transfer-label,
+.timeline-detail {
+  line-break: strict;
+  word-break: auto-phrase;
+  text-wrap: pretty;
 }
 
 /* ========================
@@ -1595,16 +1611,45 @@ body {
     break-inside: auto !important;
   }
 
-  /* Chrome は flex コンテナをページ分割できず、中身が丸ごと次ページに送られる。
-     印刷では段組みをやめて縦積みにし、通常のブロックとして分割させる */
-  .day-section {
+  /* 1日目・3日目は印刷でも「左＝タイムライン／右＝ヤフー乗換案内の画像」の
+     2カラムを保つ。
+     ただし段組みに flex / grid を使うと、コンテナをページ単位で分割できない
+     ブラウザ（段組みの分割に対応する前の Chrome・iOS Safari 等）で中身が丸ごと次ページへ
+     送られてしまう。表のセルはどの実装でもページ分割できるため、印刷時だけ
+     table / table-cell に置き換える。これで3日目のように1ページに収まらない日でも、
+     段組みを保ったまま次ページへ続けられる。
+     角丸を残すため border-collapse は separate にする（collapse だと無効化される） */
+  .day-section-split {
+    display: table !important;
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+  .day-section-split > .day-section-timeline-col {
+    display: table-cell !important;
+    vertical-align: top !important;
+    min-width: 0 !important;
+    padding-right: 12px !important;
+  }
+  .day-section-split > .route-column {
+    display: table-cell !important;
+    vertical-align: top !important;
+    width: 250px !important;
+    margin: 0 !important;
+  }
+  /* table-cell 化で flex の gap が効かなくなるため、
+     概算カードを開いたまま印刷する場合の間隔を margin で補う */
+  .day-section-split > .route-column > * + * {
+    margin-top: 10px !important;
+  }
+
+  /* 2日目（乗換案内の画像が無い日）は従来どおり縦1列のブロックのまま */
+  .day-section:not(.day-section-split) {
     display: block !important;
   }
-  .day-section > div {
+  .day-section:not(.day-section-split) > div {
     min-width: 0 !important;
-  }
-  .day-section .route-column {
-    margin-top: 12px !important;
   }
 
   /* タイムライン内部要素の分断防止 */
@@ -2439,7 +2484,9 @@ a.header-partner-badge:hover {
 
   /* A4の印刷可能幅(約680px)は700px未満のため、上のスマホ用ブレークポイントを
      screen専用にしても、他の要因で.route-columnが崩れた場合に画像が
-     用紙いっぱいまで拡大されると被害が大きい。念のため印刷時の幅を固定する */
+     用紙いっぱいまで拡大されると被害が大きい。念のため印刷時の幅を固定する。
+     2カラムの右列としての幅(250px)は、上の .day-section-split > .route-column が
+     クラス2つ分の詳細度で上書きするため、こちらは保険としてのみ働く */
   .route-column {
     width: 260px !important;
     margin: 0 auto !important;
@@ -2641,4 +2688,175 @@ input.input-missing {
    app.js の tgNoOrphanTail() が Intl.Segmenter で区切って付ける */
 .tg-w {
   display: inline-block;
+}
+
+/* ============================================================
+   印刷用：改札での切符の出し方ガイド（行き／帰りを左右2カラム）
+   ============================================================
+   画面ではモーダルで1つずつ読む案内を、紙では最後の1ページにまとめて
+   左右に並べる。守っている条件は次の3つ。
+
+   1. 必ず1ページに収める
+      分量は行程によって変わる（実測で片側 737〜1190文字）。固定の文字サイズ
+      では最長のケースが2ページに割れてしまうため、app.js の
+      fitTicketGuidePrint() が A4 の印刷可能範囲（680×1032px 相当）で高さを
+      実測し、収まる中で最大の文字サイズを --tgp-fs に入れる。
+   2. 段組みがページをまたいでも崩れないこと
+      .day-section-split と同じ理由で flex / grid ではなく table を使う。
+   3. 画面で測った高さが、そのまま印刷の高さになること
+      この指定を @media print の中に入れると画面で測れなくなるので、
+      あえてメディア指定なしで書き、表示/非表示だけを .print-only に任せる。
+      また印刷時は html の font-size が画面と異なる（21px）ため、
+      rem を使うと実測とずれる。サイズはすべて --tgp-fs 由来の絶対値にする。
+      同じ理由で、モーダル用 .tg-* のサイズ指定（rem・スマホ幅の分岐）は
+      クラス2つ分の詳細度ですべて上書きしている */
+
+.tgp {
+  --tgp-fs: 9pt;
+  font-size: var(--tgp-fs);
+  line-height: 1.5;
+  color: #111111;
+  /* 紙の最後に、必ず新しいページから始める */
+  break-before: page;
+  page-break-before: always;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin: 0;
+  padding: 0;
+}
+
+.tgp-title {
+  font-size: calc(var(--tgp-fs) * 1.35) !important;
+  font-weight: 700 !important;
+  color: #0c3c78 !important;
+  margin: 0 0 calc(var(--tgp-fs) * 0.35) 0 !important;
+  padding: 0 0 calc(var(--tgp-fs) * 0.3) 0 !important;
+  border-bottom: 2px solid #0c3c78;
+  line-break: strict;
+  text-wrap: balance;
+}
+
+.tgp-note {
+  font-size: calc(var(--tgp-fs) * 0.92) !important;
+  line-height: 1.5 !important;
+  color: #444444 !important;
+  margin: 0 0 calc(var(--tgp-fs) * 0.8) 0 !important;
+  line-break: strict;
+  text-wrap: pretty;
+}
+
+/* 左右2カラム本体 */
+.tgp-inner {
+  display: table;
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.tgp-col {
+  display: table-cell;
+  vertical-align: top;
+  width: 50%;
+}
+/* 1方向しかガイドが作れない行程（片道だけ新幹線など）では1カラムにする */
+.tgp-inner.is-single .tgp-col {
+  width: 100%;
+}
+.tgp-col + .tgp-col {
+  padding-left: calc(var(--tgp-fs) * 1.4);
+  border-left: 1px solid #c9d8e8;
+}
+.tgp-col:first-child {
+  padding-right: calc(var(--tgp-fs) * 1.4);
+}
+.tgp-inner.is-single .tgp-col:first-child {
+  padding-right: 0;
+}
+
+.tgp-col-head {
+  font-size: calc(var(--tgp-fs) * 1.1) !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  background: #0c3c78 !important;
+  border-radius: 4px;
+  padding: calc(var(--tgp-fs) * 0.22) calc(var(--tgp-fs) * 0.6);
+  margin: 0 0 calc(var(--tgp-fs) * 0.5) 0 !important;
+  line-break: strict;
+}
+
+/* ---- モーダル用 .tg-* の寸法を、紙の分量にあわせて詰め直す ---- */
+.tgp .tg-lead {
+  font-size: calc(var(--tgp-fs) * 0.9) !important;
+  line-height: 1.45 !important;
+  color: #555555 !important;
+  margin: 0 0 calc(var(--tgp-fs) * 0.55) 0 !important;
+}
+.tgp .tg-heading {
+  font-size: calc(var(--tgp-fs) * 1.02) !important;
+  font-weight: 700 !important;
+  color: #0c3c78 !important;
+  margin: 0 0 calc(var(--tgp-fs) * 0.4) 0 !important;
+  padding: 0 0 calc(var(--tgp-fs) * 0.2) 0 !important;
+  border-bottom: 1px solid #c9d8e8;
+}
+.tgp .tg-heading-sections {
+  margin-top: calc(var(--tgp-fs) * 0.85) !important;
+}
+.tgp .tg-step {
+  border: 1px solid #e0e6ef;
+  border-left: 3px solid #0c3c78;
+  border-radius: 4px;
+  background: #fbfcfe;
+  padding: calc(var(--tgp-fs) * 0.4) calc(var(--tgp-fs) * 0.5);
+  margin: 0 0 calc(var(--tgp-fs) * 0.4) 0;
+}
+.tgp .tg-step-title {
+  font-size: var(--tgp-fs) !important;
+  font-weight: 700 !important;
+  color: #0c3c78 !important;
+  line-height: 1.4 !important;
+  margin: 0 0 calc(var(--tgp-fs) * 0.15) 0 !important;
+}
+.tgp .tg-step p {
+  font-size: calc(var(--tgp-fs) * 0.95) !important;
+  line-height: 1.45 !important;
+  color: #1f2933 !important;
+  letter-spacing: -0.01em;
+  margin: 0 !important;
+}
+.tgp .tg-step p + p {
+  margin-top: calc(var(--tgp-fs) * 0.12) !important;
+}
+.tgp .tg-section {
+  margin: 0 0 calc(var(--tgp-fs) * 0.55) 0;
+}
+.tgp .tg-section h4 {
+  font-size: var(--tgp-fs) !important;
+  font-weight: 700 !important;
+  color: #0c3c78 !important;
+  line-height: 1.4 !important;
+  margin: 0 0 calc(var(--tgp-fs) * 0.15) 0 !important;
+}
+.tgp .tg-section p {
+  font-size: calc(var(--tgp-fs) * 0.95) !important;
+  line-height: 1.5 !important;
+  color: #1f2933 !important;
+  letter-spacing: -0.01em;
+  margin: 0 !important;
+}
+.tgp .tg-step strong,
+.tgp .tg-section strong {
+  color: #111111 !important;
+  font-weight: 700 !important;
+}
+
+/* 高さの実測中だけ使う。画面外に置いたまま、印刷と同じ幅でレイアウトさせる */
+.tgp-measuring {
+  display: block !important;
+  position: absolute !important;
+  left: -10000px !important;
+  top: 0 !important;
+  visibility: hidden !important;
+  break-before: auto !important;
+  page-break-before: auto !important;
 }
