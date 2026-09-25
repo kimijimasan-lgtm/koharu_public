@@ -16,3 +16,9 @@ airport_access_research.md
 
 # 調査・作業レポート（内部メモ。公開リポジトリには置かない）
 report*.txt
+
+# 内部メモ・旧コード（公開リポジトリには置かない）
+CLAUDE.md
+HANDOVER_FOR_CLAUDE.md
+design_reliability.md
+app_old.js
