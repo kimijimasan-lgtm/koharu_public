@@ -309,7 +309,9 @@
       <div class="container">
   
         <div class="confirmed-actions top-actions no-print" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; text-align: center;">
-          <button type="button" class="btn btn-primary" onclick="window.print()" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">🖨️ 印刷する</button>
+          <!-- onclick を使わずJSで束ねる。印刷前に「モバイル幅だけの並べ替え」を
+               2カラム構造へ戻す必要があるため（beforeprint を発火しない環境がある） -->
+          <button type="button" id="btn-print" class="btn btn-primary" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">🖨️ 印刷する</button>
           <button type="button" id="btn-direct-pdf" class="btn btn-primary" style="font-size: 1.4rem; padding: 15px; user-select: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15); background-color: #e67e22; border-color: #d35400;">📄 PDFファイルで保存する</button>
           <button type="button" id="btn-back-to-yahoo-from-confirmed" class="btn btn-secondary" style="font-size: 1rem; padding: 10px; user-select: none;">🔙 前のページに戻る（画像を貼り直す）</button>
           <!-- 開発者確認用：入力内容をURLにして、スマホで同じ行程を開く（画像は含まない） -->

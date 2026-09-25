@@ -48,6 +48,8 @@ const App = {
     });
 
     this.bindDirectPdfButton();
+    this.bindPrintButton();
+    this.bindMobileItineraryOrder();
     this.bindHowtoModalEvents();
     this.bindTicketGuideModalEvents();
     
@@ -1683,9 +1685,10 @@ const App = {
     const cardHtml = this.renderRouteTimeline(route, heading);
     if (!cardHtml) return '';
     if (!hasImage) return cardHtml;
+    // summary は「アプリ」の途中で改行されやすいので、文節ごとに区切る
     return `
       <details class="route-fallback">
-        <summary>${heading}（アプリ概算・タップで表示）</summary>
+        <summary><span class="ph">${heading}</span><span class="ph">（アプリ概算・</span><span class="ph">タップで表示）</span></summary>
         ${cardHtml}
       </details>
     `;
@@ -1735,6 +1738,79 @@ const App = {
     if (container) {
       container.innerHTML = '';
     }
+  },
+
+  // ============================================================
+  // モバイル幅だけの並べ替え
+  // ============================================================
+  // しおりのDOMは「PC幅・印刷・PDF」の2カラム構造（左＝タイムライン／
+  // 右＝ヤフー乗換案内の画像）で組み立てる。紙面のレイアウトは
+  // css の @media print（.day-section-split を table 化）と、
+  // PDF（html2canvas がA4内寸719px＝screen媒体で描画）の両方が
+  // この構造に依存しているため、構造そのものは変えない。
+  //
+  // 700px以下の画面のときだけ、次の3つを行程の外へ移して並べ替える。
+  //   1. 行きの画像 → 「滞在スケジュール」見出しの直後
+  //   2. 帰りの画像 → 3日目の直後
+  //   3. 切符の出し方ボタン → 帰りの画像の直後
+  // 画像は1組しか持たず、要素ごと移動するだけなので、
+  // データ量もイベントリスナーもそのまま引き継がれる
+  MOBILE_ORDER_QUERY: 'screen and (max-width: 700px)',
+
+  // [動かす要素, 元の親（＝常に最後の子として戻す）, モバイル時の移動先]
+  MOBILE_ORDER_PLACEMENTS: [
+    ['route-image-outbound', 'route-column-outbound', 'mobile-slot-outbound'],
+    ['route-image-return', 'route-column-return', 'mobile-slot-return'],
+    ['ticket-guide-buttons', 'ticket-purchase-card', 'mobile-slot-ticket-guide'],
+  ],
+
+  // forceWide = true で、画面幅に関係なく必ず元の2カラム構造に戻す
+  // （印刷・PDF生成の直前に使う）
+  applyMobileItineraryOrder(forceWide = false) {
+    let toMobile = false;
+    try {
+      toMobile = !forceWide && window.matchMedia(this.MOBILE_ORDER_QUERY).matches;
+    } catch (e) {
+      // matchMedia が使えない環境では、従来どおりの2カラム構造のままにする
+      toMobile = false;
+    }
+
+    this.MOBILE_ORDER_PLACEMENTS.forEach(([elId, homeId, slotId]) => {
+      const el = document.getElementById(elId);
+      const target = document.getElementById(toMobile ? slotId : homeId);
+      // 画像が未添付の日や、新幹線を使わない行程では要素自体が存在しない
+      if (!el || !target) return;
+      // 3要素とも元の親の「最後の子」なので、戻すときも appendChild でよい
+      if (el.parentElement !== target) target.appendChild(el);
+    });
+  },
+
+  // 画面幅の変化と、印刷の開始・終了に合わせて並べ替えを切り替える。
+  // init から一度だけ呼ぶ
+  bindMobileItineraryOrder() {
+    const apply = () => this.applyMobileItineraryOrder();
+
+    try {
+      const mq = window.matchMedia(this.MOBILE_ORDER_QUERY);
+      // addEventListener 非対応の古い実装向けに addListener も見る
+      if (mq.addEventListener) mq.addEventListener('change', apply);
+      else if (mq.addListener) mq.addListener(apply);
+    } catch (e) {}
+
+    // matchMedia の change が発火しない場面（iframe内での寸法変更など）が
+    // あるため、resize でも見に行く。applyMobileItineraryOrder は
+    // 既に正しい位置にある要素には触らないので、何度呼んでも問題ない
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(apply, 150);
+    });
+
+    // 印刷は必ず2カラム構造で行う。ブラウザのメニューから印刷された場合も
+    // ここで元に戻す（beforeprint を発火しない環境があるため、
+    // 画面の「印刷する」ボタン側でも同じ処理を呼んでいる）
+    window.addEventListener('beforeprint', () => this.applyMobileItineraryOrder(true));
+    window.addEventListener('afterprint', apply);
   },
 
   async generateFinalItinerary() {
@@ -1935,7 +2011,7 @@ const App = {
 
     // Render logic
     const ticketSection = `
-        <div class="no-print" style="width:100%; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
+        <div id="ticket-purchase-card" class="no-print" style="width:100%; background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
           <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:var(--color-primary);">🎫 新幹線チケット（きっぷ）の購入</h3>
           <p style="font-size:0.95rem; color:#666; margin-bottom:15px;">※印刷には表示されません</p>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -2026,16 +2102,19 @@ const App = {
 
         ${ticketSection}
         ${reservationSection}
-        <h3 class="section-title">🕒 ${dest.name} 2泊3日 滞在スケジュール</h3>
+        <h3 class="section-title">${this.phrasesHtml(`🕒 ${dest.name} 2泊3日&nbsp;|滞在スケジュール`)}</h3>
+
+        <!-- モバイル幅のときだけ、行きのヤフー画像がここに移動してくる（空のときは非表示） -->
+        <div id="mobile-slot-outbound" class="mobile-route-slot"></div>
 
         <h4 style="color:var(--color-primary); border-bottom: 2px dashed #ccc; padding-bottom: 5px;">【1日目】 ${dest.name}へ到着</h4>
         <div class="day-section day-section-split" style="margin-bottom: 20px; padding: 15px; background:white; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
           <div class="day-section-timeline-col">
             ${this.renderTimeline(day1Events)}
           </div>
-          <div class="route-column">
+          <div class="route-column" id="route-column-outbound">
             ${this.renderRouteFallback(outboundRoute, '🚄 行きの交通ルート', !!img1Src)}
-            ${img1Src ? `<div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 行きの乗換経路（実際の検索結果）</h5><img src="${img1Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div>` : ''}
+            ${img1Src ? `<div id="route-image-outbound" style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;"><span class="ph">🚄 行きの乗換経路</span><span class="ph">（実際の検索結果）</span></h5><img src="${img1Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div>` : ''}
           </div>
         </div>
 
@@ -2049,11 +2128,16 @@ const App = {
           <div class="day-section-timeline-col">
             ${this.renderTimeline(day3Events)}
           </div>
-          <div class="route-column">
+          <div class="route-column" id="route-column-return">
             ${this.renderRouteFallback(returnRoute, '🚄 帰りの交通ルート', !!img3Src)}
-            ${img3Src ? `<div style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;">🚄 帰りの乗換経路（実際の検索結果）</h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div>` : ''}
+            ${img3Src ? `<div id="route-image-return" style="background:#f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; break-inside: avoid; page-break-inside: avoid;"><h5 style="margin:0 0 10px 0; text-align:center; color:#555;"><span class="ph">🚄 帰りの乗換経路</span><span class="ph">（実際の検索結果）</span></h5><img src="${img3Src}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid #ddd;"></div>` : ''}
           </div>
         </div>
+
+        <!-- モバイル幅のときだけ、帰りのヤフー画像と「切符の出し方」ボタンがここに移動してくる -->
+        <div id="mobile-slot-return" class="mobile-route-slot"></div>
+        <div id="mobile-slot-ticket-guide" class="mobile-route-slot no-print"></div>
+
       <div class="checklist-card" style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px; break-inside: avoid; page-break-inside: avoid;">
           <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">🎒 持ち物チェックリスト</h3>
           <div style="display: flex; flex-wrap: wrap; gap: 20px;">
@@ -2086,6 +2170,8 @@ const App = {
     this.updatePrintScreenshotsLayout();
     this.bindTicketGuideButtons();
     this.renderTicketGuidePrint();
+    // 組み立て直後は常に2カラム構造なので、モバイル幅なら並べ替える
+    this.applyMobileItineraryOrder();
     this.showStep('confirmed');
     window.scrollTo(0,0);
   },
@@ -2357,20 +2443,25 @@ const App = {
     // 新幹線を使わない行程（飛行機ルート等）では、案内できる改札が無いのでボタンを出さない
     if (!this.ticketGuideHtml.outbound && !this.ticketGuideHtml.return) return '';
 
+    // .btn は inline-flex なので、文節の span をそのまま置くと
+    // 1文節＝1フレックス行になって文言がバラバラに折れる。
+    // span 1つにまとめて、その中で普通の行として折り返させる
     const btn = (dir, label) => `
       <button type="button" class="btn" data-ticket-guide="${dir}"
         style="padding:10px 20px; font-weight:bold; background:#fff; color:var(--color-primary); border:2px solid var(--color-primary);">
-        ${label}
+        <span class="btn-label">${label}</span>
       </button>
     `;
 
+    // id は、モバイル幅のときにこのブロックだけを行程の末尾へ移すために使う
+    // （applyMobileItineraryOrder）。PC幅・印刷・PDFでは購入カードの中に残る
     return `
-      <div style="margin-top:18px; border-top:1px dashed #ddd; padding-top:16px;">
+      <div id="ticket-guide-buttons" style="margin-top:18px; border-top:1px dashed #ddd; padding-top:16px;">
         <h4 style="margin:0 0 6px 0; font-size:1.02rem; color:#444; line-break:strict; text-wrap:balance;">👓 はじめての方へ：改札での切符の出し方</h4>
-        <p style="margin:0 0 12px 0; font-size:0.92rem; color:#666; line-height:1.7; line-break:strict; text-wrap:pretty;">どの改札で、どの切符を何枚入れるのかを、今回の行程にあわせてご案内します。</p>
+        <p style="margin:0 0 12px 0; font-size:0.92rem; color:#666; line-height:1.7; line-break:strict; text-wrap:pretty;">${this.phrasesHtml('どの改札で、|どの切符を|何枚入れるのかを、|今回の行程に|あわせて|ご案内します。')}</p>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          ${this.ticketGuideHtml.outbound ? btn('outbound', '🚄 行きの切符の出し方を見る') : ''}
-          ${this.ticketGuideHtml.return ? btn('return', '🚄 帰りの切符の出し方を見る') : ''}
+          ${this.ticketGuideHtml.outbound ? btn('outbound', this.phrasesHtml('🚄 行きの切符の|出し方を見る')) : ''}
+          ${this.ticketGuideHtml.return ? btn('return', this.phrasesHtml('🚄 帰りの切符の|出し方を見る')) : ''}
         </div>
       </div>
     `;
@@ -2617,6 +2708,21 @@ const App = {
     return this.pickPdfScale(container.offsetWidth, container.scrollHeight);
   },
 
+  // 「印刷する」ボタン。紙面は常に2カラム構造で出したいので、
+  // window.print() の前に並べ替えを元へ戻す。
+  // 印刷が終わった後は afterprint（bindMobileItineraryOrder 側）で
+  // モバイル用の並びに戻るが、afterprint を発火しない環境のために
+  // ここでも保険として戻す
+  bindPrintButton() {
+    const btn = document.getElementById('btn-print');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      this.applyMobileItineraryOrder(true);
+      window.print();
+      setTimeout(() => this.applyMobileItineraryOrder(), 1000);
+    });
+  },
+
   bindDirectPdfButton() {
     const btnPdf = document.getElementById('btn-direct-pdf');
     if (!btnPdf) return;
@@ -2624,6 +2730,10 @@ const App = {
     btnPdf.addEventListener('click', async () => {
       const overlay = document.getElementById('pdf-loading-overlay');
       if (overlay) overlay.style.display = 'flex';
+
+      // html2canvas は画面のDOMをそのまま写すため、スマホで押された場合は
+      // モバイル用の並びのままPDFになってしまう。紙面は常に2カラムにする
+      this.applyMobileItineraryOrder(true);
 
       // 待ち表示が実際に描かれるまで少し待つ
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -2689,6 +2799,8 @@ const App = {
         alert("PDFの作成に失敗しました。");
       } finally {
         if (overlay) overlay.style.display = 'none';
+        // 画面の並びをモバイル用に戻す（PC幅なら何も起きない）
+        this.applyMobileItineraryOrder();
       }
     });
   },

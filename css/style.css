@@ -2344,6 +2344,43 @@ a.header-partner-badge:hover {
   }
 }
 
+/* モバイル幅（700px以下）のときだけ、ヤフー乗換案内の画像と
+   「切符の出し方」ボタンがこの器へ移動してくる（js の
+   applyMobileItineraryOrder）。PC幅・印刷・PDFでは中身が空のままなので、
+   :empty で器ごと消して余白が生まれないようにする */
+.mobile-route-slot:empty { display: none; }
+.mobile-route-slot { margin-bottom: 20px; }
+
+/* 移動してきた「切符の出し方」ボタンは、元は購入カードの中の一区画だった。
+   単独で置くと区切り線だけが浮くため、白いカードとして見せる */
+#mobile-slot-ticket-guide:not(:empty) {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
+}
+#mobile-slot-ticket-guide > #ticket-guide-buttons {
+  margin-top: 0 !important;
+  border-top: none !important;
+  padding-top: 0 !important;
+}
+/* ボタン内の文言のまとまり。.btn（inline-flex）の中で
+   1つのフレックス要素として扱い、中身は通常の行として折り返す */
+.btn-label {
+  line-break: strict;
+  text-wrap: balance;
+}
+
+/* 「行き」「帰り」の2つを横に並べると1ボタンあたりの幅が半分になり、
+   文言が4行に折れて最後に「見る」だけが残る。スマホでは縦に積んで
+   1行に収める（PC幅・印刷では従来どおり横並び） */
+@media screen and (max-width: 700px) {
+  #ticket-guide-buttons [data-ticket-guide] {
+    flex: 1 1 100%;
+  }
+}
+
 .route-column {
   width: 320px;
   max-width: 100%;
