@@ -160,7 +160,7 @@ function generateFlightTimeline(stationName, destName, departTimeStr) {
   const pushNode = (time, text) => timeline.push({ type: 'node', time, text });
   const pushEdge = (text) => timeline.push({ type: 'edge', text });
 
-  pushNode(t, \\\\\\（ご自宅周辺） 発\\\);
+  pushNode(t, \\\\\\ 発\\\);
   pushEdge(airportTransText);
   t = addMins(t, airportTransferTime);
   pushNode(t, \\\\\\ 着\\\);

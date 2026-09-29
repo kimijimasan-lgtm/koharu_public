@@ -3315,7 +3315,7 @@ function generateFlightTimeline(stationName, destName, departTimeStr, airportInd
     note: '実際の運航ダイヤは航空会社サイトでご確認ください',
   });
 
-  pushNode(t, `${normStation}（ご自宅周辺） 発`);
+  pushNode(t, `${normStation} 発`);
   pushEdge(airportTransText, access.reliability, airportTransferTime);
   t = addMins(t, airportTransferTime);
   totalMins += airportTransferTime;
