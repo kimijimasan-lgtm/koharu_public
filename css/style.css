@@ -1544,8 +1544,18 @@ body {
     font-weight: 700 !important;
     font-size: 0.85rem !important;
   }
-  .alt-cost { color: #8c3b00 !important; }
-  .alt-sub, .alt-foot { color: #333333 !important; }
+  /* 参考表示（タクシー以外の手段）の色。
+     上の #confirmed-content p/span/label/li/div は ID を含むため詳細度が (1,0,1) で、
+     クラスだけの .alt-cost 等（0,1,0）は !important を付けても負ける。
+     .transfer-cost と信頼度バッジは同じ理由で #confirmed-content 付きに直してあるので、
+     参考表示もそれにそろえる（実測で #1f2933 に潰れていた） */
+  #confirmed-content .alt-cost {
+    color: #8c3b00 !important;
+    font-weight: 700 !important;
+  }
+  #confirmed-content .alt-sub,
+  #confirmed-content .alt-foot { color: #333333 !important; }
+  #confirmed-content .transfer-duration { color: #111111 !important; }
   .transfer-duration {
     color: #111111 !important;
     font-weight: 700 !important;
@@ -1729,6 +1739,31 @@ body {
   .timeline-content,
   .timeline-title,
   .timeline-detail {
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 参考表示（タクシー以外の手段）が付いた移動行だけは、分断を許す。
+     上の「1ページに収まる大きさの単位にだけ掛ける」の考え方と同じ理由。
+     参考表示が付くと移動行が 400〜580px まで伸びるため、avoid のままだと
+     行ごと次ページへ送られて前ページの下が大きく空く
+     （2026-10-05の実測。A4・印刷可能高さ1032pxで改ページをたどった値。
+      空白の合計が 函館 549px・札幌 1171px、1か所あたり最大 337px あった。
+      この指定で 函館 260px・札幌 427px まで減った）。
+     器では守らず、下の .alt-row / .alt-foot / .rl-caveat の単位で守る。
+     :has() は上の .confirmed-section:has(.reservation-links) で既に使っている。
+     未対応のブラウザではこの指定が無視されるだけで、今までと同じ動きに戻る */
+  .timeline-item:has(.alt-transport),
+  .timeline-item:has(.alt-transport) .timeline-content,
+  .timeline-item:has(.alt-transport) .timeline-detail {
+    page-break-inside: auto !important;
+    -webkit-column-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  .alt-row,
+  .alt-foot,
+  .alt-transport .rl-caveat {
     page-break-inside: avoid !important;
     -webkit-column-break-inside: avoid !important;
     break-inside: avoid !important;
