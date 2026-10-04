@@ -1299,6 +1299,12 @@ const App = {
     if (event.type === 'transfer') return null;
     const hotelLoc = { venue: hotel.name, area: hotel.area, taxiFromCityStation: hotel.taxiFromCityStation };
     if (event.type === 'transport') {
+      // 「ホテルを出発」だけは type='transport' だが、いる場所は駅ではなく宿。
+      // 駅（駅から0分）として扱うと、宿を出ただけなのに「いったん駅まで戻って
+      // から出かけた」と読まれ、経路効率チェックが大きな迂回だと誤検出する
+      // （例: 積丹・お宿 かさい で「推定 +70分の迂回」）。
+      // 他の transport（コインロッカー、駅 到着／出発）は実際に駅なのでそのまま
+      if ((event.title || '').includes('ホテルを出発')) return hotelLoc;
       const stationName = dest.cityStation || dest.station;
       return { venue: stationName, area: '__station__', taxiFromCityStation: 0 };
     }
@@ -1328,6 +1334,12 @@ const App = {
         if (ev.type === 'transfer') continue;
         const loc = this.inferEventLocation(ev, hotel, dest);
         if (!loc || loc.area === '__unknown__' || loc.taxiFromCityStation == null) continue;
+        // 宿での出来事（朝食・チェックアウト・荷物の預け入れと受け取り・帰還・
+        // ホテルを出発）は、観光の寄り道ではなく、その日の起点と終点にあたる。
+        // 判定の並びに入れると「宿へ戻ってまた出かける」が迂回に見えてしまうため、
+        // 前後どちらにも使わない。名前ではなく場所で見る（宿の名前が付いた
+        // レストランを巻き込まないため）
+        if (loc.venue === hotel.name) continue;
         locations.push({ name: ev.title, area: loc.area, dist: loc.taxiFromCityStation });
       }
 
