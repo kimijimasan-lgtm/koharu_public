@@ -1412,7 +1412,7 @@ const App = {
     const badge = (rl) => this.renderReliabilityBadge(rl);
     // バッジは時刻・金額と同じ span に入れる。別の要素にするとスマホ幅で
     // バッジだけが次の行に取り残される（360px幅で実測）
-    const time = (min, rl) => `<span class="alt-time">約${min}分${badge(rl)}</span>`;
+    const time = (min, rl) => (min == null ? '' : `<span class="alt-time">約${min}分${badge(rl)}</span>`);
     const money = (r) => {
       if (r.fareYen == null || r.fareYen === 0) return '';
       const max = r.fareYenMax;
