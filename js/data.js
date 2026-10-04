@@ -1584,6 +1584,12 @@ function findLocalTrainAccess(fromStationName) {
 // しおりの時間配分はタクシー利用で組んでいるため、ここの値は日程には一切反映せず、
 // 該当する移動行の下に「使う場合の所要時間と金額」として並べて表示するだけに使う。
 // 起点は函館駅（前）。シャトルバスは函館駅前発のみ確認できた（逆向きは未確認なので扱わない）。
+//
+// 値の出どころは種類ごとに確からしさが違うため、コメントではなく reliability() で持たせる:
+//   シャトルバスの所要・運賃 … 函館バス公式で確認（VERIFIED）
+//   市電の区間運賃           … 函館市公式の公示運賃（VERIFIED）
+//   市電の乗車時間           … 観光案内の一致値・公式時刻表は未確認（RESEARCHED）
+//   電停からの徒歩時間       … 目安（ESTIMATED）
 const HAKODATE_ALT_TRANSPORT = {
   stationAreas: ['__station__', '函館駅前'],
   shuttle: {
@@ -1591,13 +1597,15 @@ const HAKODATE_ALT_TRANSPORT = {
     durationMin: 15,
     fareYen: 300,
     note: '五稜郭タワー前で下車（タワーまで徒歩約1分）',
-    caveat: '運行本数が限られます。乗る前に函館バスの時刻表をご確認ください',
-    source: '函館バス公式（五稜郭タワー・トラピスチヌシャトルバス）',
-    verified_date: '2026-10-04',
+    // 所要時間・運賃とも公式の案内に載っている値
+    reliability: reliability(RELIABILITY.VERIFIED, {
+      source: '函館バス公式（五稜郭タワー・トラピスチヌシャトルバス）',
+      verifiedDate: '2026-10-04',
+      note: '所要時間・運賃とも公式の案内で確認。函館駅前発のみ確認（逆向きは未確認）',
+      caveat: '運行本数が限られます。乗る前に函館バスの時刻表をご確認ください',
+    }),
   },
-  // 運賃は LOCAL_TRANSIT_FARES.hakodate_tram_fare（函館市公式・2025年12月改定）の区間運賃。
-  // 乗車時間は複数の観光案内で一致した目安値（函館駅前→五稜郭公園前16分・十字街5分・湯の川32分）。
-  // 電停からの徒歩は目安。
+  // 運賃は LOCAL_TRANSIT_FARES.hakodate_tram_fare の区間運賃と同じ値を転記している
   tram: {
     '五稜郭':     { stop: '五稜郭公園前', durationMin: 16, fareYen: 270, walk: '電停と五稜郭タワーの間は徒歩約10〜15分' },
     'ベイエリア': { stop: '十字街',       durationMin: 5,  fareYen: 250, walk: '電停と金森赤レンガ倉庫の間は徒歩約5分' },
@@ -1605,8 +1613,22 @@ const HAKODATE_ALT_TRANSPORT = {
     '函館山':     { stop: '十字街',       durationMin: 5,  fareYen: 250, walk: '電停とロープウェイ山麓駅の間は徒歩約10分' },
     '湯の川温泉': { stop: '湯の川',       durationMin: 32, fareYen: 290, walk: '電停から宿までの距離は宿により異なります' },
   },
-  source: '函館市公式サイト（運賃）・観光案内各種（所要時間）',
-  verified_date: '2026-10-04',
+  // 市電の値は「運賃」と「乗車時間」で確からしさが違うので別々に持つ
+  tramFareReliability: reliability(RELIABILITY.VERIFIED, {
+    source: '函館市公式サイト（函館市電 対キロ区間制の公示運賃）',
+    verifiedDate: '2026-08-04',
+    note: 'LOCAL_TRANSIT_FARES.hakodate_tram_fare の区間運賃と同じ値',
+  }),
+  tramDurationReliability: reliability(RELIABILITY.RESEARCHED, {
+    source: '観光案内各種（複数ソースで一致）',
+    verifiedDate: '2026-10-04',
+    note: '観光案内の一致値・公式時刻表は未確認',
+    // 待ち時間は行程を組み替える判断材料になるので、本文にも出す（caveat）
+    caveat: '乗車時間だけの値です。乗り降りと待ち時間は含みません',
+  }),
+  walkReliability: reliability(RELIABILITY.ESTIMATED, {
+    note: '電停から目的地までの徒歩時間は目安です（実測・公式案内で未確認）',
+  }),
 };
 
 // 目的地名からタクシー実運賃データを引く(未登録の目的地は null)

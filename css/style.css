@@ -918,13 +918,41 @@ body {
 .alt-head { margin-top: 0.6rem; }
 .alt-label { font-weight: 600; }
 .alt-time { font-weight: 700; }
-.alt-cost { font-weight: 700; color: #e67e22; }
-.alt-sub { font-size: 0.8rem; color: #666; }
+/* 金額とそのバッジは必ず同じ行に置く（狭い画面でバッジだけが折り返さないように） */
+.alt-cost { font-weight: 700; color: #e67e22; white-space: nowrap; }
+/* 注意書きの下限13pxを満たすサイズ（0.82rem = 13.1px） */
+.alt-sub { font-size: 0.82rem; color: #666; }
 .alt-foot {
   margin-top: 0.4rem;
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: 0.82rem;
+  line-height: 1.6;
   color: #666;
+  line-break: strict;
+  text-wrap: pretty;
+}
+/* 参考表示の中の信頼度バッジ。.alt-row（0.85rem）と .alt-sub（0.82rem）は本文より
+   小さいため、.rl-badge の 0.72em のままだと 9px 近くまで縮んで読めなくなる。
+   他の行のバッジと同じ見かけの大きさになるよう rem で固定する */
+.alt-row .rl-badge {
+  font-size: 0.72rem;
+  margin-left: 5px;
+}
+/* 補足行はバッジが行頭に来るので、左の余白を右へ寄せる */
+.alt-row > .rl-badge:first-child {
+  margin-left: 0;
+  margin-right: 5px;
+}
+/* .rl-caveat は移動行（flex）用に flex-basis:100% を持つ。
+   .alt-transport は block なのでそのまま1行の塊として出る */
+.alt-transport .rl-caveat {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  /* 最終行が1〜3文字で浮くのを避ける。pretty / auto-phrase は未対応ブラウザでは
+     単に効かないだけで、崩れはしない */
+  line-break: strict;
+  text-wrap: pretty;
+  word-break: auto-phrase;
 }
 
 /* 移動・自由時間の所要時間。縦線の左は時刻だけにして、所要時間は右側（内容の中）に出す */

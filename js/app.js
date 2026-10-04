@@ -1392,6 +1392,8 @@ const App = {
 
   // 函館で、タクシー以外に使える手段（シャトルバス・市電）を移動行の下に添える。
   // 日程（時刻・所要時間の計算）には一切影響させず、表示用の detail だけに書く。
+  // 値ごとに確からしさが違うので信頼度バッジを添える
+  // （シャトルバス=確定／市電の運賃=確定／市電の乗車時間=概算／電停からの徒歩=目安）。
   attachHakodateAlternatives(transfer, fromLoc, toLoc, dest) {
     if (!dest || dest.name !== '函館' || typeof HAKODATE_ALT_TRANSPORT === 'undefined') return transfer;
     const H = HAKODATE_ALT_TRANSPORT;
@@ -1403,24 +1405,34 @@ const App = {
     if (!other) return transfer;
 
     const yen = (n) => `¥${n.toLocaleString()}`;
-    const money = (n) => `<span class="alt-cost">1人${yen(n)}</span><span class="alt-sub">（2人で${yen(n * 2)}）</span>`;
+    const badge = (rl) => this.renderReliabilityBadge(rl);
+    // バッジは時刻・金額と同じ span に入れる。別の要素にするとスマホ幅で
+    // バッジだけが次の行に取り残される（360px幅で実測）
+    const time = (min, rl) => `<span class="alt-time">約${min}分${badge(rl)}</span>`;
+    const money = (n, rl) => `<span class="alt-cost">1人${yen(n)}${badge(rl)}</span>` +
+      `<span class="alt-sub">（2人で${yen(n * 2)}）</span>`;
+    // 補足行はバッジを行頭に置く。末尾に置くと最終行がバッジだけになる
+    const sub = (rl, text) => `<div class="alt-row alt-sub">${badge(rl)}${this.tgNoOrphanTail(text)}</div>`;
     const rows = [];
 
     if (fromStation && other.area === H.shuttle.toArea) {
       const s = H.shuttle;
-      rows.push(`<div class="alt-row alt-head"><span class="alt-label">🚌 函館駅前からシャトルバスなら</span><span class="alt-time">約${s.durationMin}分</span>${money(s.fareYen)}</div>` +
-        `<div class="alt-row alt-sub">${s.note}。${s.caveat}</div>`);
+      // 所要時間も運賃も同じ公式案内で確認した値なので、バッジは時間の横に1つだけ出す
+      rows.push(`<div class="alt-row alt-head"><span class="alt-label">🚌 ${this.tgNoOrphanTail('函館駅前からシャトルバスなら')}</span>${time(s.durationMin, s.reliability)}${money(s.fareYen, null)}</div>` +
+        sub(null, s.note) +
+        this.renderReliabilityCaveat(s.reliability));
     }
     const t = H.tram[other.area];
     if (t) {
       const dir = fromStation ? `函館駅前から市電で${t.stop}まで` : `${t.stop}から市電で函館駅前まで`;
-      rows.push(`<div class="alt-row alt-head"><span class="alt-label">🚃 ${dir}</span><span class="alt-time">約${t.durationMin}分</span>${money(t.fareYen)}</div>` +
-        `<div class="alt-row alt-sub">${t.walk}（乗り降り・待ち時間は含みません）</div>`);
+      rows.push(`<div class="alt-row alt-head"><span class="alt-label">🚃 ${this.tgNoOrphanTail(dir)}</span>${time(t.durationMin, H.tramDurationReliability)}${money(t.fareYen, H.tramFareReliability)}</div>` +
+        sub(H.walkReliability, t.walk) +
+        this.renderReliabilityCaveat(H.tramDurationReliability));
     }
     if (!rows.length) return transfer;
 
     transfer.detail = `<div class="alt-transport">${rows.join('')}` +
-      `<div class="alt-foot">※しおりの時間は<strong>タクシー利用の場合</strong>で組んでいます。上の手段を使うと所要時間が変わるため、日程には反映していません。</div></div>`;
+      `<div class="alt-foot">※しおりの時間は<strong>タクシー利用の場合</strong>${this.tgNoOrphanTail('で組んでいます。上の手段を使うと所要時間が変わるため、日程には反映していません。')}</div></div>`;
     return transfer;
   },
 
