@@ -902,6 +902,31 @@ body {
   font-size: 0.75rem;
 }
 
+/* タクシーの代わりに使える手段（シャトルバス・市電）の参考表示 */
+.alt-transport {
+  margin-top: 0.25rem;
+}
+.alt-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.5rem;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.alt-head { margin-top: 0.6rem; }
+.alt-label { font-weight: 600; }
+.alt-time { font-weight: 700; }
+.alt-cost { font-weight: 700; color: #e67e22; }
+.alt-sub { font-size: 0.8rem; color: #666; }
+.alt-foot {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #666;
+}
+
 /* 移動・自由時間の所要時間。縦線の左は時刻だけにして、所要時間は右側（内容の中）に出す */
 .transfer-duration {
   display: inline-block;
@@ -1491,6 +1516,8 @@ body {
     font-weight: 700 !important;
     font-size: 0.85rem !important;
   }
+  .alt-cost { color: #8c3b00 !important; }
+  .alt-sub, .alt-foot { color: #333333 !important; }
   .transfer-duration {
     color: #111111 !important;
     font-weight: 700 !important;

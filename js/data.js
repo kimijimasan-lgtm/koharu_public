@@ -1580,6 +1580,35 @@ function findLocalTrainAccess(fromStationName) {
   return null;
 }
 
+// 函館の「タクシーの代わりに使える手段」（シャトルバス・市電）。
+// しおりの時間配分はタクシー利用で組んでいるため、ここの値は日程には一切反映せず、
+// 該当する移動行の下に「使う場合の所要時間と金額」として並べて表示するだけに使う。
+// 起点は函館駅（前）。シャトルバスは函館駅前発のみ確認できた（逆向きは未確認なので扱わない）。
+const HAKODATE_ALT_TRANSPORT = {
+  stationAreas: ['__station__', '函館駅前'],
+  shuttle: {
+    toArea: '五稜郭',
+    durationMin: 15,
+    fareYen: 300,
+    note: '五稜郭タワー前で下車（タワーまで徒歩約1分）',
+    caveat: '運行本数が限られます。乗る前に函館バスの時刻表をご確認ください',
+    source: '函館バス公式（五稜郭タワー・トラピスチヌシャトルバス）',
+    verified_date: '2026-10-04',
+  },
+  // 運賃は LOCAL_TRANSIT_FARES.hakodate_tram_fare（函館市公式・2025年12月改定）の区間運賃。
+  // 乗車時間は複数の観光案内で一致した目安値（函館駅前→五稜郭公園前16分・十字街5分・湯の川32分）。
+  // 電停からの徒歩は目安。
+  tram: {
+    '五稜郭':     { stop: '五稜郭公園前', durationMin: 16, fareYen: 270, walk: '電停と五稜郭タワーの間は徒歩約10〜15分' },
+    'ベイエリア': { stop: '十字街',       durationMin: 5,  fareYen: 250, walk: '電停と金森赤レンガ倉庫の間は徒歩約5分' },
+    '元町':       { stop: '十字街',       durationMin: 5,  fareYen: 250, walk: '電停と元町の間は坂道を徒歩約10分' },
+    '函館山':     { stop: '十字街',       durationMin: 5,  fareYen: 250, walk: '電停とロープウェイ山麓駅の間は徒歩約10分' },
+    '湯の川温泉': { stop: '湯の川',       durationMin: 32, fareYen: 290, walk: '電停から宿までの距離は宿により異なります' },
+  },
+  source: '函館市公式サイト（運賃）・観光案内各種（所要時間）',
+  verified_date: '2026-10-04',
+};
+
 // 目的地名からタクシー実運賃データを引く(未登録の目的地は null)
 function getTaxiFareData(destName) {
   if (destName === '函館') return LOCAL_TRANSIT_FARES.hakodate_taxi_fare;

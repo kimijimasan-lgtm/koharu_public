@@ -1390,6 +1390,40 @@ const App = {
     return this.makeTransfer('🔄', '移動', '', null, taxiRl);
   },
 
+  // 函館で、タクシー以外に使える手段（シャトルバス・市電）を移動行の下に添える。
+  // 日程（時刻・所要時間の計算）には一切影響させず、表示用の detail だけに書く。
+  attachHakodateAlternatives(transfer, fromLoc, toLoc, dest) {
+    if (!dest || dest.name !== '函館' || typeof HAKODATE_ALT_TRANSPORT === 'undefined') return transfer;
+    const H = HAKODATE_ALT_TRANSPORT;
+    const isStation = (l) => H.stationAreas.includes(l.area);
+    let other = null;
+    let fromStation = false;
+    if (isStation(fromLoc) && !isStation(toLoc)) { other = toLoc; fromStation = true; }
+    else if (isStation(toLoc) && !isStation(fromLoc)) { other = fromLoc; }
+    if (!other) return transfer;
+
+    const yen = (n) => `¥${n.toLocaleString()}`;
+    const money = (n) => `<span class="alt-cost">1人${yen(n)}</span><span class="alt-sub">（2人で${yen(n * 2)}）</span>`;
+    const rows = [];
+
+    if (fromStation && other.area === H.shuttle.toArea) {
+      const s = H.shuttle;
+      rows.push(`<div class="alt-row alt-head"><span class="alt-label">🚌 函館駅前からシャトルバスなら</span><span class="alt-time">約${s.durationMin}分</span>${money(s.fareYen)}</div>` +
+        `<div class="alt-row alt-sub">${s.note}。${s.caveat}</div>`);
+    }
+    const t = H.tram[other.area];
+    if (t) {
+      const dir = fromStation ? `函館駅前から市電で${t.stop}まで` : `${t.stop}から市電で函館駅前まで`;
+      rows.push(`<div class="alt-row alt-head"><span class="alt-label">🚃 ${dir}</span><span class="alt-time">約${t.durationMin}分</span>${money(t.fareYen)}</div>` +
+        `<div class="alt-row alt-sub">${t.walk}（乗り降り・待ち時間は含みません）</div>`);
+    }
+    if (!rows.length) return transfer;
+
+    transfer.detail = `<div class="alt-transport">${rows.join('')}` +
+      `<div class="alt-foot">※しおりの時間は<strong>タクシー利用の場合</strong>で組んでいます。上の手段を使うと所要時間が変わるため、日程には反映していません。</div></div>`;
+    return transfer;
+  },
+
   fillMovementGaps(events, hotel, dest) {
     const result = [];
     for (let i = 0; i < events.length; i++) {
@@ -1433,6 +1467,7 @@ const App = {
       
       // Calculate stay duration based on next event time
       const transfer = this.estimateMovement(currentLoc, nextLoc, hotel, dest);
+      this.attachHakodateAlternatives(transfer, currentLoc, nextLoc, dest);
       
       if (current.time && next.time) {
         const gapMin = this.timeToMin(next.time) - this.timeToMin(current.time);
@@ -2058,7 +2093,7 @@ const App = {
              <td style="text-align: right; padding: 15px 0;">¥${costs.total.toLocaleString()}</td>
           </tr>
         </table>
-        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">※新幹線・交通費は東京-函館間を想定した概算値（固定¥60,000）です。飛行機利用エリア（稚内・知床・根室等）では実際の航空券代を反映していないため、実際の運賃は別途ご確認ください。タクシー代と飲食代はスケジュールに基づく概算です。</p>
+        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">※新幹線・交通費は東京-函館間を想定した概算値（固定¥60,000）です。飛行機利用エリア（稚内・知床・根室等）では実際の航空券代を反映していないため、実際の運賃は別途ご確認ください。タクシー代と飲食代はスケジュールに基づく概算です。日程はタクシー利用で組んでおり、シャトルバス・市電の情報は参考表示のため合計に含めていません。</p>
       </div>
     `;
 
