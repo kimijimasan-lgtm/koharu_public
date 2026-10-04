@@ -1705,9 +1705,10 @@ const App = {
       if (e.type === 'transfer') {
         html += `
           <div class="timeline-item type-transfer">
-            <div class="timeline-time">${e.duration ? e.duration : ''}</div>
+            <div class="timeline-time"></div>
             <div class="timeline-dot"></div>
             <div class="timeline-content">
+              ${e.duration ? `<span class="transfer-duration">${e.duration}</span>` : ''}
               <span class="transfer-icon">${e.icon}</span>
               <span class="transfer-label">${e.title}</span>\n              ${e.cost ? ` <span class="transfer-cost" style="margin-left: 10px; color: #e67e22; font-weight: bold; font-size: 0.85em;">${e.cost}</span>` : ""}
               ${this.renderReliabilityBadge(e.reliability)}
