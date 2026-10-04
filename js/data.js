@@ -1580,56 +1580,244 @@ function findLocalTrainAccess(fromStationName) {
   return null;
 }
 
-// 函館の「タクシーの代わりに使える手段」（シャトルバス・市電）。
+// 「タクシーの代わりに使える手段」（シャトルバス・市電・路線バス・JR・徒歩など）を、地域ごとに登録する表。
+// 路線バスやタクシーはどの地域にもあるが、シャトルバスや市電は地域によってある・ないが違うため、
+// 調べて確認できた区間だけをここに足していく。登録のない地域・区間には何も表示しない。
+//
 // しおりの時間配分はタクシー利用で組んでいるため、ここの値は日程には一切反映せず、
 // 該当する移動行の下に「使う場合の所要時間と金額」として並べて表示するだけに使う。
-// 起点は函館駅（前）。シャトルバスは函館駅前発のみ確認できた（逆向きは未確認なので扱わない）。
 //
-// 値の出どころは種類ごとに確からしさが違うため、コメントではなく reliability() で持たせる:
-//   シャトルバスの所要・運賃 … 函館バス公式で確認（VERIFIED）
-//   市電の区間運賃           … 函館市公式の公示運賃（VERIFIED）
-//   市電の乗車時間           … 観光案内の一致値・公式時刻表は未確認（RESEARCHED）
-//   電停からの徒歩時間       … 目安（ESTIMATED）
-const HAKODATE_ALT_TRANSPORT = {
-  stationAreas: ['__station__', '函館駅前'],
-  shuttle: {
-    toArea: '五稜郭',
-    durationMin: 15,
-    fareYen: 300,
-    note: '五稜郭タワー前で下車（タワーまで徒歩約1分）',
-    // 所要時間・運賃とも公式の案内に載っている値
-    reliability: reliability(RELIABILITY.VERIFIED, {
-      source: '函館バス公式（五稜郭タワー・トラピスチヌシャトルバス）',
-      verifiedDate: '2026-10-04',
-      note: '所要時間・運賃とも公式の案内で確認。函館駅前発のみ確認（逆向きは未確認）',
-      caveat: '運行本数が限られます。乗る前に函館バスの時刻表をご確認ください',
-    }),
-  },
-  // 運賃は LOCAL_TRANSIT_FARES.hakodate_tram_fare の区間運賃と同じ値を転記している
-  tram: {
-    '五稜郭':     { stop: '五稜郭公園前', durationMin: 16, fareYen: 270, walk: '電停と五稜郭タワーの間は徒歩約10〜15分' },
-    'ベイエリア': { stop: '十字街',       durationMin: 5,  fareYen: 250, walk: '電停と金森赤レンガ倉庫の間は徒歩約5分' },
-    '元町':       { stop: '十字街',       durationMin: 5,  fareYen: 250, walk: '電停と元町の間は坂道を徒歩約10分' },
-    '函館山':     { stop: '十字街',       durationMin: 5,  fareYen: 250, walk: '電停とロープウェイ山麓駅の間は徒歩約10分' },
-    '湯の川温泉': { stop: '湯の川',       durationMin: 32, fareYen: 290, walk: '電停から宿までの距離は宿により異なります' },
-  },
-  // 市電の値は「運賃」と「乗車時間」で確からしさが違うので別々に持つ
-  tramFareReliability: reliability(RELIABILITY.VERIFIED, {
+// 【新しい地域・区間を足すとき】キーは目的地名（dest.name。getTaxiFareData と同じ）。
+//   stationArea  … アプリが「駅（または空港）」とみなす場所を、下の between で使う名前で書く
+//   areaAliases  … 宿・飲食店の area 名が between の名前と違うときの読み替え（'旭川駅直結': '旭川駅前' など）
+//   routes[]     … 区間ごとに1つ
+//     between [A, B]   … 行き来する2つの area 名（スポット・宿・飲食店の area と同じ名前）
+//     oneWay           … true なら A→B の向きだけ表示（逆向きを確認できていない手段は true）
+//     icon / label     … 表示用（例: '🚌' / '路線バス'）
+//     endLabels [a, b] … 見出しに出す乗降場所の名前（省略時は between）。b が null なら「aから○○なら」と出す
+//     durationMin      … 乗車時間（分）。乗り換え・待ち時間は含めない
+//     fareYen          … 大人1人の運賃。0 なら金額を出さない（徒歩）。fareYenMax があれば範囲（情報源が割れたとき）
+//     note             … 乗降場所からの徒歩など、利用者が知りたい補足
+//     durationRl / fareRl / noteRl … 所要時間・運賃・補足それぞれの信頼度（reliability()）。
+//                        本文に出す注意（本数が少ない・季節運行・予約制など）は caveat に書く
+//   値の出どころは種類ごとに確からしさが違うため、コメントではなく reliability() で持たせる。
+//     VERIFIED … 公式の案内で確認／ RESEARCHED … 公式以外の複数ソースで一致／ ESTIMATED … 根拠が弱い・ソースが割れる
+//   調べていない値は入れない（無言で仮の値を使わない）。
+const _altRl = (level, o = {}) => reliability(level, Object.assign({ verifiedDate: '2026-10-04' }, o));
+
+const LOCAL_ALT_TRANSPORT = (() => {
+  // ---- 函館：シャトルバスは函館駅前発のみ確認（逆向きは未確認）。市電は駅前との往復どちらも同じ運賃・時間。
+  const hkShuttle = _altRl(RELIABILITY.VERIFIED, {
+    source: '函館バス公式（五稜郭タワー・トラピスチヌシャトルバス）',
+    note: '所要時間・運賃とも公式の案内で確認。函館駅前発のみ確認（逆向きは未確認）',
+    caveat: '運行本数が限られます。乗る前に函館バスの時刻表をご確認ください',
+  });
+  const hkTramDur = _altRl(RELIABILITY.RESEARCHED, {
+    source: '観光案内各種（複数ソースで一致）',
+    note: '観光案内の一致値・公式時刻表は未確認',
+    caveat: '乗車時間だけの値です。乗り降りと待ち時間は含みません',
+  });
+  // 市電の運賃は LOCAL_TRANSIT_FARES.hakodate_tram_fare の区間運賃と同じ値を転記している
+  const hkTramFare = _altRl(RELIABILITY.VERIFIED, {
     source: '函館市公式サイト（函館市電 対キロ区間制の公示運賃）',
     verifiedDate: '2026-08-04',
     note: 'LOCAL_TRANSIT_FARES.hakodate_tram_fare の区間運賃と同じ値',
-  }),
-  tramDurationReliability: reliability(RELIABILITY.RESEARCHED, {
-    source: '観光案内各種（複数ソースで一致）',
-    verifiedDate: '2026-10-04',
-    note: '観光案内の一致値・公式時刻表は未確認',
-    // 待ち時間は行程を組み替える判断材料になるので、本文にも出す（caveat）
-    caveat: '乗車時間だけの値です。乗り降りと待ち時間は含みません',
-  }),
-  walkReliability: reliability(RELIABILITY.ESTIMATED, {
+  });
+  const hkWalk = _altRl(RELIABILITY.ESTIMATED, {
     note: '電停から目的地までの徒歩時間は目安です（実測・公式案内で未確認）',
-  }),
-};
+  });
+  const hkTram = (area, stop, min, yen, note) => ({
+    between: ['函館駅前', area], icon: '🚃', label: '市電', endLabels: ['函館駅前', stop],
+    durationMin: min, fareYen: yen, note, durationRl: hkTramDur, fareRl: hkTramFare, noteRl: hkWalk,
+  });
+
+  // ---- 共通の信頼度（北海道・第1弾の調査 2026-10-04）
+  const walkRl = _altRl(RELIABILITY.RESEARCHED, { source: '観光案内各種（複数ソースで一致）', note: '徒歩時間は観光案内の目安' });
+  const walkEst = _altRl(RELIABILITY.ESTIMATED, { note: '徒歩時間は目安です（実測・公式案内で未確認）' });
+
+  return {
+    '函館': {
+      stationArea: '函館駅前',
+      routes: [
+        {
+          between: ['函館駅前', '五稜郭'], oneWay: true, icon: '🚌', label: 'シャトルバス', endLabels: ['函館駅前', null],
+          durationMin: 15, fareYen: 300, note: '五稜郭タワー前で下車（タワーまで徒歩約1分）',
+          durationRl: hkShuttle, fareRl: null, noteRl: null,
+        },
+        hkTram('五稜郭', '五稜郭公園前', 16, 270, '電停と五稜郭タワーの間は徒歩約10〜15分'),
+        hkTram('ベイエリア', '十字街', 5, 250, '電停と金森赤レンガ倉庫の間は徒歩約5分'),
+        hkTram('元町', '十字街', 5, 250, '電停と元町の間は坂道を徒歩約10分'),
+        hkTram('函館山', '十字街', 5, 250, '電停とロープウェイ山麓駅の間は徒歩約10分'),
+        hkTram('湯の川温泉', '湯の川', 32, 290, '電停から宿までの距離は宿により異なります'),
+      ],
+    },
+
+    // ---- 札幌：アプリ上の「駅」は新千歳空港。市内は地下鉄が中心（市電は所要時間を確認できず未登録）。
+    '札幌': {
+      stationArea: '新千歳空港',
+      areaAliases: { '道庁前・札幌駅前': '札幌駅前', '大通・駅前通': '大通', '時計台前・大通': '大通' },
+      routes: [
+        {
+          between: ['新千歳空港', '札幌駅前'], icon: '🚃', label: 'JR快速エアポート', endLabels: ['新千歳空港', '札幌駅'],
+          durationMin: 37, fareYen: 1230, note: '札幌駅で降りたあと、ホテルまでは徒歩や地下鉄になります',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内各種（複数ソースで一致）', note: 'JR北海道公式では未確認', caveat: '毎時5〜6本程度。指定席（Uシート）は別料金です' }),
+          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内各種（2サイトで一致）', note: 'JR北海道公式では未確認' }), noteRl: null,
+        },
+        {
+          between: ['札幌駅前', '大通'], icon: '🚇', label: '地下鉄', endLabels: ['さっぽろ駅', '大通駅'],
+          durationMin: 2, fareYen: 210, note: '南北線で1駅。大通駅から大通公園・時計台・道庁へは徒歩約5〜10分',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内各種（複数ソースで一致）', note: '札幌市交通局の公式ページでは取得できず' }),
+          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内各種（複数ソースで一致）', note: '札幌市交通局の公式ページでは取得できず' }),
+          noteRl: walkEst,
+        },
+        {
+          between: ['大通', 'すすきの'], icon: '🚇', label: '地下鉄', endLabels: ['大通駅', 'すすきの駅'],
+          durationMin: 2, fareYen: 210, note: '南北線で1駅。徒歩でも行ける距離です',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '隣の駅のため1駅分の目安。この区間専用の値は未確認' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '1区の運賃として扱った目安。この区間専用の値は未確認' }), noteRl: null,
+        },
+        {
+          between: ['札幌駅前', '円山'], icon: '🚇', label: '地下鉄', endLabels: ['さっぽろ駅', '円山公園駅'],
+          durationMin: 12, fareYen: 250, note: '南北線から大通駅で東西線に乗り換え。円山公園駅から円山動物園まで徒歩約10〜15分',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '「札幌駅→大通2分＋大通→円山公園10分」の合計の目安', caveat: '大通駅での乗り換えの歩行・待ち時間は含みません' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '1つの観光案内のみで確認' }), noteRl: walkEst,
+        },
+        {
+          between: ['札幌駅前', '定山渓温泉'], icon: '🚌', label: '路線バス', endLabels: ['札幌駅前ターミナル', '定山渓'],
+          durationMin: 70, fareYen: 1000, note: 'じょうてつバス定山渓線。降りたあと、ホテルまでは徒歩数分',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '旅行会社の案内（約70分）', caveat: '便数は未確認です。冬は道路状況で遅れることがあります' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: 'じょうてつバス公式（2025年12月改定後の運賃）' }), noteRl: null,
+        },
+        {
+          between: ['札幌駅前', '定山渓温泉'], icon: '🚌', label: 'かっぱライナー号（予約制）', endLabels: ['札幌駅', '定山渓'],
+          durationMin: 60, fareYen: 1700, note: 'ネット予約割で1,460円になる場合があります',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: 'じょうてつバス公式・旅行会社の案内', caveat: '予約制です。前日までの予約が必要とする案内があります' }),
+          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: 'じょうてつバス公式・旅行会社の案内' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 小樽：アプリ上の「駅」は小樽駅。市街は徒歩圏が多く、路線バスは天狗山方面。
+    '小樽': {
+      stationArea: '小樽駅前',
+      areaAliases: { '小樽運河': '運河', '堺町通り': '堺町' },
+      routes: [
+        {
+          between: ['小樽駅前', '運河'], icon: '🚶', label: '徒歩', endLabels: ['小樽駅前', '運河'],
+          durationMin: 10, fareYen: 0, note: '平坦な道です（案内により10〜15分）', durationRl: walkRl, fareRl: null, noteRl: null,
+        },
+        {
+          between: ['小樽駅前', '堺町'], icon: '🚶', label: '徒歩', endLabels: ['小樽駅前', '堺町通り'],
+          durationMin: 15, fareYen: 0, note: '案内により10〜15分。余裕を見て15分です', durationRl: walkRl, fareRl: null, noteRl: null,
+        },
+        {
+          between: ['小樽駅前', '天狗山'], icon: '🚌', label: '路線バス', endLabels: ['小樽駅前', '天狗山ロープウェイ'],
+          durationMin: 17, fareYen: 240, note: '北海道中央バス9番「天狗山ロープウェイ線」（小樽駅前4番乗り場）',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '案内により17分・約20分と割れる', caveat: '冬は直行便が設定されます。本数と最新の運賃は北海道中央バスで確認してください' }),
+          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '小樽市観光公式の告知（2020年4月改定）と2026年の観光案内が一致', note: '2026年10月時点の公式運賃表は未確認' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 旭川：アプリ上の「駅」は旭川空港。富良野線のJRと、旭川電気軌道・道北バスの路線バス。
+    '旭川': {
+      stationArea: '旭川空港',
+      areaAliases: { '旭川駅直結': '旭川駅前', '旭川駅前・中心街': '旭川駅前' },
+      routes: [
+        {
+          between: ['旭川空港', '旭川駅前'], icon: '🚌', label: '空港連絡バス', endLabels: ['旭川空港', '旭川駅前'],
+          durationMin: 40, fareYen: 750, note: '旭川電気軌道77番。駅側の乗り場は旭川駅バスターミナル周辺',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '旭川電気軌道公式・観光案内（複数ソースで一致）', caveat: '1日9便程度で、飛行機の便に合わせて運行します。向きによって運賃の表記が違う案内（690円・750円）があります' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '旭川電気軌道公式' }), noteRl: null,
+        },
+        {
+          between: ['旭川空港', '旭山'], icon: '🚌', label: '直行バス（季節運行）', endLabels: ['旭川空港', '旭山動物園'],
+          durationMin: 35, fareYen: 840, note: '旭川電気軌道78番',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '旭山動物園公式（アクセス案内）', caveat: '4/29〜11/3の土日祝のみ運行（7/25〜8/16は毎日）、1日1往復です。11/3を過ぎると運休します' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '旭山動物園公式（アクセス案内）' }), noteRl: null,
+        },
+        {
+          between: ['旭川駅前', '旭山'], icon: '🚌', label: '路線バス', endLabels: ['旭川駅前', '旭山動物園'],
+          durationMin: 40, fareYen: 670, note: '旭川電気軌道41番・47番（旭川駅前6番のりば）。約30分間隔',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内各種（複数ソースで一致）', caveat: '冬や混雑時は所要時間が延びることがあります' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '旭山動物園公式（2026年9月1日改定後の運賃）' }), noteRl: null,
+        },
+        {
+          between: ['旭川駅前', '美瑛'], icon: '🚃', label: 'JR富良野線', endLabels: ['旭川駅', '美瑛駅'],
+          durationMin: 34, fareYen: 680, note: '美瑛駅から「美瑛の丘」へは徒歩では行きにくく、別の移動が必要です',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '案内により30〜35分', caveat: '普通列車のみで本数は少なめ（概ね1時間に1本前後）。運行状況はJR北海道で確認してください' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '乗換案内サイトの表示のみで確認。JR北海道公式では未確認' }), noteRl: walkEst,
+        },
+        {
+          between: ['旭川駅前', '富良野'], icon: '🚃', label: 'JR富良野線', endLabels: ['旭川駅', '富良野駅'],
+          durationMin: 71, fareYen: 1380, note: '夏季だけ停まるラベンダー畑駅は今は営業期間外です。富良野の市街へ行く手段として使います',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '案内により66〜80分とばらつきあり', caveat: '普通列車は本数が少なめです' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '乗換案内サイトの表示のみで確認' }), noteRl: null,
+        },
+        {
+          between: ['美瑛', '富良野'], icon: '🚃', label: 'JR富良野線', endLabels: ['美瑛駅', '富良野駅'],
+          durationMin: 44, fareYen: 800, note: null,
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '乗換案内サイトの表示のみで確認', caveat: '普通列車で本数は少なめです' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '乗換案内サイトの表示のみで確認' }), noteRl: null,
+        },
+        {
+          between: ['旭川駅前', '層雲峡'], icon: '🚌', label: '路線バス', endLabels: ['旭川駅前', '層雲峡'],
+          durationMin: 110, fareYen: 2140, note: '道北バス81・83番。層雲峡ターミナルから温泉街まで徒歩約5分',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '層雲峡観光協会ほか', caveat: '2026年7月と10月1日にダイヤが変わり、本数は少なめです。最新の運賃・時刻は道北バスで確認してください' }),
+          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '旅行情報サイト2件で一致', note: '道北バス公式では取得できず' }), noteRl: null,
+        },
+        {
+          between: ['旭川駅前', '旭岳温泉'], icon: '🚌', label: '路線バス「いで湯号」', endLabels: ['旭川駅前', '旭岳温泉'],
+          durationMin: 90, fareYen: 1800, note: '旭川電気軌道66番。空港を経由します',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '案内により70〜108分とばらつきあり', caveat: '本数が少なめです。2026年9月の値上げ後の運賃は公式で確認できていません' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '旅行情報サイト1件のみで確認' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 登別：アプリ上の「駅」は登別駅。登別温泉行きバスの運賃は情報源が割れているため範囲で表示する。
+    '登別': {
+      stationArea: '登別駅',
+      routes: [
+        {
+          between: ['登別駅', '登別'], icon: '🚶', label: '徒歩', endLabels: ['登別駅', '登別マリンパークニクス'],
+          durationMin: 5, fareYen: 0, note: 'ニクスは登別温泉ではなく海側にあります', durationRl: walkRl, fareRl: null, noteRl: null,
+        },
+        {
+          between: ['登別駅', '登別温泉'], icon: '🚌', label: '路線バス', endLabels: ['登別駅前', '登別温泉'],
+          durationMin: 15, fareYen: 330, fareYenMax: 350, note: '道南バス 登別温泉・登別駅前線',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内2件で一致（約15分）', note: '道南バス公式では取得できず', caveat: '本数と季節ダイヤは未確認です。乗る前に道南バスで確認してください' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '観光案内で330円・350円と割れる', caveat: '運賃は情報源により330円と350円に割れています（改定前後の可能性）' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 洞爺湖：アプリ上の「駅」は洞爺駅。道南バスの公式ページで確認できた値。
+    '洞爺湖': {
+      stationArea: '洞爺駅',
+      routes: [
+        {
+          between: ['洞爺駅', '洞爺湖温泉'], icon: '🚌', label: '路線バス', endLabels: ['洞爺駅前', '洞爺湖温泉'],
+          durationMin: 26, fareYen: 400, note: '道南バス 洞爺湖温泉・洞爺駅前線',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '道南バス公式', caveat: '約20分とする案内もあります。洞爺湖温泉発は7:00〜18:50で15便。天候や道路状況で遅れることがあります' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '道南バス公式' }), noteRl: null,
+        },
+        {
+          between: ['洞爺湖温泉', '昭和新山'], icon: '🚌', label: '路線バス', endLabels: ['洞爺湖温泉', '昭和新山'],
+          durationMin: 15, fareYen: 400, note: '道南バス 昭和新山線。終点から熊牧場までの徒歩時間は未確認です',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '道南バス公式', caveat: '本数が少なめです（洞爺湖温泉発は9:15〜17:23の7便）。国の資料には「季節運行・1日4便」とあり食い違うため、冬は最新の時刻表を確認してください' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '道南バス公式' }), noteRl: null,
+        },
+        {
+          between: ['洞爺湖温泉', '有珠山'], icon: '🚌', label: '路線バス', endLabels: ['洞爺湖温泉', '昭和新山（有珠山ロープウェイ方面）'],
+          durationMin: 15, fareYen: 400, note: '昭和新山でバスを降り、有珠山ロープウェイの山麓駅へ向かいます（徒歩時間は未確認）',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: 'バス区間は道南バス公式の値。ロープウェイ山麓駅までの最後の区間は未確認', caveat: '本数が少なめで、季節運行の可能性があります' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: 'バス区間は道南バス公式の値。ロープウェイ乗車料金は含みません' }), noteRl: null,
+        },
+      ],
+    },
+  };
+})();
 
 // 目的地名からタクシー実運賃データを引く(未登録の目的地は null)
 function getTaxiFareData(destName) {
