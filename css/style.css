@@ -2663,6 +2663,19 @@ input.input-missing {
   background: #fbfcfe;
 }
 
+.tg-group {
+  margin: 14px 0 8px 0;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #444;
+  line-break: strict;
+  text-wrap: balance;
+}
+
+.tg-heading + .tg-group {
+  margin-top: 0;
+}
+
 .tg-step-title {
   margin: 0 0 6px 0;
   font-weight: bold;
@@ -2838,6 +2851,16 @@ input.input-missing {
 }
 .tgp .tg-heading-sections {
   margin-top: calc(var(--tgp-fs) * 0.85) !important;
+}
+.tgp .tg-group {
+  font-size: var(--tgp-fs) !important;
+  font-weight: 700 !important;
+  color: #333333 !important;
+  line-height: 1.4 !important;
+  margin: calc(var(--tgp-fs) * 0.5) 0 calc(var(--tgp-fs) * 0.3) 0 !important;
+}
+.tgp .tg-heading + .tg-group {
+  margin-top: 0 !important;
 }
 .tgp .tg-step {
   border: 1px solid #e0e6ef;

@@ -2275,16 +2275,6 @@ const App = {
     `;
   },
 
-  // 解説セクション（見出し＋本文）
-  renderTicketGuideSection(heading, body) {
-    return `
-      <div class="tg-section">
-        <h4>${this.tgNoOrphanTail(heading)}</h4>
-        <p>${this.tgNoOrphanTail(body)}</p>
-      </div>
-    `;
-  },
-
   // 切符の出し方ガイド本体を組み立てる
   renderTicketGuide(guide, direction) {
     if (!guide || !guide.trains || !guide.trains.length) return '';
@@ -2329,8 +2319,22 @@ const App = {
         '2枚とも出てくるので必ず両方受け取ります。'
       );
     } else {
+      // 行程が新幹線の駅から始まる場合。ふだん在来線で新幹線の駅へ向かう人向けに、
+      // 「在来線の駅から乗る場合」も並べて案内する（最寄り駅の名前は行程に含まれないので、駅名は出さない）
+      steps += `<p class="tg-group">${this.tgNoOrphanTail('◆ 新幹線の駅から乗る場合')}</p>`;
       steps += this.renderTicketGuideStep(
         `${entry}（乗る時）`,
+        `「乗車券」＋「${e(this.ticketName(firstTrain))}」（2枚重ねて）`,
+        '2枚とも出てくるので必ず両方受け取ります。'
+      );
+      steps += `<p class="tg-group">${this.tgNoOrphanTail('◆ 在来線の駅から乗る場合')}</p>`;
+      steps += this.renderTicketGuideStep(
+        '最初の在来線駅（乗る時）',
+        '「乗車券」のみ（1枚）',
+        '切符が出てくるので受け取ります。'
+      );
+      steps += this.renderTicketGuideStep(
+        `${entry}（新幹線への乗換口）`,
         `「乗車券」＋「${e(this.ticketName(firstTrain))}」（2枚重ねて）`,
         '2枚とも出てくるので必ず両方受け取ります。'
       );
@@ -2360,72 +2364,11 @@ const App = {
       );
     }
 
-    // ── 改札と切符の解説 ──
-    let sections = '';
-
-    // 在来線（普通・快速）から乗り継ぐ場合だけ「乗車券だけで改札を通る」が成り立つ。
-    // 在来特急から乗り継ぐ場合は手前の区間にも特急券が要るので、この説明は使えない
-    const roleBody = (hasBefore && !beforeHasExpress)
-      ? `乗車券は「出発駅から目的地まで移動するための運賃」の切符で、旅の最初から最後まで通して使います。特急券は「新幹線という特別な速い列車に乗るための料金」の切符です。そのため、在来線の駅では乗車券だけで改札を通り、新幹線のエリアに入る${entry}で初めて特急券が必要になります。`
-      : `乗車券は「出発駅から目的地まで移動するための運賃」の切符で、旅の最初から最後まで通して使います。特急券は「新幹線という特別な速い列車に乗るための料金」の切符です。そのため、${entry}の新幹線改札では、この2種類を一緒に入れることになります。`;
-    sections += this.renderTicketGuideSection('「乗車券」と「特急券」の役割の違い', roleBody);
-
-    const firstDropOff = guide.transfers.length ? e(guide.transfers[0].station) : exit;
-    sections += this.renderTicketGuideSection(
-      `${entry}で「${e(this.ticketName(firstTrain))}」を通す理由`,
-      `${entry}の新幹線改札機に「乗車券」と「${e(this.ticketName(firstTrain))}」を一緒に入れることで、「ここから${firstDropOff}行きの新幹線に乗車した」という記録が切符に付きます。改札機を通過する際、切符には小さな穴が開いて機械から戻ってきますので、取り忘れないようご注意ください。`
-    );
-
-    guide.transfers.forEach(tr => {
-      const fromLabel = e(tr.fromTrainGeneric ? '新幹線' : tr.fromTrain);
-      const toLabel = e(tr.toTrainGeneric ? '新幹線' : tr.toTrain);
-      const st = e(tr.station);
-      const fromTicket = e(tr.fromTrainGeneric ? '特急券' : `${tr.fromTrain}特急券`);
-      sections += this.renderTicketGuideSection(
-        `${st}で改札を通らない理由`,
-        `${st}での「${fromLabel}」から「${toLabel}」への乗り換えは、新幹線の改札の内側（新幹線エリア内）で行われます。改札の外に出るわけではないため、切符を機械に通すタイミングはありません。ホームにある階段やエスカレーターを使って、案内板に表示された「${toLabel}」の発車番線ホームへ直接移動してください。${st}で役目を終えた「${fromTicket}」は、ポケットやカバンにしまっておいて大丈夫です。`
-      );
-    });
-
-    if (hasAfter) {
-      // 新函館北斗から先のように在来線特急へ乗り継ぐ行程。
-      // 乗換改札の構造は駅ごとに異なり、一次資料で確認できていないため
-      // 「切符が回収される」等の断定はせず、駅員さんへの確認を促す
-      sections += this.renderTicketGuideSection(
-        `${exit}から先の乗り換えについて`,
-        `${exit}から${finalPlace}までは、新幹線ではなく在来線の特急に乗り換えます。この区間には別の特急券が必要になるため、きっぷの枚数はここまでの案内より増えます。乗り換え改札の場所や切符の入れ方は駅によって異なりますので、${exit}に着いたら駅員さんにきっぷをまとめて見せて確認するのが確実です。`
-      );
-    } else {
-      sections += this.renderTicketGuideSection(
-        `${exit}で切符が回収される理由`,
-        `${exit}に到着して新幹線の改札機に「乗車券」と「${e(this.ticketName(lastTrain))}」を入れると、目的地までの移動がすべて完了したと改札機が認識します。そのため切符は戻ってこず、そのまま回収されて扉が開きます。`
-      );
-    }
-
-    // 迷った時の安心策。枚数は「乗車券1枚＋新幹線の特急券」で数える。
-    // 券名に「・」を含む列車（やまびこ・なすの等）があると区切りが読み取れなくなるので、
-    // そのときだけ区切り記号を「／」に変える
-    const ticketNames = ['乗車券', ...trains.map(t => this.ticketName(t))];
-    const separator = ticketNames.some(n => n.includes('・')) ? '／' : '・';
-    const ticketList = ticketNames.map(n => e(n)).join(separator);
-    const ticketCount = ticketNames.length;
-    // 在来線特急が前後に付く行程では、実際に持っている枚数がこれより増える。
-    // 「◯枚重ねて入れれば大丈夫」と言い切ると枚数が合わず不安にさせるため、
-    // 新幹線の改札で入れる分だけを案内する
-    const extraExpress = hasAfter || beforeHasExpress;
-    const expressOnlyList = trains.map(t => e(this.ticketName(t))).join(separator);
-    const reliefBody = extraExpress
-      ? `新幹線の改札の前で「どれを入れればいいか」と迷った場合は、「乗車券」と新幹線の特急券（${expressOnlyList}）を重ねて自動改札機に入れれば、機械が正しく判別してくれます。在来線の特急に乗る区間には別の特急券があるため、手元の枚数はこれより多くなります。一番確実で落ち着いて通れる方法は、改札口の端にある駅員さんのいる有人窓口へ行き、切符をまとめて見せることです。`
-      : `改札の前で「どれを入れればいいか」と迷った場合は、持っている${ticketCount}枚（${ticketList}）をそのまま${ticketCount}枚重ねて自動改札機に入れてしまっても機械が正しく判別してくれます。また、一番確実で落ち着いて通れる方法は、改札口の端にある駅員さんのいる有人窓口へ行き、切符をまとめて見せることです。`;
-    sections += this.renderTicketGuideSection('迷った時の安心策', reliefBody);
-
     const dirLabel = direction === 'return' ? '帰り' : '行き';
     return `
       <p class="tg-lead">${this.tgNoOrphanTail(`${e(dirLabel)}の行程（${e(guide.startStation)} → ${e(finalPlace)}）にあわせた案内です。券名は実際のきっぷの表記と異なる場合があります。`)}</p>
-      <h3 class="tg-heading">${this.tgNoOrphanTail(hasBefore ? '在来線から新幹線の切符の出し方' : '新幹線の切符の出し方')}</h3>
+      <h3 class="tg-heading">${this.tgNoOrphanTail(hasBefore ? '在来線から新幹線の切符の出し方' : '改札での切符の出し方')}</h3>
       ${steps}
-      <h3 class="tg-heading tg-heading-sections">${this.tgNoOrphanTail('改札と切符の解説')}</h3>
-      ${sections}
     `;
   },
 
