@@ -1816,6 +1816,173 @@ const LOCAL_ALT_TRANSPORT = (() => {
         },
       ],
     },
+
+    // ====== 第2弾の調査（2026-10-04）。公式ページを読めなかった区間は、運賃や所要時間が確認できたものだけを登録している ======
+    // 登録していない地域：根室・摩周湖・ニセコ・積丹・美瑛（路線バスの運賃や所要時間を確認できず）。
+
+    // ---- 帯広：アプリ上の「駅」はとかち帯広空港。
+    '帯広': {
+      stationArea: 'とかち帯広空港',
+      areaAliases: { '帯広駅直結': '帯広駅前' },
+      routes: [
+        {
+          between: ['とかち帯広空港', '帯広駅前'], icon: '🚌', label: '空港連絡バス', endLabels: ['とかち帯広空港', '帯広駅'],
+          durationMin: 38, fareYen: 1000, note: '十勝バス とかち帯広空港線（帯広駅バスターミナル）',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '北海道エアポート公式（とかち帯広空港）', caveat: '本数は飛行機の便に合わせて限られます。ホテルを回る空港シャトル（1,000〜1,200円・35〜50分）もありますが、予約の要否は未確認です' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '北海道エアポート公式（とかち帯広空港）', note: '2025年6月に十勝バスの運賃改定がありましたが、空港の公式ページの表示は1,000円です' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 釧路：アプリ上の「駅」はたんちょう釧路空港。阿寒バスの公式ページで確認できた値が中心。
+    '釧路': {
+      stationArea: 'たんちょう釧路空港',
+      areaAliases: { '釧路ウォーターフロント': '幣舞橋前', '釧路市役所前': '幣舞橋前' },
+      routes: [
+        {
+          between: ['たんちょう釧路空港', '釧路駅前'], icon: '🚌', label: '空港連絡バス', endLabels: ['たんちょう釧路空港', '釧路駅前'],
+          durationMin: 45, fareYen: 1200, note: '阿寒バス 釧路空港連絡バス（釧路駅前の阿寒バスターミナル）',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '阿寒バス公式', caveat: '本数は飛行機の便に合わせて限られます。2026年3月19日に運賃が改定されました（旧950円）' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '阿寒バス公式（2026年3月19日改定後）' }), noteRl: null,
+        },
+        {
+          between: ['たんちょう釧路空港', '幣舞橋前'], icon: '🚌', label: '空港連絡バス', endLabels: ['たんちょう釧路空港', '釧路市役所前・MOO'],
+          durationMin: 55, fareYen: 1200, note: '釧路駅前を経由する便。降りるのは釧路市役所前またはフィッシャーマンズワーフMOO（幣舞橋のすぐそば）',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '阿寒バス公式', caveat: '釧路駅前で降りるより約10分長くかかります' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '阿寒バス公式（2026年3月19日改定後）' }), noteRl: null,
+        },
+        {
+          between: ['釧路駅前', '幣舞橋前'], icon: '🚶', label: '徒歩', endLabels: ['釧路駅前', '幣舞橋・MOO'],
+          durationMin: 15, fareYen: 0, note: '釧路市役所前までの徒歩時間は未確認です', durationRl: walkRl, fareRl: null, noteRl: null,
+        },
+        {
+          between: ['釧路駅前', '釧路湿原'], icon: '🚃', label: 'JR釧網本線', endLabels: ['釧路駅', '釧路湿原駅'],
+          durationMin: 24, fareYen: 470, note: '釧路湿原駅から細岡展望台まで徒歩約10〜15分（急な階段があります）',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { source: 'JR北海道のくしろ湿原ノロッコ号の時刻', caveat: 'ノロッコ号は2026年10月10日が最終運行です（運転終了）。そのあとは普通列車のみで、1日2往復と少なめです。ノロッコ号は指定席料金1,000円が別にかかります' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: 'JR北海道公式の運賃は読めていません', caveat: '運賃は470円・540円・440円と案内が割れています' }), noteRl: walkRl,
+        },
+        {
+          between: ['釧路駅前', '釧路'], icon: '🚌', label: '路線バス', endLabels: ['釧路駅前', '釧路市動物園'],
+          durationMin: 55, fareYen: 890, note: '阿寒バス（70・71・88番系統）',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '釧路市公式（動物園へのアクセス）', caveat: '本数は未確認です。乗る前に阿寒バスで確認してください' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '阿寒バスの運賃表の値ですが、最新かどうか未確認です' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 網走：アプリ上の「駅」は女満別空港。網走バスの公式資料で確認できた値。
+    '網走': {
+      stationArea: '女満別空港',
+      routes: [
+        {
+          between: ['女満別空港', '網走駅前'], icon: '🚌', label: '空港連絡バス', endLabels: ['女満別空港', '網走駅'],
+          durationMin: 30, fareYen: 1050, note: '網走バス 女満別空港線（網走バスターミナル）',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '網走バス公式の観光案内', note: '案内により26〜35分', caveat: '飛行機の到着に合わせて運行します。網走中心街・網走湖畔・天都山の宿へ行くときは、網走駅（バスターミナル）での乗り継ぎが必要です' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式（知床エアポートライナー運賃表）' }), noteRl: null,
+        },
+        {
+          between: ['網走駅前', '網走市'], icon: '🚌', label: '路線バス', endLabels: ['網走駅前', '博物館網走監獄'],
+          durationMin: 9, fareYen: 330, note: '網走バス 市内観光施設めぐり（網走駅②のりば）',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）', caveat: '冬ダイヤの資料で確認した値です。10月以降の運行期間と本数は、網走バス（0152-43-4101）で確認してください' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）' }), noteRl: null,
+        },
+        {
+          between: ['網走駅前', '天都山'], icon: '🚌', label: '路線バス', endLabels: ['網走駅前', '天都山（流氷館）'],
+          durationMin: 12, fareYen: 420, note: '網走バス 市内観光施設めぐり（網走駅②のりば）',
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）', caveat: '冬ダイヤの資料で確認した値です。10月以降の運行期間と本数は、網走バス（0152-43-4101）で確認してください' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）' }), noteRl: null,
+        },
+        {
+          between: ['女満別空港', '知床'], icon: '🚌', label: '知床エアポートライナー', endLabels: ['女満別空港', 'ウトロ温泉'],
+          durationMin: 132, fareYen: 4000, note: '知床五湖・知床峠へは行かず、ウトロ温泉止まりです',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内2件で一致（約2時間10〜12分）', caveat: '2026年10月時点では運休中です。2026年の夏季運行は9月30日で終わり、次は冬季（2027年1月16日〜3月7日）で1日2便程度です' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式（運賃表）' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 知床：アプリ上の「駅」は知床斜里駅。斜里バスの公式ページで運賃を確認。
+    '知床': {
+      stationArea: '知床斜里駅',
+      areaAliases: { '知床斜里駅前': '知床斜里駅' },
+      routes: [
+        {
+          between: ['知床斜里駅', 'ウトロ'], icon: '🚌', label: '路線バス', endLabels: ['知床斜里駅', 'ウトロ温泉'],
+          durationMin: 50, fareYen: 1650, note: '斜里バス 知床線（斜里バスターミナル→ウトロ温泉バスターミナル）',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '予約サイトの時刻と観光案内（約50分）', note: '公式の時刻表PDFは読めていません', caveat: '夏ダイヤは2026年4月28日〜10月31日で、冬ダイヤは本数が減ります' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '斜里バス公式' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 稚内：アプリ上の「駅」は稚内空港。公式の運賃が読めず、案内が割れているので目安として登録。
+    '稚内': {
+      stationArea: '稚内空港',
+      areaAliases: { '稚内港・駅前': '稚内駅前' },
+      routes: [
+        {
+          between: ['稚内空港', '稚内駅前'], icon: '🚌', label: '空港連絡バス', endLabels: ['稚内空港', '稚内駅前ターミナル'],
+          durationMin: 35, fareYen: 800, note: '宗谷バス 稚内空港連絡バス',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '案内により30〜35分', caveat: '飛行機の発着に合わせた運行で本数は限られ、欠航時は運休します。空港行きは途中乗車できません。現金かPayPayのみで、交通系ICは使えません' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '公式ページは700円の表示（2025年4月の運賃改定前の可能性）。800円は旅行サイト1件のみ', caveat: '運賃は700円・800円と案内が割れています' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 千歳：アプリ上の「駅」は千歳駅。支笏湖行きバスは本数が少ない。
+    '千歳': {
+      stationArea: '千歳駅',
+      areaAliases: { '支笏湖温泉': '支笏湖' },
+      routes: [
+        {
+          between: ['千歳駅', '支笏湖'], icon: '🚌', label: '路線バス', endLabels: ['千歳駅前', '支笏湖'],
+          durationMin: 44, fareYen: 1140, note: '北海道中央バス 支笏湖線。降りてから宿までは徒歩やタクシーになる場合があります',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '旅行ブログ1件（2026年6月時点）のみで確認', caveat: '1日4本程度と少なく、冬期ダイヤや運行期間は未確認です。北海道中央バスで確認してください' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '旅行ブログ1件のみで確認。旧運賃930円とする案内もあります' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 苫小牧：アプリ上の「駅」は苫小牧駅。
+    '苫小牧': {
+      stationArea: '苫小牧駅',
+      areaAliases: { '苫小牧駅周辺': '苫小牧駅', '苫小牧駅前': '苫小牧駅' },
+      routes: [
+        {
+          between: ['苫小牧駅', 'ウトナイ'], icon: '🚌', label: '路線バス', endLabels: ['苫小牧駅前', 'ウトナイ湖'],
+          durationMin: 35, fareYen: 510, note: '道南バス。降りてから湖まで徒歩約5〜15分（バス停により異なります）',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { source: '日本野鳥の会の案内（35分）', note: '資料により25〜48分と幅があります', caveat: '本数や運行条件は未確認です。道南バスで確認してください' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: 'モデルコースの記載のみ。運賃改定の反映は未確認' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 江差：アプリ上の「駅」は木古内駅。江差町の公式観光サイトで運賃を確認。
+    '江差': {
+      stationArea: '木古内駅',
+      areaAliases: { '江差町': '江差', '江差町中歌町': '江差', '江差町姥神町': '江差', '江差町愛宕町': '江差' },
+      routes: [
+        {
+          between: ['木古内駅', '江差'], icon: '🚌', label: '路線バス', endLabels: ['木古内駅前', '江差ターミナル'],
+          durationMin: 83, fareYen: 1900, note: '函館バス 江差・木古内線。中歌町・姥神町フェリー前・新地町でも降りられます（江差病院前までは2,000円）',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '上ノ国町の時刻表の見出しにある83分のみで確認。便によって差がある可能性があります', caveat: '本数は1日数便と少なく、年末年始は運休する便があります（2026年10月1日改正）' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '江差町公式観光サイト' }), noteRl: null,
+        },
+      ],
+    },
+
+    // ---- 富良野：アプリ上の「駅」は富良野駅。ふらのバスの公式ページで便数などを確認、運賃は目安。
+    '富良野': {
+      stationArea: '富良野駅',
+      routes: [
+        {
+          between: ['富良野駅', '中富良野'], icon: '🚌', label: 'ふらのバス ラベンダー号', endLabels: ['富良野駅前', '中富良野駅'],
+          durationMin: 12, fareYen: 260, note: '中富良野駅から先は徒歩です（ファーム富田まで約25分）',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '時刻表をまとめたサイトの値', caveat: '1日7便で予約は不要です。整理券を取り、降りるときに現金で払います。徒歩を含めて時間が合うか確認してください' }),
+          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '乗車券販売サイトの値。ふらのバスの運賃表（2025年10月改定）は未確認' }), noteRl: walkRl,
+        },
+      ],
+    },
   };
 })();
 
