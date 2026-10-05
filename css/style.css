@@ -2419,6 +2419,16 @@ a.header-partner-badge:hover {
   font-size: 0.78rem;
   line-height: 1.5;
   border-radius: 0 4px 4px 0;
+  /* 1日目・3日目の交通ルートカード（.route-card、幅196〜220px）は
+     .alt-transport より狭いのに、この基本クラスには line-break 等が
+     無く、語中改行・孤立行が起きていた（2026-10-05、羽田アクセスの
+     caveat 追加で発覚）。.alt-transport .rl-caveat と同じ指定をここにも
+     足し、どの場所の .rl-caveat でも折り返しが崩れないようにする。
+     word-break: auto-phrase は対応ブラウザだけに効く補助で、
+     未対応でも崩れはしない */
+  line-break: strict;
+  text-wrap: pretty;
+  word-break: auto-phrase;
 }
 
 /* ============================================================
