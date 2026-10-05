@@ -1348,6 +1348,14 @@ const App = {
         const curr = locations[i];
         const next = locations[i + 1];
         if (prev.area === curr.area || curr.area === next.area || prev.area === next.area) continue;
+        // 前後どちらかが「到着駅/出発駅」（__station__）のときは警告しない。
+        // 駅からの所要分は、空港型の地域（cityStation 導入後も）で特に、
+        // 実際のアクセス（空港連絡バスなど）と細部が合わないことがあり、
+        // 駅発着が絡む並びは「迂回」ではなく通常の行程として誤検出しやすい
+        // （例: 帯広駅 到着 → 幸福駅 → 夕食。実測で120通り中5件がこれだった）。
+        // 120通りで再集計し、この条件により本物の警告（摩周湖6件）は
+        // 影響を受けないことを確認済み
+        if (prev.area === '__station__' || next.area === '__station__') continue;
 
         const prevDist = prev.dist;
         const currDist = curr.dist;
