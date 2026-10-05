@@ -2311,6 +2311,39 @@ function generateHourlySchedule(minuteList, startH = 6, endH = 22) {
   return list;
 }
 
+// ============================================================
+// 東北・北海道新幹線の駅（この行程で新幹線に乗れる駅）
+// ============================================================
+// 切符ガイドを出してよいかの判定に使う。ここに無い駅は、出発駅そのものに
+// この行程で使う新幹線が来ないため、改札の通り方を案内できない
+// （在来線の駅から新幹線の駅へ向かう場合の切符の入れ方は、
+//  JR東日本の公式情報で裏が取れていない。2026-10-05 時点）。
+// 例: 水戸（常磐線）・つくば（TX）・千葉・船橋（総武線）・横浜（東海道線）・
+//     前橋（両毛線）は新幹線が来ない。秋田（こまち）・山形/米沢（つばさ）・
+//     高崎/熊谷（上越・北陸）・品川/新横浜/小田原（東海道）は新幹線の駅だが
+//     東北・北海道新幹線は通らない。
+// 出典: 旅行総合研究所タビリス「はやぶさ号の停車駅」ほか1件（2件で一致）。
+//       2026-10-05 確認
+const TOHOKU_SHINKANSEN_STATIONS = [
+  '東京', '上野', '大宮', '小山', '宇都宮', '那須塩原', '新白河', '郡山', '福島',
+  '白石蔵王', '仙台', '古川', 'くりこま高原', '一ノ関', '水沢江刺', '北上',
+  '新花巻', '盛岡', 'いわて沼宮内', '二戸', '八戸', '七戸十和田', '新青森',
+  '奥津軽いまべつ', '木古内', '新函館北斗',
+];
+
+// 「はやぶさ」の停車が確認できている駅。
+// ここに無い駅では、切符ガイドに列車名を書かず「特急券」とだけ案内する
+// （CLAUDE.md「確認できない固有名詞は書かない」）。
+// ◎全列車が停車: 東京・大宮・仙台・盛岡・新青森・新函館北斗
+// ○一部通過あり（多くは停車）: 上野・八戸
+// ▲一部の列車のみ停車（確定扱いにしない）: 古川・くりこま高原・一ノ関・
+//   水沢江刺・北上・新花巻・いわて沼宮内・二戸・七戸十和田・奥津軽いまべつ・木古内
+// ×通過: 小山・宇都宮・那須塩原・新白河・郡山・福島（やまびこ・なすのが停車）
+// 出典: 旅行総合研究所タビリス「はやぶさ号の停車駅」ほか1件（2件で一致）
+//       ＋駅探の新幹線時刻表（実ダイヤ）で古川・宇都宮・小山を個別に確認。
+//       2026-10-05 確認
+const HAYABUSA_CONFIRMED_STOPS = ['東京', '上野', '大宮', '仙台', '盛岡', '八戸', '新青森'];
+
 // departDateStr（'YYYY-MM-DD'）は在来線区間の平日/土休日ダイヤ判定にのみ使う。
 // 省略時は平日扱い（isWeekendDate の既定）。
 function generateShinkansenTimeline(stationName, destName, departTimeStr, departDateStr = null) {
@@ -2480,15 +2513,22 @@ function generateShinkansenTimeline(stationName, destName, departTimeStr, depart
       const dur = times[`${normStation}-函館`] || 255;
       const firstTrain = findNextDeparture(t, hayabusaSchedule);
       const stationWait = diffMins(t, firstTrain);
-      
+
+      // 以前はどの駅でも列車名を「はやぶさ」で固定していたため、はやぶさが
+      // 停車しない駅（小山など）や、そもそも東北・北海道新幹線が来ない駅
+      // （水戸・つくば・千葉など）でも「はやぶさ特急券」と案内していた。
+      // 停車を確認できた駅だけ列車名を書き、それ以外は generic にして
+      // 「特急券」とだけ案内する（2026-10-05）
+      const hayabusaStops = HAYABUSA_CONFIRMED_STOPS.includes(normStation);
+
       pushNode(t, `${normStation}駅 発`);
       if (stationWait > 0) {
         pushEdge(`☕ 駅での待ち（${stationWait}分）`, waitRl, stationWait);
         t = addMins(t, stationWait);
         totalMins += stationWait;
       }
-      pushEdge(`🚄 はやぶさ等（約${dur}分）`, travelTimeReliability(`${normStation}-函館`), dur,
-        { kind: 'shinkansen', trainName: 'はやぶさ', generic: false });
+      pushEdge(`🚄 ${hayabusaStops ? 'はやぶさ等' : '新幹線'}（約${dur}分）`, travelTimeReliability(`${normStation}-函館`), dur,
+        { kind: 'shinkansen', trainName: hayabusaStops ? 'はやぶさ' : '新幹線', generic: !hayabusaStops });
       t = addMins(t, dur);
       totalMins += dur;
       pushNode(t, `新函館北斗駅 着`);
@@ -4179,6 +4219,21 @@ function buildTicketGuide(route) {
   // 無理に当てはめず null を返す（改札の通り方を捏造しないこと）
   if (shinkansenLegs.some(l => l.kind !== 'shinkansen')) return null;
   if (shinkansenLegs.some(l => !l.fromStation || !l.toStation)) return null;
+
+  // 新幹線に乗る駅・降りる駅が、この行程で使う東北・北海道新幹線の駅でない場合は
+  // 案内を作らない（ボタンも印刷のセクションも出なくなる）。
+  // 水戸・つくば・千葉・船橋・横浜・前橋には新幹線が来ず、秋田・山形・米沢・
+  // 高崎・熊谷・品川・新横浜・小田原はこの行程の新幹線が通らないため、
+  // 「この駅の改札で乗車券と特急券を入れる」という案内が成り立たない。
+  // 在来線の駅から新幹線の駅へ向かう場合の切符の入れ方は、JR東日本の公式情報で
+  // 裏が取れていないため、確認できるまで案内を出さない（2026-10-05）。
+  // 乗る駅と降りる駅の両方を見るのは、復路が新函館北斗（正しい新幹線の駅）から
+  // 始まるため、乗る駅だけだと帰りの案内が残ってしまうから
+  const plain = (s) => String(s || '').replace(/駅$/, '');
+  const entryPlain = plain(shinkansenLegs[0].fromStation);
+  const exitPlain = plain(shinkansenLegs[shinkansenLegs.length - 1].toStation);
+  if (!TOHOKU_SHINKANSEN_STATIONS.includes(entryPlain)) return null;
+  if (!TOHOKU_SHINKANSEN_STATIONS.includes(exitPlain)) return null;
 
   const beforeLegs = legs.slice(0, firstShinkansen);
   const afterLegs = legs.slice(lastShinkansen + 1);
