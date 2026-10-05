@@ -2934,15 +2934,16 @@ const AIRPORT_ACCESS = [
       },
       {
         airport: '羽田空港',
-        durationMin: 90,
+        durationMin: 110,
         label: '🚄 新幹線・東京モノレール等',
         via: '東京駅 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'JR東日本 東北新幹線（宇都宮−東京 約50分）＋東京モノレール 公式（浜松町−第3ターミナル 空港快速13分）',
-          verifiedDate: '2026-09-15',
-          note: '新幹線約50分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+          source: 'JR東日本 東北新幹線（宇都宮−東京 約50分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速1時間43分）',
+          verifiedDate: '2026-10-05',
+          note: '新幹線約50分 ＋ 東京駅での乗換 ＋ 東京→浜松町 約5分 ＋ 浜松町での乗換 ＋ モノレール16〜18分（国内線は第1・第2ターミナル発着）',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
     ],
@@ -2975,15 +2976,16 @@ const AIRPORT_ACCESS = [
       },
       {
         airport: '羽田空港',
-        durationMin: 110,
+        durationMin: 120,
         label: '🚄 新幹線・東京モノレール等',
         via: '東京駅 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'JR東日本 東北新幹線（那須塩原−東京 約70分）＋東京モノレール 公式（空港快速13分）',
-          verifiedDate: '2026-09-15',
-          note: '新幹線約70分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+          source: 'JR東日本 東北新幹線（那須塩原−東京 約70分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速2時間0分）',
+          verifiedDate: '2026-10-05',
+          note: '新幹線約70分 ＋ 東京駅での乗換 ＋ 東京→浜松町 約5分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
     ],
@@ -2993,15 +2995,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 85,
+        durationMin: 90,
         label: '🚄 新幹線・東京モノレール等',
         via: '東京駅 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'JR東日本 東北新幹線（小山−東京 約43分）＋東京モノレール 公式（空港快速13分）',
-          verifiedDate: '2026-09-15',
-          note: '新幹線約43分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+          source: 'JR東日本 東北新幹線（小山−東京 約43分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速1時間28分）',
+          verifiedDate: '2026-10-05',
+          note: '新幹線約43分 ＋ 東京駅での乗換 ＋ 東京→浜松町 約5分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
     ],
@@ -3015,15 +3018,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 115,
+        durationMin: 130,
         label: '🚃 特急ひたち・東京モノレール等',
         via: '東京駅 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'JR東日本 特急ひたち（水戸−東京 約75分）＋東京モノレール 公式（空港快速13分）',
-          verifiedDate: '2026-09-15',
-          note: '特急約75分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+          source: 'JR東日本 特急ひたち（水戸−東京 約75分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速2時間8分）',
+          verifiedDate: '2026-10-05',
+          note: '特急約75分 ＋ 東京駅での乗換 ＋ 東京→浜松町 約5分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
       {
@@ -3061,15 +3065,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 95,
+        durationMin: 110,
         label: '🚃 つくばエクスプレス・東京モノレール等',
         via: '秋葉原・浜松町 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'つくばエクスプレス（つくば−秋葉原 快速45分）＋東京モノレール 公式（空港快速13分）',
-          verifiedDate: '2026-09-15',
-          note: 'TX快速45分 ＋ 秋葉原→浜松町・モノレール 約30分 ＋ 乗換の余裕を含めた合計',
+          source: 'つくばエクスプレス（つくば−秋葉原 快速45分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速1時間50分）',
+          verifiedDate: '2026-10-05',
+          note: 'TX快速45分 ＋ 秋葉原での乗換 ＋ 秋葉原→浜松町 約15分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
       {
@@ -3100,15 +3105,16 @@ const AIRPORT_ACCESS = [
         // 前橋・高崎〜羽田空港の高速バスは145〜245分かかるうえ運休便がありうるため、
         // 鉄道経由を既定にしている
         airport: '羽田空港',
-        durationMin: 95,
+        durationMin: 105,
         label: '🚄 新幹線・東京モノレール等',
         via: '東京駅 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'JR東日本 上越新幹線（高崎−東京 約55分）＋東京モノレール 公式（空港快速13分）',
-          verifiedDate: '2026-09-15',
-          note: '新幹線約55分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+          source: 'JR東日本 上越新幹線（高崎−東京 約55分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速1時間42分）',
+          verifiedDate: '2026-10-05',
+          note: '新幹線約55分 ＋ 東京駅での乗換 ＋ 東京→浜松町 約5分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
     ],
@@ -3118,15 +3124,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 115,
+        durationMin: 125,
         label: '🚃 両毛線・新幹線・東京モノレール等',
         via: '高崎・東京駅 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'JR東日本 両毛線（前橋−高崎 約16分）＋上越新幹線（約55分）＋東京モノレール 公式',
-          verifiedDate: '2026-09-15',
-          note: '両毛線約16分 ＋ 新幹線約55分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+          source: 'JR東日本 両毛線（前橋−高崎 約16分）＋上越新幹線（約55分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速2時間2分）',
+          verifiedDate: '2026-10-05',
+          note: '両毛線約16分 ＋ 新幹線約55分 ＋ 東京駅での乗換 ＋ 東京→浜松町 約5分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
     ],
@@ -3140,15 +3147,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 60,
+        durationMin: 80,
         label: '🚃 JR・東京モノレール等',
         via: '浜松町 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'JR東日本 上野東京ライン・京浜東北線（大宮−浜松町 約40分）＋東京モノレール 公式（空港快速13分）',
-          verifiedDate: '2026-09-15',
-          note: 'JR約40分 ＋ モノレール13分 ＋ 乗換の余裕を含めた合計',
+          source: 'JR東日本 上野東京ライン・京浜東北線（大宮−浜松町 約40分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速1時間16分）',
+          verifiedDate: '2026-10-05',
+          note: 'JR約40分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
       {
@@ -3172,15 +3180,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 80,
+        durationMin: 90,
         label: '🚄 新幹線・東京モノレール等',
         via: '東京駅 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: 'JR東日本 上越新幹線（熊谷−東京 約38分）＋東京モノレール 公式（空港快速13分）',
-          verifiedDate: '2026-09-15',
-          note: '新幹線約38分 ＋ 東京→羽田 約30分 ＋ 乗換の余裕を含めた合計',
+          source: 'JR東日本 上越新幹線（熊谷−東京 約38分）＋東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速1時間30分）',
+          verifiedDate: '2026-10-05',
+          note: '新幹線約38分 ＋ 東京駅での乗換 ＋ 東京→浜松町 約5分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
       {
@@ -3274,15 +3283,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 30,
+        durationMin: 40,
         label: '🚃 山手線・東京モノレール',
         via: '浜松町 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: '東京モノレール 公式（浜松町−羽田空港第3ターミナル 空港快速13分）＋JR東日本 山手線（東京−浜松町 約5分）',
-          verifiedDate: '2026-09-15',
-          note: '山手線約5分 ＋ モノレール13分 ＋ 乗換の余裕を含めた合計。京急経由でもほぼ同じ',
+          source: '東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋JR東日本 山手線（東京−浜松町 約5分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速38分）',
+          verifiedDate: '2026-10-05',
+          note: '山手線約5分 ＋ 浜松町での乗換 ＋ モノレール16〜18分（国内線は第1・第2ターミナル）。京急経由でもほぼ同じ',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
       {
@@ -3304,15 +3314,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 20,
+        durationMin: 25,
         label: '🚃 京急本線',
         via: null,
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: '京浜急行電鉄 公式「電車でアクセス｜羽田空港へ行く」（品川−羽田空港第1・第2ターミナル 14分）',
-          verifiedDate: '2026-09-15',
-          note: '公式の乗車時間14分 ＋ ホーム移動・待ちの余裕を含めた合計',
+          source: '京浜急行電鉄 公式「電車でアクセス｜羽田空港へ行く」（品川−羽田空港第1・第2ターミナル、エアポート快特14分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・急行で23〜25分）',
+          verifiedDate: '2026-10-05',
+          note: '公式の14分は本数の限られるエアポート快特の値。日中の主力の急行だと23〜25分かかる',
+          caveat: '優等種別により14〜25分前後します。平日ダイヤでの確認です',
         }),
       },
       {
@@ -3334,15 +3345,16 @@ const AIRPORT_ACCESS = [
     airports: [
       {
         airport: '羽田空港',
-        durationMin: 40,
+        durationMin: 50,
         label: '🚃 山手線・東京モノレール',
         via: '浜松町 乗換',
         mode: 'rail',
         fallbackFlightTimeMin: null,
         reliability: reliability(RELIABILITY.RESEARCHED, {
-          source: '東京モノレール 公式（空港快速13分）＋JR東日本 山手線（上野−浜松町 約19分）',
-          verifiedDate: '2026-09-15',
-          note: '山手線約19分 ＋ モノレール13分 ＋ 乗換の余裕を含めた合計',
+          source: '東京モノレール 公式（浜松町−羽田空港第1/第2ターミナル 空港快速16〜18分）＋JR東日本 山手線（上野−浜松町 約19分）＋Yahoo!乗換案内の実ダイヤ検索（2026-10-06・平日朝・最速46分）',
+          verifiedDate: '2026-10-05',
+          note: '山手線約19分 ＋ 浜松町での乗換 ＋ モノレール16〜18分',
+          caveat: '時間帯とダイヤにより10〜20分前後します。平日ダイヤでの確認です',
         }),
       },
       {
