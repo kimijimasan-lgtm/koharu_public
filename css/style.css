@@ -902,6 +902,64 @@ body {
   font-size: 0.75rem;
 }
 
+/* ============================================================
+   旅行代金カードの「実際の金額」
+   ============================================================
+   画面では入力欄(input)を見せ、印刷・PDFでは入力欄を消して
+   .actual-cost-print（入力済みなら数字、未入力なら手書き用の線）に
+   差し替える。
+   - window.print()（@media print）では、.actual-cost-input-wrap に付けた
+     .no-print が既存の規則でそのまま非表示になる（¥記号と入力欄を
+     1つの塊にしているのは、狭い画面で ¥ だけが前の行に残って
+     改行されるのを防ぐため）
+   - html2pdf（html2canvas）はこの screen 用スタイルのまま器を描くため
+     （@media print は効かない）、JS側（preparePdfContainer）で
+     クローンから .no-print を取り除いたうえで .actual-cost-print を
+     明示的に見せている */
+.actual-cost-row td {
+  font-size: 0.85em;
+  color: #888;
+}
+.actual-cost-input-wrap {
+  display: inline-block;
+  white-space: nowrap;
+}
+.actual-cost-input {
+  box-sizing: border-box;
+  width: 90px;
+  text-align: right;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  vertical-align: middle;
+}
+.actual-cost-yen {
+  color: #888;
+  margin-right: 2px;
+  vertical-align: middle;
+}
+.actual-cost-print {
+  display: none;
+}
+/* 未入力のまま印刷・PDFにしたときの、手書き用の線（枠） */
+.actual-cost-blankline {
+  display: inline-block;
+  width: 4.5em;
+  border-bottom: 1px solid #999;
+  margin-left: 2px;
+}
+
+/* 旅行代金カード下の注意書き。360px幅で、文言を変えても折り返し位置が
+   変わって最終行が3文字以下になることがあった（「実際の金額」の説明文を
+   短くした際に発覚）。CLAUDE.mdの基本方針どおり、まずCSSで直す */
+.cost-summary-card p {
+  line-break: strict;
+  text-wrap: pretty;
+  word-break: auto-phrase;
+}
+
 /* タクシーの代わりに使える手段（シャトルバス・市電）の参考表示 */
 .alt-transport {
   margin-top: 0.25rem;
@@ -1613,8 +1671,25 @@ body {
     color: #8c3b00 !important;
     font-weight: 800 !important;
   }
+  /* 「実際の合計」が表の最終行になったため、上の :last-child だけでは
+     「合計」と同じオレンジ色になってしまう。実際の金額（利用者の入力）
+     であることが分かるよう、緑系の色で区別する。このルールは上の
+     :last-child と詳細度が同じなので、後に書くことで優先させている */
+  .cost-summary-card table tr.actual-total-row td {
+    color: #1b7a3d !important;
+    font-weight: 800 !important;
+  }
   .cost-summary-card p {
     color: #444444 !important;
+  }
+
+  /* 「実際の金額」：入力欄(.no-print)は既存の規則で消え、
+     代わりに手書き/入力済みの表示(.actual-cost-print)を見せる */
+  .actual-cost-print {
+    display: inline-block !important;
+  }
+  .actual-cost-blankline {
+    border-bottom: 1px solid #333333 !important;
   }
 
   /* ================================================
@@ -1643,6 +1718,14 @@ body {
   }
   #confirmed-content tr[style*="color"] td {
     color: #6b3200 !important;
+    font-weight: 800 !important;
+  }
+  /* 「実際の合計」の <tr> も style 属性に color を持つため、上の
+     一括上書き（tr[style*="color"]）に巻き込まれて #6b3200 になって
+     しまう。詳細度が同じ（ID1+属性/クラス1+タグ2）なので、後に書いて
+     上書きする。概算の「合計」と見分けがつくよう、緑系の色にする */
+  #confirmed-content tr.actual-total-row td {
+    color: #1b7a3d !important;
     font-weight: 800 !important;
   }
   #confirmed-content a {

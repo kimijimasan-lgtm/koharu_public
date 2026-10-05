@@ -1652,6 +1652,136 @@ const App = {
      return { shinkansen, accommodation, taxi, food, total };
   },
 
+  // ============================================================
+  // 旅行代金（概算）カードの「実際の金額」
+  // ============================================================
+  // 概算の計算（calculateTotalCost）には一切混ぜない。利用者が自分で
+  // 入力した「実際にかかった／かかる金額」を、別の状態として保存するだけ。
+  // 保存先は、同じしおり（同じ行程）を特定するキーで分ける。
+  // スマホ用リンク（buildShareUrl）には含めない＝snapshotInputs()とは
+  // 別経路で、localStorageにしか書かない。
+
+  ACTUAL_COST_PREFIX: 'koharu_actual_cost_',
+  ACTUAL_COST_FIELDS: ['shinkansen', 'accommodation', 'taxi', 'food'],
+
+  // 文字列を短いハッシュ値にする（localStorageのキーを短く保つためだけの
+  // 用途で、暗号学的な強度は必要ない）
+  hashString(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; }
+    return (h >>> 0).toString(36);
+  },
+
+  // 「同じしおり」を特定するキー。宿・日程・出発/帰着時刻・乗換案内で
+  // 入力した到着/出発時刻・使った列車パターンが1つでも違えば別の行程とみなす
+  buildActualCostKey(hotel, dest) {
+    const inputs = this.snapshotInputs();
+    const hotelKey = hotel
+      ? (hotel.id === 'custom' ? `custom:${hotel.name}:${hotel.taxiFromCityStation}` : String(hotel.id))
+      : '';
+    const arrival = document.getElementById('hakodate-arrival-time')?.value || '';
+    const departure = document.getElementById('hakodate-departure-time')?.value || '';
+    const sig = JSON.stringify({
+      d: inputs.destination, h: hotelKey, dd: inputs.departureDate, dt: inputs.departureTime,
+      rt: inputs.returnTime, lp: inputs.luggagePattern, a: arrival, dep: departure,
+      to: (inputs.trainChoice && inputs.trainChoice.outbound) || '',
+      ti: (inputs.trainChoice && inputs.trainChoice.inbound) || '',
+    });
+    return this.ACTUAL_COST_PREFIX + this.hashString(sig);
+  },
+
+  // 保存されている「実際の金額」を読み込む。壊れたデータや範囲外の値は
+  // 無視して未入力（null）扱いにする
+  loadActualCosts(key) {
+    const empty = { shinkansen: null, accommodation: null, taxi: null, food: null };
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return empty;
+      const parsed = JSON.parse(raw);
+      const num = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 999999) ? Math.round(v) : null;
+      return {
+        shinkansen: num(parsed.shinkansen), accommodation: num(parsed.accommodation),
+        taxi: num(parsed.taxi), food: num(parsed.food),
+      };
+    } catch (e) { return empty; }
+  },
+
+  saveActualCosts(key, values) {
+    try { localStorage.setItem(key, JSON.stringify(values)); } catch (e) {}
+  },
+
+  // 入力欄に入れられた文字列から、半角数字だけを取り出す
+  // （全角数字→半角、数字以外の文字は無視）
+  parseActualCostInput(raw) {
+    const halfWidth = String(raw || '').replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    const digits = halfWidth.replace(/[^0-9]/g, '');
+    if (!digits) return null;
+    return Math.min(parseInt(digits, 10), 999999);
+  },
+
+  // 入力済みの欄だけを足す。1つも入力が無ければ null（＝表示は「—」）
+  computeActualTotal(values) {
+    const filled = this.ACTUAL_COST_FIELDS
+      .map((f) => values[f])
+      .filter((v) => v != null && !isNaN(v));
+    if (!filled.length) return null;
+    return filled.reduce((a, b) => a + b, 0);
+  },
+
+  // 印刷・PDF用の表示（.actual-cost-print の中身）。
+  // 入力済みなら金額、未入力なら手書きできる線（枠）を残す
+  renderActualCostPrintInner(value) {
+    return value == null ? '<span class="actual-cost-blankline">¥</span>' : `¥${value.toLocaleString()}`;
+  },
+
+  // 概算1項目分の見出し行＋「実際の金額」入力行をまとめて作る
+  renderCostRowPair(labelHtml, estimateYen, fieldName, actualValue, estimateBorder, actualBorder) {
+    return `
+      <tr style="${estimateBorder}">
+         <td style="padding: 10px 0;">${labelHtml}</td>
+         <td style="text-align: right; padding: 10px 0;">¥${estimateYen.toLocaleString()}</td>
+      </tr>
+      <tr class="actual-cost-row" style="${actualBorder}">
+         <td style="padding: 4px 0 10px 0;">↳ 実際の金額</td>
+         <td style="text-align: right; padding: 4px 0 10px 0;">
+           <span class="actual-cost-input-wrap no-print">
+             <span class="actual-cost-yen">¥</span>
+             <input type="text" inputmode="numeric" class="actual-cost-input"
+                    data-field="${fieldName}" placeholder="未入力" maxlength="9"
+                    value="${actualValue == null ? '' : actualValue.toLocaleString()}">
+           </span>
+           <span class="actual-cost-print" data-field="${fieldName}">${this.renderActualCostPrintInner(actualValue)}</span>
+         </td>
+      </tr>
+    `;
+  },
+
+  // costHtml 組み立て後に呼ぶ。入力イベントを束ね、入力のたびに
+  // ①印刷用spanの更新 ②実際の合計の再計算 ③localStorageへの保存 を行う
+  bindActualCostInputs(key) {
+    const card = document.querySelector('.cost-summary-card');
+    if (!card) return;
+    const values = this.loadActualCosts(key);
+    const totalCell = document.getElementById('actual-total-cell');
+
+    card.querySelectorAll('.actual-cost-input').forEach((input) => {
+      input.addEventListener('input', () => {
+        const field = input.dataset.field;
+        const num = this.parseActualCostInput(input.value);
+        input.value = num == null ? '' : num.toLocaleString();
+        values[field] = num;
+
+        const span = card.querySelector(`.actual-cost-print[data-field="${field}"]`);
+        if (span) span.innerHTML = this.renderActualCostPrintInner(num);
+
+        const total = this.computeActualTotal(values);
+        if (totalCell) totalCell.textContent = total == null ? '—' : `¥${total.toLocaleString()}`;
+
+        this.saveActualCosts(key, values);
+      });
+    });
+  },
+
   getGoogleMapsUrl(query) {
     return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
   },
@@ -2109,32 +2239,37 @@ const App = {
     
     
     const costs = this.calculateTotalCost(hotel, day1Events, day2Events, day3Events);
+    // 「実際の金額」は概算の計算には一切混ぜず、別の状態として
+    // localStorageに保存する（キーは同じしおりを特定するもの）
+    const actualCostKey = this.buildActualCostKey(hotel, dest);
+    const actualCosts = this.loadActualCosts(actualCostKey);
+    const actualTotal = this.computeActualTotal(actualCosts);
     const costHtml = `
       <div class="cost-summary-card" style="background:white; padding: 20px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;">
         <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:#27ae60;">💰 2名様 旅行代金（概算）</h3>
         <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem;">
-          <tr style="border-bottom: 1px dashed #ccc;">
-             <td style="padding: 10px 0;">🚅 新幹線・交通費 (東京方面目安)${this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '東京-函館間を想定した固定値です。出発地・目的地による差は反映していません' }))}</td>
-             <td style="text-align: right; padding: 10px 0;">¥${costs.shinkansen.toLocaleString()}</td>
-          </tr>
-          <tr style="border-bottom: 1px dashed #ccc;">
-             <td style="padding: 10px 0;">🏨 宿泊代 (${hotel.name} / 2泊)${this.renderReliabilityBadge(reliability(RELIABILITY.RESEARCHED, { note: '宿泊プランの公表料金に基づく目安です。時期により変動します' }))}</td>
-             <td style="text-align: right; padding: 10px 0;">¥${costs.accommodation.toLocaleString()}</td>
-          </tr>
-          <tr style="border-bottom: 1px dashed #ccc;">
-             <td style="padding: 10px 0;">🚕 現地タクシー代 (2泊3日分)${this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '所要分から距離を逆算し、公示運賃を当てはめた概算です' }))}</td>
-             <td style="text-align: right; padding: 10px 0;">¥${costs.taxi.toLocaleString()}</td>
-          </tr>
-          <tr style="border-bottom: 2px solid #333;">
-             <td style="padding: 10px 0;">🍽️ 飲食代 (昼食・夕食目安)${this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '各店の予算帯から求めた概算です' }))}</td>
-             <td style="text-align: right; padding: 10px 0;">¥${costs.food.toLocaleString()}</td>
-          </tr>
+          ${this.renderCostRowPair('🚅 新幹線・交通費 (東京方面目安)' + this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '東京-函館間を想定した固定値です。出発地・目的地による差は反映していません' })),
+            costs.shinkansen, 'shinkansen', actualCosts.shinkansen,
+            'border-bottom: 1px dashed #eee;', 'border-bottom: 1px dashed #ccc;')}
+          ${this.renderCostRowPair(`🏨 宿泊代 (${hotel.name} / 2泊)` + this.renderReliabilityBadge(reliability(RELIABILITY.RESEARCHED, { note: '宿泊プランの公表料金に基づく目安です。時期により変動します' })),
+            costs.accommodation, 'accommodation', actualCosts.accommodation,
+            'border-bottom: 1px dashed #eee;', 'border-bottom: 1px dashed #ccc;')}
+          ${this.renderCostRowPair('🚕 現地タクシー代 (2泊3日分)' + this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '所要分から距離を逆算し、公示運賃を当てはめた概算です' })),
+            costs.taxi, 'taxi', actualCosts.taxi,
+            'border-bottom: 1px dashed #eee;', 'border-bottom: 1px dashed #ccc;')}
+          ${this.renderCostRowPair('🍽️ 飲食代 (昼食・夕食目安)' + this.renderReliabilityBadge(reliability(RELIABILITY.ESTIMATED, { note: '各店の予算帯から求めた概算です' })),
+            costs.food, 'food', actualCosts.food,
+            'border-bottom: 1px dashed #eee;', 'border-bottom: 2px solid #333;')}
           <tr style="font-weight: bold; font-size: 1.3rem; color: #d35400;">
              <td style="padding: 15px 0;">合計</td>
              <td style="text-align: right; padding: 15px 0;">¥${costs.total.toLocaleString()}</td>
           </tr>
+          <tr class="actual-total-row" style="font-weight: bold; font-size: 1.15rem; color: #1b7a3d;">
+             <td style="padding: 10px 0;">実際の合計</td>
+             <td id="actual-total-cell" style="text-align: right; padding: 10px 0;">${actualTotal == null ? '—' : `¥${actualTotal.toLocaleString()}`}</td>
+          </tr>
         </table>
-        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">※新幹線・交通費は東京-函館間を想定した概算値（固定¥60,000）です。飛行機利用エリア（稚内・知床・根室等）では実際の航空券代を反映していないため、実際の運賃は別途ご確認ください。タクシー代と飲食代はスケジュールに基づく概算です。日程はタクシー利用で組んでおり、シャトルバス・市電の情報は参考表示のため合計に含めていません。</p>
+        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">※新幹線・交通費は東京-函館間を想定した概算値（固定¥60,000）です。飛行機利用エリア（稚内・知床・根室等）では実際の航空券代を反映していないため、実際の運賃は別途ご確認ください。タクシー代と飲食代はスケジュールに基づく概算です。日程はタクシー利用で組んでおり、シャトルバス・市電の情報は参考表示のため合計に含めていません。「実際の金額」はご自身の記録です。未入力の項目は実際の合計に含めません。</p>
       </div>
     `;
 
@@ -2247,6 +2382,8 @@ const App = {
     this.updatePrintScreenshotsLayout();
     this.bindTicketGuideButtons();
     this.renderTicketGuidePrint();
+    // innerHTML の再代入で入力イベントは失われるため、都度束ね直す
+    this.bindActualCostInputs(actualCostKey);
     // 組み立て直後は常に2カラム構造なので、モバイル幅なら並べ替える
     this.applyMobileItineraryOrder();
     this.showStep('confirmed');
@@ -2718,7 +2855,15 @@ const App = {
     // 画面専用のボタン類（no-print）は html2canvas が描かない設定にして
     // あるが、器の中では場所だけを取り続けるため、その分が紙の末尾に
     // 空白ページとして残る。器から取り除いて詰める
+    // 「実際の金額」の入力欄(.actual-cost-input)もこのクラスを持つため、
+    // ここで一緒に取り除かれる
     container.querySelectorAll('.no-print').forEach(node => node.remove());
+
+    // html2pdf はこの器を screen 媒体のまま描く（@media print は効かない）ため、
+    // 画面では隠している .actual-cost-print（印刷・PDF用の金額表示）を
+    // ここで明示的に見せる。中身は入力欄で更新済みのものがクローンに
+    // そのまま入っているので、取り除いたinputの代わりとして機能する
+    container.querySelectorAll('.actual-cost-print').forEach(el => { el.style.display = 'inline-block'; });
 
     // 画面では下部の固定ボタンに隠れないよう大きな余白を取っているが、
     // 紙では不要なので詰める
