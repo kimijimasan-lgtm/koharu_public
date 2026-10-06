@@ -1329,6 +1329,10 @@ const App = {
         const stationName = dest.cityStation || dest.station;
         return { venue: stationName, area: '__station__', taxiFromCityStation: 0 };
       }
+      // 1日目に枠へ収まる見どころが無かったときの「周辺を散策」も、
+      // アプリが作る案内で、いる場所は宿そのもの。宿として返すと
+      // 隣の宿イベントと venue が一致し、移動行とタクシー代が出なくなる
+      if (event.title === '周辺を散策') return hotelLoc;
       return { venue: event.title, area: '__unknown__', taxiFromCityStation: null };
     }
     return { venue: '__unknown__', area: '__unknown__', taxiFromCityStation: null };
@@ -1432,6 +1436,43 @@ const App = {
   // 対象の地域と区間は data.js の LOCAL_ALT_TRANSPORT に登録したものだけ。登録のない地域・区間では何もしない。
   // 日程（時刻・所要時間の計算）には一切影響させず、表示用の detail だけに書く。
   // 値ごとに確からしさが違うので信頼度バッジを添える（登録時に reliability を持たせる）。
+  // 1日目に行く見どころを選ぶ。
+  // 1日目は「宿に着く → 60分休む → 見どころ → 120分後に夕食」という組み立てで、
+  // 見どころに使える枠は 120分（DAY1_SPOT_BUDGET_MIN）しかない。
+  // ここに「宿からの往復の移動 ＋ 滞在時間」が収まるものだけを候補にする。
+  // 2日目に使う spots[0] / spots[1] は候補から外す（同じ場所を2回出さない）。
+  // 収まるものが無ければ null を返し、呼び出し側が「周辺を散策」を出す。
+  DAY1_SPOT_BUDGET_MIN: 120,
+
+  pickDay1Spot(dest, hotel) {
+    const spots = (dest && dest.spots) || [];
+    if (!spots.length) return null;
+    const hotelTaxi = parseInt(hotel && hotel.taxiFromCityStation);
+    const base = isNaN(hotelTaxi) ? 15 : hotelTaxi;
+
+    const candidates = [];
+    for (let i = 0; i < spots.length; i++) {
+      if (i === 0 || i === 1) continue; // 2日目に出す分
+      const s = spots[i];
+      if (!s) continue;
+      const taxi = s.taxiFromCityStation;
+      if (taxi == null) continue;
+      // estimateMovement と同じ式。片道の見積もり
+      const oneWay = Math.max(10, Math.abs(taxi - base) + 5);
+      const need = oneWay * 2 + (s.duration || 0);
+      if (need > this.DAY1_SPOT_BUDGET_MIN) continue;
+      candidates.push({ spot: s, need, duration: s.duration || 0, index: i });
+    }
+    if (!candidates.length) return null;
+
+    // 枠に収まるものが複数あるときは、元の並び順（データに先に書かれたもの）を採る。
+    // 並び順は目的地ごとの「おすすめ順」なので、これを尊重する。
+    // 滞在時間の長さで選ぶと、近くて短い見どころより遠いものが選ばれ、
+    // タクシー代がかえって増えることがある（登別・積丹で実測）
+    candidates.sort((a, b) => a.index - b.index);
+    return candidates[0].spot;
+  },
+
   // 運行する期間が決まっている路線（knownPeriods あり）について、
   // 旅行の3日間と重なる期間を探す。
   // 戻り値
@@ -2183,9 +2224,21 @@ const App = {
     day1Events.push({ time: this.minToTime(currentMin), title: hotel.name + ' 到着', type: 'hotel', icon: '🏨' });
     
     currentMin += 60; // rest
-    const d1Spot = dest.spots[2] || dest.spots[0];
-      day1Events.push({ time: this.minToTime(currentMin), title: d1Spot ? d1Spot.name : '周辺を散策', type: 'sightseeing', icon: '🚶' });
-    
+    // 1日目の枠（宿に着いてから夕食までの120分）に収まる見どころを選ぶ。
+    // 以前は dest.spots[2] を距離に関係なく選んでいたため、網走では
+    // 片道90分の知床五湖が入り、2時間の枠に往復170分＋滞在150分が詰め込まれていた。
+    // 移動の見積もりは estimateMovement と同じ式にそろえる（宿からの往復）
+    const d1Spot = this.pickDay1Spot(dest, hotel);
+    day1Events.push({
+      time: this.minToTime(currentMin),
+      title: d1Spot ? d1Spot.name : '周辺を散策',
+      type: 'sightseeing',
+      icon: '🚶',
+      // 収まる見どころが無いときだけ、その事実を添える（「行けません」とは書かない）
+      detail: d1Spot ? '' : this.phrasesHtml('この時間に|往復できる見どころが|登録されていないため、|宿の周りで|お過ごしください。|主な見どころは|2日目にご案内します。'),
+    });
+
+
     currentMin += 120;
     if (hotel.dinnerIncluded) {
       day1Events.push({ time: this.minToTime(currentMin), title: 'ホテルで夕食', type: 'food', icon: '🍽️' });
