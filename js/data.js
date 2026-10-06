@@ -1777,7 +1777,7 @@ const LOCAL_ALT_TRANSPORT = (() => {
         {
           between: ['旭川空港', '旭山'], icon: '🚌', label: '直行バス（季節運行）', endLabels: ['旭川空港', '旭山動物園'],
           durationMin: 35, fareYen: 840, note: '旭川電気軌道78番',
-          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '旭山動物園公式（アクセス案内）', caveat: '4/29〜11/3の土日祝のみ運行（7/25〜8/16は毎日）、1日1往復です。11/3を過ぎると運休します' }),
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '旭山動物園公式（アクセス案内）', verifiedDate: '2026-10-06', caveat: '春から秋の開園期間の、土日祝だけの運行です（夏休みの期間は毎日）。1日1往復で、冬のあいだは運休します。2026年は11月3日が最後です。運行日は旭山動物園で確認してください' }),
           fareRl: _altRl(RELIABILITY.VERIFIED, { source: '旭山動物園公式（アクセス案内）' }), noteRl: null,
         },
         {
@@ -1794,7 +1794,7 @@ const LOCAL_ALT_TRANSPORT = (() => {
         },
         {
           between: ['旭川駅前', '富良野'], icon: '🚃', label: 'JR富良野線', endLabels: ['旭川駅', '富良野駅'],
-          durationMin: 71, fareYen: 1380, note: '夏季だけ停まるラベンダー畑駅は今は営業期間外です。富良野の市街へ行く手段として使います',
+          durationMin: 71, fareYen: 1380, note: 'ラベンダー畑駅は夏のあいだだけ停まる臨時駅です。富良野の市街へ行く手段として使います',
           durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '案内により66〜80分とばらつきあり', caveat: '普通列車は本数が少なめです' }),
           fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '乗換案内サイトの表示のみで確認' }), noteRl: null,
         },
@@ -1807,7 +1807,7 @@ const LOCAL_ALT_TRANSPORT = (() => {
         {
           between: ['旭川駅前', '層雲峡'], icon: '🚌', label: '路線バス', endLabels: ['旭川駅前', '層雲峡'],
           durationMin: 110, fareYen: 2140, note: '道北バス81・83番。層雲峡ターミナルから温泉街まで徒歩約5分',
-          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '層雲峡観光協会ほか', caveat: '2026年7月と10月1日にダイヤが変わり、本数は少なめです。最新の運賃・時刻は道北バスで確認してください' }),
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '層雲峡観光協会ほか', note: '2026年7月・10月1日の改正は、道北バス公式の告知では未確認。改正後の時刻表も未確認（公式PDFの本文が読み取れず）', caveat: 'ダイヤが変わっている場合があります。本数は少なめです。最新の時刻・運賃は、道北バスで確認してください' }),
           fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '旅行情報サイト2件で一致', note: '道北バス公式では取得できず' }), noteRl: null,
         },
         {
@@ -1900,14 +1900,14 @@ const LOCAL_ALT_TRANSPORT = (() => {
         {
           between: ['美瑛駅前', '白金'], icon: '🚌', label: '路線バス（白金線）', endLabels: ['美瑛駅', '白金青い池入口'],
           durationMin: 22, fareYen: 800, note: '道北バス 白金線（1日10便前後）',
-          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '道北バス公式の時刻表PDFとバス比較サイトの停車時刻（13:45→14:07）で一致', caveat: '2026年10月1日に改正の予定があるとの記載があり、最新の時刻・運賃は道北バスの旭川駅前営業所（0166-23-4161）で確認してください。' }),
-          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '道北バス公式の時刻表PDF（美瑛〜白金青い池入口 大人片道800円）' }), noteRl: null,
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '道北バス公式の時刻表PDF（美瑛駅前発の全10便が22分）', verifiedDate: '2026-10-06', note: '時刻表の表そのものには改正日の記載がないため、改正後の時刻かどうかは確定していない', caveat: '道北バス公式の時刻表PDFで確認した値です。運賃は、2026年10月1日改正の運賃表に記載があります。1日10便前後で、帰りは青い池入口から美瑛駅まで25分かかります。乗る日の便は、道北バスの、旭川駅前営業所（0166-23-4161）でも確認できます' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '道北バス公式の時刻表PDF（2026年10月1日改正の運賃表）。美瑛−青い池入口 大人片道800円', verifiedDate: '2026-10-06' }), noteRl: null,
         },
         {
           between: ['美瑛駅前', '白金温泉'], icon: '🚌', label: '路線バス（白金線）', endLabels: ['美瑛駅', '白金温泉'],
-          durationMin: 32, fareYen: 900, note: '道北バス 白金線（1日10便前後）',
-          durationRl: _altRl(RELIABILITY.ESTIMATED, { source: '公式資料で26分と32分の2通りの記載', caveat: '所要時間は資料により26分と32分に分かれています（ここでは長い方の32分を表示）。2026年10月1日に改正の予定があるとの記載もあり、最新の時刻・運賃は道北バスの旭川駅前営業所（0166-23-4161）で確認してください。' }),
-          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '道北バス公式の時刻表PDFと国立大雪青少年交流の家の公式アクセスで一致（大人片道900円）' }), noteRl: null,
+          durationMin: 26, fareYen: 900, note: '道北バス 白金線（1日10便前後）',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '道北バス公式の時刻表PDF（美瑛駅前発の全10便が26分）', verifiedDate: '2026-10-06', note: '時刻表の表そのものには改正日の記載がないため、改正後の時刻かどうかは確定していない', caveat: '道北バス公式の時刻表PDFで確認した値です。運賃は、2026年10月1日改正の運賃表に記載があります。1日10便前後で、帰りは白金温泉から美瑛駅まで28分かかります。乗る日の便は、道北バスの、旭川駅前営業所（0166-23-4161）でも確認できます' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '道北バス公式の時刻表PDF（2026年10月1日改正の運賃表）。美瑛−白金温泉 大人片道900円', verifiedDate: '2026-10-06' }), noteRl: null,
         },
       ],
     },
@@ -1999,8 +1999,8 @@ const LOCAL_ALT_TRANSPORT = (() => {
         },
         {
           between: ['釧路駅前', '釧路湿原'], icon: '🚃', label: 'JR釧網本線', endLabels: ['釧路駅', '釧路湿原駅'],
-          durationMin: 24, fareYen: 470, note: '釧路湿原駅から細岡展望台まで徒歩約10〜15分（急な階段があります）',
-          durationRl: _altRl(RELIABILITY.ESTIMATED, { source: 'JR北海道のくしろ湿原ノロッコ号の時刻', caveat: 'ノロッコ号は2026年10月10日が最終運行です（運転終了）。そのあとは普通列車のみで、1日2往復と少なめです。ノロッコ号は指定席料金1,000円が別にかかります' }),
+          durationMin: 20, fareYen: 470, note: '釧路湿原駅から細岡展望台まで徒歩約10〜15分（急な階段があります）',
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '乗換案内の釧網本線の時刻表（釧路発は19〜20分、釧路湿原発は20〜21分で一致）', verifiedDate: '2026-10-06', note: '普通列車の所要時間は、JR北海道の公式時刻表では未確認。ノロッコ号の運転終了は、JR北海道 釧路支社のニュースリリース（2026年8月7日）で確認。定期運転は10月4日まで、10月9日と10日がラストラン', caveat: 'ノロッコ号は、2026年10月10日が最後の運転日です。以降は運行しません。この所要時間は普通列車の値です。普通列車は本数が少ないので、帰りの時刻を先に決めてください' }),
           fareRl: _altRl(RELIABILITY.ESTIMATED, { note: 'JR北海道公式の運賃は読めていません', caveat: '運賃は470円・540円・440円と案内が割れています' }), noteRl: walkRl,
         },
         {
@@ -2032,19 +2032,19 @@ const LOCAL_ALT_TRANSPORT = (() => {
         {
           between: ['網走駅前', '網走市'], icon: '🚌', label: '路線バス', endLabels: ['網走駅前', '博物館網走監獄'],
           durationMin: 9, fareYen: 330, note: '網走バス 市内観光施設めぐり（網走駅②のりば）',
-          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）', caveat: '冬ダイヤの資料で確認した値です。10月以降の運行期間と本数は、網走バス（0152-43-4101）で確認してください' }),
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）', note: '2026-10-06 に網走バス公式で、2026年10月1日〜2027年1月19日の時刻表があることを確認。ただし、その中身（所要時間）は未確認', caveat: '冬のダイヤで確認した値です。網走バスの公式に、10月から翌年1月までの時刻表が出ています。乗る日の便を、その時刻表で確認してください' }),
           fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）' }), noteRl: null,
         },
         {
           between: ['網走駅前', '天都山'], icon: '🚌', label: '路線バス', endLabels: ['網走駅前', '天都山（流氷館）'],
           durationMin: 12, fareYen: 420, note: '網走バス 市内観光施設めぐり（網走駅②のりば）',
-          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）', caveat: '冬ダイヤの資料で確認した値です。10月以降の運行期間と本数は、網走バス（0152-43-4101）で確認してください' }),
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）', note: '2026-10-06 に網走バス公式で、2026年10月1日〜2027年1月19日の時刻表があることを確認。ただし、その中身（所要時間）は未確認', caveat: '冬のダイヤで確認した値です。網走バスの公式に、10月から翌年1月までの時刻表が出ています。乗る日の便を、その時刻表で確認してください' }),
           fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表（2026年1〜3月の冬ダイヤ）' }), noteRl: null,
         },
         {
           between: ['女満別空港', '知床'], icon: '🚌', label: '知床エアポートライナー', endLabels: ['女満別空港', 'ウトロ温泉'],
           durationMin: 132, fareYen: 4000, note: '知床五湖・知床峠へは行かず、ウトロ温泉止まりです',
-          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内2件で一致（約2時間10〜12分）', caveat: '2026年10月時点では運休中です。2026年の夏季運行は9月30日で終わり、次は冬季（2027年1月16日〜3月7日）で1日2便程度です' }),
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内2件で一致（約2時間10〜12分）', note: '2026-10-06 に斜里バス公式・網走バス公式で運行期間を確認。2026年の夏期は6月1日〜9月30日。冬期は「1月下旬〜3月上旬ごろ」の表記で、2027年の日程は未発表', caveat: '季節限定の運行です。夏期は6月から9月まで、冬期は1月下旬から3月上旬です。2026年の夏期は、9月に終わりました。次の冬期の日程は未発表です。網走バスで確認してください' }),
           fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式（運賃表）' }), noteRl: null,
         },
       ],
@@ -2058,7 +2058,7 @@ const LOCAL_ALT_TRANSPORT = (() => {
         {
           between: ['知床斜里駅', 'ウトロ'], icon: '🚌', label: '路線バス', endLabels: ['知床斜里駅', 'ウトロ温泉'],
           durationMin: 50, fareYen: 1650, note: '斜里バス 知床線（斜里バスターミナル→ウトロ温泉バスターミナル）',
-          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '予約サイトの時刻と観光案内（約50分）', note: '公式の時刻表PDFは読めていません', caveat: '夏ダイヤは2026年4月28日〜10月31日で、冬ダイヤは本数が減ります' }),
+          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '予約サイトの時刻と観光案内（約50分）', note: '公式の時刻表PDFは読めていません。冬ダイヤの開始時期は、前年の実績（2025年11月1日〜2026年4月27日）からの推定', caveat: '夏ダイヤは4月下旬から10月31日まで、冬ダイヤは11月ごろからで、本数が減ります。乗る時期の時刻表を斜里バスで確認してください' }),
           fareRl: _altRl(RELIABILITY.VERIFIED, { source: '斜里バス公式' }), noteRl: null,
         },
       ],
@@ -2120,7 +2120,7 @@ const LOCAL_ALT_TRANSPORT = (() => {
         {
           between: ['木古内駅', '江差'], icon: '🚌', label: '路線バス', endLabels: ['木古内駅前', '江差ターミナル'],
           durationMin: 83, fareYen: 1900, note: '函館バス 江差・木古内線。中歌町・姥神町フェリー前・新地町でも降りられます（江差病院前までは2,000円）',
-          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '上ノ国町の時刻表の見出しにある83分のみで確認。便によって差がある可能性があります', caveat: '本数は1日数便と少なく、年末年始は運休する便があります（2026年10月1日改正）' }),
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '上ノ国町の時刻表の見出しにある83分のみで確認。2026年10月1日の改正は第三者の記事が出典で、函館バス公式では未確認。改正後の時刻も未確認', caveat: '2026年10月1日に改正があったとの情報があります。改正後の時刻は未確認です。本数は1日数便と少なく、年末年始は運休する便もあります。くわしくは函館バスで確認してください' }),
           fareRl: _altRl(RELIABILITY.VERIFIED, { source: '江差町公式観光サイト' }), noteRl: null,
         },
       ],
