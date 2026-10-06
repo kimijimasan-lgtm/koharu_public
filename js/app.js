@@ -1432,7 +1432,39 @@ const App = {
   // 対象の地域と区間は data.js の LOCAL_ALT_TRANSPORT に登録したものだけ。登録のない地域・区間では何もしない。
   // 日程（時刻・所要時間の計算）には一切影響させず、表示用の detail だけに書く。
   // 値ごとに確からしさが違うので信頼度バッジを添える（登録時に reliability を持たせる）。
-  attachAlternativeTransport(transfer, fromLoc, toLoc, dest) {
+  // 運行する期間が決まっている路線（knownPeriods あり）について、
+  // 旅行の3日間と重なる期間を探す。
+  // 戻り値
+  //   { state: 'always' }                     … 期間の登録が無い（通年扱い。今までどおり）
+  //   { state: 'unknownDate' }                … 旅行日が分からない（今までどおり出す）
+  //   { state: 'in', period }                 … 重なる期間がある
+  //   { state: 'out', coverage, periods }     … どの期間とも重ならない
+  // 判定は宿の休館（isHotelAvailable）と同じ考え方で、出発日から2泊3日の
+  // 3日間と期間が重なるかを見る。3日のうち一部でも重なれば「運行あり」とする
+  findOperatingPeriod(route, departureDateStr) {
+    const periods = route && route.operatingPeriods;
+    if (!periods || !periods.length) return { state: 'always' };
+    if (!departureDateStr) return { state: 'unknownDate' };
+
+    const endDate = new Date(`${departureDateStr}T00:00:00`);
+    if (isNaN(endDate.getTime())) return { state: 'unknownDate' };
+    endDate.setDate(endDate.getDate() + 2);
+    const tripStart = departureDateStr;
+    const tripEnd = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+
+    const hit = periods.find((p) => p.from && p.to && tripStart <= p.to && p.from <= tripEnd);
+    if (hit) return { state: 'in', period: hit };
+    return { state: 'out', coverage: route.periodsCoverage || 'official-partial', periods };
+  },
+
+  // 「2026年6月1日」の形にそろえる（データは 'YYYY-MM-DD'）
+  formatPeriodDate(ymd) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+    if (!m) return String(ymd || '');
+    return `${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日`;
+  },
+
+  attachAlternativeTransport(transfer, fromLoc, toLoc, dest, departureDate = null) {
     if (!dest || typeof LOCAL_ALT_TRANSPORT === 'undefined') return transfer;
     const H = LOCAL_ALT_TRANSPORT[dest.name];
     if (!H) return transfer;
@@ -1469,11 +1501,38 @@ const App = {
       const ends = r.endLabels || r.between;
       const [a, b] = forward ? [ends[0], ends[1]] : [ends[1], ends[0]];
       const head = b == null ? `${a}から${r.label}なら` : `${a}から${r.label}で${b}まで`;
+
+      // 運行する期間が決まっている路線は、旅行日に当たる期間の運賃・所要時間を使う。
+      // どの期間にも当たらないときは、数字を出さずに事実だけを書く
+      const op = this.findOperatingPeriod(r, departureDate);
+      const shown = op.state === 'in'
+        ? Object.assign({}, r, {
+            fareYen: op.period.fareYen != null ? op.period.fareYen : r.fareYen,
+            durationMin: op.period.durationMin != null ? op.period.durationMin : r.durationMin,
+          })
+        : r;
+
       // 本文に出す注意（caveat）は、所要時間・運賃・補足のうち持っているものをすべて出す
       const caveats = [r.durationRl, r.fareRl, r.noteRl]
         .filter((rl, idx, arr) => rl && rl.caveat && arr.indexOf(rl) === idx)
         .map((rl) => this.renderReliabilityCaveat(rl)).join('');
-      rows.push(`<div class="alt-row alt-head"><span class="alt-label">${r.icon} ${this.tgNoOrphanTail(head)}</span>${time(r.durationMin, r.durationRl)}${money(r)}</div>` +
+
+      if (op.state === 'out') {
+        // 期間外。公式に出ている期間だけを事実として書き、運賃も所要時間も出さない。
+        // 'official-partial' は「公式が出している期間がこれだけ」という意味なので、
+        // ここで「運休」と書いてはいけない（公式がそう書いていないため）
+        const list = (op.periods || [])
+          .map((p) => `${p.label || ''}が${this.formatPeriodDate(p.from)}から${this.formatPeriodDate(p.to)}まで`)
+          .join('、');
+        const msg = op.coverage === 'official-complete'
+          ? `この路線は、旅行の時期には運行がありません。運行するのは、${list}です`
+          : `この時期の運行は、公式に出ていません。公式に出ている運行期間は、${list}です。乗る時期の運行を${this.tgNoOrphanTail('お確かめください')}`;
+        rows.push(`<div class="alt-row alt-head"><span class="alt-label">${r.icon} ${this.tgNoOrphanTail(head)}</span></div>` +
+          `<div class="rl-caveat">※ ${this.tgNoOrphanTail(msg)}</div>`);
+        continue;
+      }
+
+      rows.push(`<div class="alt-row alt-head"><span class="alt-label">${r.icon} ${this.tgNoOrphanTail(head)}</span>${time(shown.durationMin, r.durationRl)}${money(shown)}</div>` +
         (r.note ? sub(r.noteRl, r.note) : '') + caveats);
     }
     if (!rows.length) return transfer;
@@ -1483,7 +1542,7 @@ const App = {
     return transfer;
   },
 
-  fillMovementGaps(events, hotel, dest) {
+  fillMovementGaps(events, hotel, dest, departureDate = null) {
     const result = [];
     for (let i = 0; i < events.length; i++) {
       result.push(events[i]);
@@ -1526,7 +1585,7 @@ const App = {
       
       // Calculate stay duration based on next event time
       const transfer = this.estimateMovement(currentLoc, nextLoc, hotel, dest);
-      this.attachAlternativeTransport(transfer, currentLoc, nextLoc, dest);
+      this.attachAlternativeTransport(transfer, currentLoc, nextLoc, dest, departureDate);
       
       if (current.time && next.time) {
         const gapMin = this.timeToMin(next.time) - this.timeToMin(current.time);
@@ -2221,9 +2280,12 @@ const App = {
     });
     day3Events.push({ time: '', title: '自宅・出発地に帰着', type: 'transport', icon: '🏠' });
 
-    day1Events = this.fillMovementGaps(day1Events, hotel, dest);
-    day2Events = this.fillMovementGaps(day2Events, hotel, dest);
-    day3Events = this.fillMovementGaps(day3Events, hotel, dest);
+    // 運行期間のある路線（知床エアポートライナーなど）を旅行日で出し分けるため、
+    // 出発日を渡す。日付が未入力なら null になり、今までどおり期間を見ずに出す
+    const tripDate = inputs.departureDate || null;
+    day1Events = this.fillMovementGaps(day1Events, hotel, dest, tripDate);
+    day2Events = this.fillMovementGaps(day2Events, hotel, dest, tripDate);
+    day3Events = this.fillMovementGaps(day3Events, hotel, dest, tripDate);
 
     this.enrichEventsWithLinks(day1Events, hotel, dest);
     this.enrichEventsWithLinks(day2Events, hotel, dest);
