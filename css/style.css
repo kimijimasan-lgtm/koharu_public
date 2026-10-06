@@ -905,17 +905,13 @@ body {
 /* ============================================================
    旅行代金カードの「実際の金額」
    ============================================================
-   画面では入力欄(input)を見せ、印刷・PDFでは入力欄を消して
+   画面では入力欄(input)を見せ、印刷では入力欄を消して
    .actual-cost-print（入力済みなら数字、未入力なら手書き用の線）に
    差し替える。
-   - window.print()（@media print）では、.actual-cost-input-wrap に付けた
-     .no-print が既存の規則でそのまま非表示になる（¥記号と入力欄を
-     1つの塊にしているのは、狭い画面で ¥ だけが前の行に残って
-     改行されるのを防ぐため）
-   - html2pdf（html2canvas）はこの screen 用スタイルのまま器を描くため
-     （@media print は効かない）、JS側（preparePdfContainer）で
-     クローンから .no-print を取り除いたうえで .actual-cost-print を
-     明示的に見せている */
+   window.print()（@media print）では、.actual-cost-input-wrap に付けた
+   .no-print が既存の規則でそのまま非表示になる。¥記号と入力欄を
+   1つの塊にしているのは、狭い画面で ¥ だけが前の行に残って
+   改行されるのを防ぐため */
 .actual-cost-row td {
   font-size: 0.85em;
   color: #888;
@@ -943,7 +939,7 @@ body {
 .actual-cost-print {
   display: none;
 }
-/* 未入力のまま印刷・PDFにしたときの、手書き用の線（枠） */
+/* 未入力のまま印刷したときの、手書き用の線（枠） */
 .actual-cost-blankline {
   display: inline-block;
   width: 4.5em;
@@ -1434,7 +1430,7 @@ body {
     line-height: 1.5 !important;
   }
 
-  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .pdf-fab, .home-fab, .no-print {
+  .btn, .form-actions, .itinerary-actions, .confirmed-actions, .home-fab, .no-print {
     display: none !important;
   }
 
@@ -1988,36 +1984,6 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-/* ========================
-   PDF: 保存・共有ボタン
-   ======================== */
-.pdf-fab {
-  position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
-  z-index: 900;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.7rem 1.1rem;
-  border: 2px solid var(--color-primary);
-  border-radius: 999px;
-  background: white;
-  color: var(--color-primary);
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--shadow-lg);
-  transition: all 0.2s ease;
-}
-
-.pdf-fab:hover {
-  background: var(--color-primary);
-  color: white;
-  transform: translateY(-1px);
-}
-
 
 /* Station Setup Accordion */
 .station-accordion-header {
@@ -2564,7 +2530,7 @@ a.header-partner-badge:hover {
 
 /* モバイル幅（700px以下）のときだけ、ヤフー乗換案内の画像と
    「切符の出し方」ボタンがこの器へ移動してくる（js の
-   applyMobileItineraryOrder）。PC幅・印刷・PDFでは中身が空のままなので、
+   applyMobileItineraryOrder）。PC幅・印刷では中身が空のままなので、
    :empty で器ごと消して余白が生まれないようにする */
 .mobile-route-slot:empty { display: none; }
 .mobile-route-slot { margin-bottom: 20px; }
@@ -3142,7 +3108,7 @@ input.input-missing {
 /* ============================================================
    開発者確認用：行程データをURLで引き継ぐ（暫定機能）
    ============================================================
-   スマホ実機での動作確認用。印刷・PDFには出さない（.no-print を併用） */
+   スマホ実機での動作確認用。印刷には出さない（.no-print を併用） */
 .restore-notice {
   margin: 0;
   padding: 12px 16px;
