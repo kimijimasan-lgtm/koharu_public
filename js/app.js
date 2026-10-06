@@ -1318,7 +1318,18 @@ const App = {
     }
     if (event.type === 'sightseeing' || event.type === 'spot') {
       const s = dest.spots && dest.spots.find(sp => sp.name === event.title);
-      return { venue: event.title, area: s ? s.area : '__unknown__', taxiFromCityStation: s ? s.taxiFromCityStation : null };
+      if (s) return { venue: event.title, area: s.area, taxiFromCityStation: s.taxiFromCityStation };
+      // 「駅周辺でお土産購入」のような最終日の文言は、実在のスポットではなく
+      // アプリが作る案内で、いる場所は駅そのもの。これを '__unknown__' のままにすると
+      // 駅からの分数が分からず、駅にいるのに「約0分・初乗り運賃だけのタクシー移動」が
+      // 入ってしまう（荷物パターンB・Cの最終日で発生）。駅として返すと、
+      // 隣の駅イベントと venue が一致するので fillMovementGaps の
+      // 「同じ場所＝移動なし（自由時間）」の分岐に乗る
+      if (/^(駅周辺|駅・空港周辺)/.test(event.title || '')) {
+        const stationName = dest.cityStation || dest.station;
+        return { venue: stationName, area: '__station__', taxiFromCityStation: 0 };
+      }
+      return { venue: event.title, area: '__unknown__', taxiFromCityStation: null };
     }
     return { venue: '__unknown__', area: '__unknown__', taxiFromCityStation: null };
   },
@@ -1404,7 +1415,15 @@ const App = {
     }
     if (fromTaxi != null || toTaxi != null) {
       const est = fromTaxi != null ? fromTaxi : toTaxi;
-      return this.makeTransfer('🚕', 'タクシー等で移動', `約${est}分`, `¥${this.estimateTaxiFare(dest.name, est).toLocaleString()}`, taxiRl);
+      // 0分のときは、相手の場所が分からないまま駅（0分）だけが取れている状態で、
+      // 距離を推し量れない。ここで数字を作ると「約0分」と初乗り運賃だけの
+      // 移動行になってしまうため、下の「移動」（時間も運賃も出さない）に任せる。
+      // 駅まわりの通常のイベントは inferEventLocation で駅として扱われ、
+      // fillMovementGaps の「同じ場所＝移動なし」で先に処理されるので、
+      // ここに落ちてくるのは場所を特定できなかったときだけ
+      if (est > 0) {
+        return this.makeTransfer('🚕', 'タクシー等で移動', `約${est}分`, `¥${this.estimateTaxiFare(dest.name, est).toLocaleString()}`, taxiRl);
+      }
     }
     return this.makeTransfer('🔄', '移動', '', null, taxiRl);
   },
