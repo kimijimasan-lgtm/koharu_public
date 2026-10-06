@@ -1812,9 +1812,9 @@ const LOCAL_ALT_TRANSPORT = (() => {
         },
         {
           between: ['旭川駅前', '旭岳温泉'], icon: '🚌', label: '路線バス「いで湯号」', endLabels: ['旭川駅前', '旭岳温泉'],
-          durationMin: 90, fareYen: 1800, note: '旭川電気軌道66番。空港を経由します',
-          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '案内により70〜108分とばらつきあり', caveat: '本数が少なめです。2026年9月の値上げ後の運賃は公式で確認できていません' }),
-          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: '旅行情報サイト1件のみで確認' }), noteRl: null,
+          durationMin: 90, fareYen: 2300, note: '旭川電気軌道66番。空港を経由します',
+          durationRl: _altRl(RELIABILITY.ESTIMATED, { note: '案内により70〜108分とばらつきあり', caveat: '本数が少なめです。乗る前に旭川電気軌道で確認してください' }),
+          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '旭川電気軌道公式の運賃改定PDF（2026年7月29日認可・9月1日実施）。主要区間の表で「6条9丁目〜旭岳 1,800円→2,300円」', verifiedDate: '2026-10-06', note: '旭川電気軌道の2026年9月1日改定後の運賃。公式の区間名は「6条9丁目〜旭岳」で、旭川駅前からが同額かは未確認' }), noteRl: null,
         },
       ],
     },
@@ -2001,7 +2001,7 @@ const LOCAL_ALT_TRANSPORT = (() => {
           between: ['釧路駅前', '釧路湿原'], icon: '🚃', label: 'JR釧網本線', endLabels: ['釧路駅', '釧路湿原駅'],
           durationMin: 20, fareYen: 470, note: '釧路湿原駅から細岡展望台まで徒歩約10〜15分（急な階段があります）',
           durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '乗換案内の釧網本線の時刻表（釧路発は19〜20分、釧路湿原発は20〜21分で一致）', verifiedDate: '2026-10-06', note: '普通列車の所要時間は、JR北海道の公式時刻表では未確認。ノロッコ号の運転終了は、JR北海道 釧路支社のニュースリリース（2026年8月7日）で確認。定期運転は10月4日まで、10月9日と10日がラストラン', caveat: 'ノロッコ号は2026年10月10日が最後の運転日です。以降は運行しません。この所要時間は普通列車の値です。普通列車は本数が少ないので、帰りの時刻を先に決めてください' }),
-          fareRl: _altRl(RELIABILITY.ESTIMATED, { note: 'JR北海道公式の運賃は読めていません', caveat: '運賃は470円・540円・440円と案内が割れています' }), noteRl: walkRl,
+          fareRl: _altRl(RELIABILITY.RESEARCHED, { source: '乗換案内（釧路〜釧路湿原 470円・営業キロ17.6km・こども230円・IC同額）。2025年4月1日の運賃改定はJR北海道公式で確認', verifiedDate: '2026-10-06', note: '470円は2025年4月1日の改定後の運賃。JR北海道公式の営業キロ表（釧路近郊エリア）には釧路湿原駅の記載がなく、公式単独では未確認' }), noteRl: walkRl,
         },
         {
           between: ['釧路駅前', '釧路'], icon: '🚌', label: '路線バス', endLabels: ['釧路駅前', '釧路市動物園'],
@@ -2044,8 +2044,8 @@ const LOCAL_ALT_TRANSPORT = (() => {
         {
           between: ['女満別空港', '知床'], icon: '🚌', label: '知床エアポートライナー', endLabels: ['女満別空港', 'ウトロ温泉'],
           durationMin: 132, fareYen: 4000, note: '知床五湖・知床峠へは行かず、ウトロ温泉止まりです',
-          durationRl: _altRl(RELIABILITY.RESEARCHED, { source: '観光案内2件で一致（約2時間10〜12分）', note: '2026-10-06 に斜里バス公式・網走バス公式で運行期間を確認。2026年の夏期は6月1日〜9月30日。冬期は「1月下旬〜3月上旬ごろ」の表記で、2027年の日程は未発表', caveat: '季節限定の運行です。夏期は6月から9月まで、冬期は1月下旬から3月上旬です。2026年の夏期は、9月に終わりました。次の冬期の日程は未発表です。網走バスで確認してください' }),
-          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式（運賃表）' }), noteRl: null,
+          durationRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表PDF。夏期は女満別空港発9:45→ウトロ温泉着11:56（131分）、冬期は9:35→11:48（133分）', verifiedDate: '2026-10-06', note: '公式に出ている運行期間は、夏期（2026年6月1日〜9月30日）と冬期（2027年1月16日〜3月7日）の2つだけ', caveat: '季節限定の運行です。夏期は6月1日から9月30日まで、冬期は2027年1月16日から3月7日までです。公式に出ている運行期間はこの2つだけで、あいだの時期は便がありません。運賃は季節で違い、夏期は3,500円、冬期は4,000円です。網走バスで確認してください' }),
+          fareRl: _altRl(RELIABILITY.VERIFIED, { source: '網走バス公式の時刻表PDF。夏期（2026年6月1日〜9月30日）は女満別空港〜ウトロ3,500円、冬期（2027年1月16日〜3月7日）はウトロ温泉→女満別空港4,000円', verifiedDate: '2026-10-06', note: 'ここでは高いほうの冬期の運賃を表示している。夏期は3,500円' }), noteRl: null,
         },
       ],
     },
@@ -3724,10 +3724,10 @@ const AIRPORT_LOCAL_TRANSIT = [
     durationMin: 136,
     label: '🚌 知床エアポートライナー等',
     reliability: reliability(RELIABILITY.RESEARCHED, {
-      source: '斜里バス系列 運行情報',
-      verifiedDate: '2026-09-13',
-      note: '女満別空港→ウトロ温泉バスターミナル 約136分・3,300円',
-      caveat: '知床エアポートライナーは冬季（流氷期）・夏季の季節限定運行です。通年運行ではない点は未反映のため、旅行時期の運行有無を必ずご確認ください',
+      source: '網走バス公式の時刻表PDF（冬期の2便目 女満別空港13:30発→ウトロ温泉15:46着＝136分）',
+      verifiedDate: '2026-10-06',
+      note: '女満別空港→ウトロ温泉バスターミナル。所要は冬期136分・夏期129〜131分。運賃は夏期3,500円・冬期4,000円',
+      caveat: '知床エアポートライナーは季節限定の運行です。夏期は6月1日から9月30日まで、冬期は2027年1月16日から3月7日までで、あいだの時期は便がありません。旅行時期の運行有無を必ずご確認ください',
     }),
   },
   {
